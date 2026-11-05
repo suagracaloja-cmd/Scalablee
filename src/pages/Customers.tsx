@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MessageCircle, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
@@ -13,7 +14,8 @@ export default function Customers() {
   const [items, setItems] = useState<Customer[]>([])
   const [totals, setTotals] = useState<Map<string, { total: number; last: string }>>(new Map())
   const [loading, setLoading] = useState(true)
-  const [q, setQ] = useState('')
+  const [params] = useSearchParams()
+  const [q, setQ] = useState(params.get('q') ?? '')
   const [status, setStatus] = useState('all')
   const [form, setForm] = useState<ReturnType<typeof empty> | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
@@ -81,7 +83,7 @@ export default function Customers() {
         </div>
         <div className="flex gap-1 overflow-x-auto">
           {['all', 'lead', 'active', 'vip', 'inactive'].map((s) => (
-            <button key={s} onClick={() => setStatus(s)} className={`shrink-0 rounded-xl border px-3 py-2 text-xs ${status === s ? 'border-brand bg-brand/20' : 'border-line text-muted'}`}>
+            <button key={s} onClick={() => setStatus(s)} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold ${status === s ? 'border-brand bg-brand text-white' : 'border-line text-muted'}`}>
               {s === 'all' ? `Todos (${items.length})` : `${STATUS_LABEL[s]} (${items.filter((c) => c.status === s).length})`}
             </button>
           ))}
@@ -108,11 +110,11 @@ export default function Customers() {
                   <span className={`chip ${STATUS_CHIP[c.status]}`}>{STATUS_LABEL[c.status]}</span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <div className="rounded-lg bg-panel-2 p-2">
+                  <div className="rounded-2xl bg-panel-2 p-3">
                     <div className="text-muted">Total comprado</div>
                     <div className="font-semibold">{brl(t?.total ?? 0)}</div>
                   </div>
-                  <div className="rounded-lg bg-panel-2 p-2">
+                  <div className="rounded-2xl bg-panel-2 p-3">
                     <div className="text-muted">Última compra</div>
                     <div className="font-semibold">{t?.last ? fmtDate(t.last) : '—'}</div>
                   </div>
@@ -122,17 +124,17 @@ export default function Customers() {
                   <span>{c.last_contact_at ? `Contato ${timeAgo(c.last_contact_at)}` : 'Sem contato registrado'}</span>
                   <div className="flex gap-1">
                     {c.phone && (
-                      <a href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer" onClick={() => touch(c)} className="rounded-lg p-1.5 text-emerald-300 hover:bg-panel-2" title="Abrir no WhatsApp">
+                      <a href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer" onClick={() => touch(c)} className="rounded-full p-1.5 text-emerald-600 hover:bg-panel-2" title="Abrir no WhatsApp">
                         <MessageCircle size={15} />
                       </a>
                     )}
                     <button
-                      className="rounded-lg p-1.5 hover:bg-panel-2"
+                      className="rounded-full p-1.5 hover:bg-panel-2"
                       onClick={() => (setEditId(c.id), setForm({ name: c.name, phone: c.phone ?? '', email: c.email ?? '', status: c.status, notes: c.notes ?? '' }))}
                     >
                       <Pencil size={14} />
                     </button>
-                    <button className="rounded-lg p-1.5 hover:bg-panel-2 hover:text-rose-300" onClick={() => remove(c)}>
+                    <button className="rounded-full p-1.5 hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(c)}>
                       <Trash2 size={14} />
                     </button>
                   </div>

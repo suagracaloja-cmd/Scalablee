@@ -1,14 +1,63 @@
+import { HeartHandshake, Megaphone, MessageCircle, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
 import type { AgentKind } from './types'
 
-export const AGENT_META: Record<AgentKind | 'assistant', { label: string; color: string; ring: string; emoji: string; desc: string }> = {
-  marketing: { label: 'Marketing', color: 'text-pink-300 bg-pink-500/15', ring: 'from-pink-500 to-orange-400', emoji: '📣', desc: 'Busca o que está bombando na internet, analisa seu Instagram e site e traz ideias de posts e campanhas.' },
-  sales: { label: 'Vendas', color: 'text-emerald-300 bg-emerald-500/15', ring: 'from-emerald-500 to-lime-400', emoji: '💼', desc: 'Acompanha suas vendas, aponta clientes que precisam de atenção e sugere mensagens de reativação.' },
-  finance: { label: 'Financeiro', color: 'text-amber-300 bg-amber-500/15', ring: 'from-amber-500 to-yellow-300', emoji: '💰', desc: 'Cuida das contas a pagar e a receber, alerta vencimentos e riscos de caixa.' },
-  crm: { label: 'CRM', color: 'text-sky-300 bg-sky-500/15', ring: 'from-sky-500 to-cyan-300', emoji: '🤝', desc: 'Cuida do relacionamento: follow-ups, leads esfriando, clientes VIP e tarefas para amanhã.' },
-  support: { label: 'Atendimento', color: 'text-violet-300 bg-violet-500/15', ring: 'from-violet-500 to-fuchsia-400', emoji: '💬', desc: 'Responde seus clientes no WhatsApp sozinho e pede sua aprovação quando necessário.' },
-  assistant: { label: 'Assistente', color: 'text-cyan-300 bg-cyan-500/15', ring: 'from-cyan-500 to-blue-500', emoji: '✨', desc: 'Sua IA pessoal.' },
+type Meta = { label: string; role: string; icon: LucideIcon; soft: string; fg: string; solid: string; desc: string; suggestions: string[] }
+
+export const AGENT_META: Record<AgentKind, Meta> = {
+  marketing: {
+    label: 'Marketing',
+    role: 'Agente de Marketing',
+    icon: Megaphone,
+    soft: 'bg-pink-50',
+    fg: 'text-pink-600',
+    solid: '#ec4899',
+    desc: 'Pesquisa o que está bombando na internet, analisa seu Instagram e site e traz ideias de posts e campanhas.',
+    suggestions: ['Me dá ideias de post para essa semana', 'Qual produto devo divulgar?', 'Ideia de campanha para clientes que sumiram', 'Como aumentar minhas vendas pelo Instagram?'],
+  },
+  sales: {
+    label: 'Vendas',
+    role: 'Agente de Vendas',
+    icon: TrendingUp,
+    soft: 'bg-emerald-50',
+    fg: 'text-emerald-600',
+    solid: '#10b981',
+    desc: 'Acompanha suas vendas, aponta clientes que precisam de atenção e sugere mensagens de reativação.',
+    suggestions: ['Quanto vendi essa semana?', 'Quais clientes sumiram?', 'Qual meu produto mais vendido?', 'Qual a previsão de vendas do mês?'],
+  },
+  finance: {
+    label: 'Financeiro',
+    role: 'Agente Financeiro',
+    icon: Wallet,
+    soft: 'bg-amber-50',
+    fg: 'text-amber-600',
+    solid: '#f59e0b',
+    desc: 'Cuida das contas a pagar e a receber, alerta vencimentos e riscos de caixa.',
+    suggestions: ['Quais contas vencem essa semana?', 'Quanto tenho a receber?', 'Como está meu caixa?', 'Quais foram minhas despesas do mês?'],
+  },
+  crm: {
+    label: 'CRM',
+    role: 'Agente de CRM',
+    icon: HeartHandshake,
+    soft: 'bg-sky-50',
+    fg: 'text-sky-600',
+    solid: '#0ea5e9',
+    desc: 'Cuida do relacionamento: follow-ups, leads esfriando, clientes VIP e tarefas para amanhã.',
+    suggestions: ['Quais leads estão esfriando?', 'Quem são meus melhores clientes?', 'Quais tarefas tenho amanhã?', 'Quais clientes precisam de atenção?'],
+  },
+  support: {
+    label: 'Atendimento',
+    role: 'Agente de Atendimento',
+    icon: MessageCircle,
+    soft: 'bg-violet-50',
+    fg: 'text-violet-600',
+    solid: '#8b5cf6',
+    desc: 'Responde seus clientes no WhatsApp sozinho e pede sua aprovação quando necessário.',
+    suggestions: ['Tem conversa esperando no WhatsApp?', 'Tem aprovação pendente?', 'Me ajuda a responder um cliente pedindo desconto', 'Como está o atendimento hoje?'],
+  },
 }
 
-export const AVATAR_STYLES = ['adventurer', 'avataaars', 'bottts', 'lorelei', 'notionists', 'personas', 'fun-emoji', 'micah']
+export const GENERAL_SUGGESTIONS = ['Como estão minhas vendas?', 'O que tenho para pagar essa semana?', 'Quem são meus melhores clientes?', 'Qual a previsão do mês?', 'Me dá um resumo de hoje']
+
+export const AVATAR_STYLES = ['notionists', 'lorelei', 'adventurer', 'avataaars', 'personas', 'micah', 'bottts', 'fun-emoji']
 export const presetAvatar = (style: string, seed: string) =>
-  `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+  `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=e8f2ff,fce7f3,d1fae5,fef3c7,e0f2fe`

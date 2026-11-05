@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { supabase, api } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import { Logo } from '../components/Layout'
-import { Field, Reveal, Spinner } from '../components/ui'
+import { Field, Logo, Reveal, Spinner } from '../components/ui'
 
 const SEGMENTS = ['Loja de roupas / moda', 'Alimentação / restaurante', 'Beleza / estética', 'Serviços', 'E-commerce', 'Saúde / clínica', 'Educação / cursos', 'Imobiliária', 'Academia / fitness', 'Outro']
 
@@ -32,24 +31,24 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <form onSubmit={submit} className="card w-full max-w-lg p-6 sm:p-8">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f2f4f7] to-[#e3efff] p-4 sm:p-6">
+      <form onSubmit={submit} className="card w-full max-w-xl p-6 sm:p-10">
         <Reveal>
-          <Logo />
+          <Logo size={42} />
         </Reveal>
-        <Reveal i={1} className="mt-6">
-          <h1 className="text-2xl font-bold">Vamos conhecer sua empresa</h1>
-          <p className="mt-1 text-sm text-muted">Seus agentes usam essas informações para trabalhar por você. Se tiver site, a IA vai entrar nele e avaliar tudo.</p>
+        <Reveal i={1} className="mt-8">
+          <h1 className="text-[28px] font-bold leading-tight tracking-tight">Vamos conhecer sua empresa</h1>
+          <p className="mt-2 text-sm text-muted">Seus 5 agentes usam essas informações para trabalhar por você. Se tiver site, a IA entra nele e avalia tudo.</p>
         </Reveal>
-        <div className="mt-6 space-y-4">
+        <div className="mt-8 space-y-4">
           <Reveal i={2}>
             <Field label="Nome da empresa *">
-              <input className="input" required value={f.name} onChange={set('name')} placeholder="Ex: Loja da Maria" />
+              <input className="input h-12" required value={f.name} onChange={set('name')} placeholder="Ex: Loja da Maria" />
             </Field>
           </Reveal>
           <Reveal i={3}>
             <Field label="Segmento">
-              <select className="input" value={f.segment} onChange={set('segment')}>
+              <select className="input h-12" value={f.segment} onChange={set('segment')}>
                 <option value="">Selecione…</option>
                 {SEGMENTS.map((s) => (
                   <option key={s}>{s}</option>
@@ -59,22 +58,22 @@ export default function Onboarding() {
           </Reveal>
           <Reveal i={4}>
             <Field label="O que você vende? (ajuda o atendimento no WhatsApp)">
-              <textarea className="input min-h-20" value={f.description} onChange={set('description')} placeholder="Produtos, preços, horário de funcionamento, entrega…" />
+              <textarea className="input min-h-24" value={f.description} onChange={set('description')} placeholder="Produtos, preços, horário de funcionamento, entrega…" />
             </Field>
           </Reveal>
           <Reveal i={5} className="grid gap-4 sm:grid-cols-2">
             <Field label="Site (opcional)">
-              <input className="input" value={f.website} onChange={set('website')} placeholder="minhaloja.com.br" />
+              <input className="input h-12" value={f.website} onChange={set('website')} placeholder="minhaloja.com.br" />
             </Field>
             <Field label="Instagram (opcional)">
-              <input className="input" value={f.instagram} onChange={set('instagram')} placeholder="@minhaloja" />
+              <input className="input h-12" value={f.instagram} onChange={set('instagram')} placeholder="@minhaloja" />
             </Field>
           </Reveal>
-          <Reveal i={6}>
-            <button className="btn-primary w-full" disabled={busy || !f.name.trim()}>
-              {busy && <Spinner />} Criar minha empresa e ativar agentes
+          <Reveal i={6} className="pt-2">
+            <button className="btn-primary h-12 w-full" disabled={busy || !f.name.trim()}>
+              {busy && <Spinner />} Criar empresa e ativar agentes
             </button>
-            <button type="button" className="mt-3 w-full text-center text-xs text-muted hover:text-slate-300" onClick={() => supabase.auth.signOut()}>
+            <button type="button" className="mt-3 w-full text-center text-xs text-muted hover:text-ink" onClick={() => supabase.auth.signOut()}>
               Sair
             </button>
           </Reveal>

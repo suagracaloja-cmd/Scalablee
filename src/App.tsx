@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Agents from './pages/Agents'
+import AgentChat from './pages/AgentChat'
 import Assistant from './pages/Assistant'
 import Sales from './pages/Sales'
 import Customers from './pages/Customers'
@@ -20,7 +21,7 @@ function Gate() {
   if (loading)
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <img src="/favicon.svg" className="h-12 w-12 animate-pulse" alt="Carregando" />
+        <img src="/logo-icon.png" className="h-14 w-14 animate-pulse" alt="Carregando" />
       </div>
     )
   if (!session) return <Login />
@@ -31,6 +32,7 @@ function Gate() {
         <Route index element={<Dashboard />} />
         <Route path="assistente" element={<Assistant />} />
         <Route path="agentes" element={<Agents />} />
+        <Route path="agentes/:kind" element={<AgentChat />} />
         <Route path="aprovacoes" element={<Approvals />} />
         <Route path="whatsapp" element={<WhatsApp />} />
         <Route path="vendas" element={<Sales />} />

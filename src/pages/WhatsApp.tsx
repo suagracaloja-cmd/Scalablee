@@ -144,19 +144,19 @@ export default function WhatsApp() {
           {/* Lista */}
           <div className={`min-h-0 overflow-y-auto border-r border-line ${active ? 'hidden md:block' : ''}`}>
             {!status.connected && (
-              <div className="m-3 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-200">Finalize a configuração do webhook na Meta para começar a receber mensagens.</div>
+              <div className="m-3 rounded-2xl bg-amber-50 p-3 text-xs text-amber-600">Finalize a configuração do webhook na Meta para começar a receber mensagens.</div>
             )}
             {convs.length === 0 && <Empty icon={<MessageCircle size={22} />} title="Nenhuma conversa ainda" text="Quando um cliente mandar mensagem, ela aparece aqui." />}
             {convs.map((c) => (
               <button key={c.id} onClick={() => setActive(c)} className={`flex w-full items-center gap-3 border-b border-line/60 px-4 py-3 text-left hover:bg-panel-2 ${active?.id === c.id ? 'bg-panel-2' : ''}`}>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 font-semibold text-emerald-300">{(c.contact_name ?? '?')[0]?.toUpperCase()}</div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 font-semibold text-emerald-600">{(c.contact_name ?? '?')[0]?.toUpperCase()}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-semibold">{c.contact_name ?? c.wa_id}</span>
                     <span className="shrink-0 text-[10px] text-muted">{timeAgo(c.last_message_at)}</span>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted">
-                    +{c.wa_id} {c.ai_paused && <span className="chip bg-amber-500/15 text-amber-300">IA pausada</span>}
+                    +{c.wa_id} {c.ai_paused && <span className="chip bg-amber-50 text-amber-600">IA pausada</span>}
                   </div>
                 </div>
                 {c.unread > 0 && <span className="rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-black">{c.unread}</span>}
@@ -178,11 +178,11 @@ export default function WhatsApp() {
                     <div className="truncate font-semibold">{active.contact_name ?? active.wa_id}</div>
                     <div className="text-xs text-muted">+{active.wa_id}</div>
                   </div>
-                  <button onClick={toggleAI} className={`btn px-3 py-1.5 text-xs ${active.ai_paused ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                  <button onClick={toggleAI} className={`btn px-3 py-1.5 text-xs ${active.ai_paused ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
                     <Bot size={14} /> {active.ai_paused ? 'IA pausada' : 'IA ativa'}
                   </button>
                 </div>
-                <div className="flex-1 space-y-2 overflow-y-auto bg-[radial-gradient(circle_at_1px_1px,#1c1d30_1px,transparent_0)] bg-[size:18px_18px] p-4">
+                <div className="flex-1 space-y-2 overflow-y-auto bg-[radial-gradient(circle_at_1px_1px,#eceef2_1px,transparent_0)] bg-[size:18px_18px] p-4">
                   {msgs.map((m) => (
                     <div key={m.id} className={`flex ${m.direction === 'out' ? 'justify-end' : ''}`}>
                       <div
@@ -190,14 +190,14 @@ export default function WhatsApp() {
                           m.direction === 'in'
                             ? 'rounded-bl-md bg-panel-2'
                             : m.status === 'pending_approval'
-                              ? 'rounded-br-md border border-dashed border-amber-400/60 bg-amber-500/10'
+                              ? 'rounded-br-md border border-dashed border-amber-400/60 bg-amber-50'
                               : m.status === 'rejected'
-                                ? 'rounded-br-md bg-slate-700/40 text-muted line-through'
-                                : 'rounded-br-md bg-emerald-700/40'
+                                ? 'rounded-br-md bg-slate-100 text-muted line-through'
+                                : 'rounded-br-md bg-brand text-white'
                         }`}
                       >
                         {m.direction === 'out' && (
-                          <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold text-emerald-200/80">
+                          <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
                             {m.author === 'agent' ? (
                               <>
                                 <AgentAvatar agent={agent} size={14} /> {agent?.name ?? 'IA'}
@@ -209,7 +209,7 @@ export default function WhatsApp() {
                         )}
                         <div className="whitespace-pre-wrap">{m.body}</div>
                         <div className="mt-0.5 text-right text-[10px] text-muted">
-                          {fmtTime(m.created_at)} {m.status === 'pending_approval' && '· aguardando aprovação'} {m.status === 'failed' && <span className="text-rose-300">· falhou: {m.error}</span>}
+                          {fmtTime(m.created_at)} {m.status === 'pending_approval' && '· aguardando aprovação'} {m.status === 'failed' && <span className="text-rose-600">· falhou: {m.error}</span>}
                         </div>
                       </div>
                     </div>
@@ -254,8 +254,8 @@ function InlineApproval({ a, onDecide }: { a: Approval; onDecide: (a: Approval, 
     setBusy(false)
   }
   return (
-    <div className="ml-auto max-w-[90%] rounded-2xl border border-amber-400/40 bg-amber-500/5 p-3">
-      <div className="mb-2 text-xs font-semibold text-amber-200">⚠️ Aprovação: {a.reason}</div>
+    <div className="ml-auto max-w-[90%] rounded-2xl border border-amber-400/40 bg-amber-50 p-3">
+      <div className="mb-2 text-xs font-semibold text-amber-600">⚠️ Aprovação: {a.reason}</div>
       <textarea className="input min-h-16 text-sm" value={text} onChange={(e) => setText(e.target.value)} />
       <div className="mt-2 flex justify-end gap-2">
         <button className="btn-danger px-3 py-1.5 text-xs" disabled={busy} onClick={() => go('reject')}>
@@ -302,14 +302,14 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
     <Modal open onClose={onClose} title="Conectar WhatsApp Business" wide>
       <ol className="mb-5 list-decimal space-y-1.5 pl-5 text-sm text-muted">
         <li>
-          Acesse <b className="text-slate-200">developers.facebook.com</b> → crie um app do tipo <b className="text-slate-200">Business</b> e adicione o produto <b className="text-slate-200">WhatsApp</b>.
+          Acesse <b className="text-ink">developers.facebook.com</b> → crie um app do tipo <b className="text-ink">Business</b> e adicione o produto <b className="text-ink">WhatsApp</b>.
         </li>
         <li>
-          Em <b className="text-slate-200">WhatsApp → Configuração da API</b>, copie o <b className="text-slate-200">Phone Number ID</b> e gere um <b className="text-slate-200">token de acesso permanente</b> (usuário do sistema).
+          Em <b className="text-ink">WhatsApp → Configuração da API</b>, copie o <b className="text-ink">Phone Number ID</b> e gere um <b className="text-ink">token de acesso permanente</b> (usuário do sistema).
         </li>
         <li>Cole abaixo e salve. Depois configure o webhook com a URL e o token de verificação que aparecerem.</li>
         <li>
-          No webhook, assine o campo <b className="text-slate-200">messages</b>.
+          No webhook, assine o campo <b className="text-ink">messages</b>.
         </li>
       </ol>
       <form onSubmit={save} className="space-y-3">
@@ -324,7 +324,7 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
         </button>
       </form>
       {saved && (
-        <div className="mt-5 space-y-3 rounded-xl border border-line bg-panel-2 p-4">
+        <div className="mt-5 space-y-3 rounded-2xl border border-line bg-panel-2 p-4">
           <div className="text-sm font-semibold">Configuração do webhook na Meta</div>
           {[
             { l: 'URL de callback', v: WEBHOOK_URL },
@@ -340,7 +340,7 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
               </div>
             </div>
           ))}
-          <div className={`text-xs ${saved.connected ? 'text-emerald-300' : 'text-amber-300'}`}>
+          <div className={`text-xs ${saved.connected ? 'text-emerald-600' : 'text-amber-600'}`}>
             {saved.connected ? '✓ Webhook verificado — recebendo mensagens' : 'Aguardando a Meta verificar o webhook…'}
           </div>
           <button type="button" className="btn-danger w-full text-xs" onClick={disconnect}>

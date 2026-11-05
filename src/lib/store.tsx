@@ -98,13 +98,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppCtx.Provider value={{ session, loading, company, agents, agentByKind, counts, reloadCompany, reloadAgents, reloadCounts, toast }}>
       {children}
-      <div className="fixed bottom-20 right-4 z-[60] flex flex-col gap-2 md:bottom-6">
+      <div className="fixed inset-x-4 bottom-28 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:items-end">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`reveal-up rounded-xl border px-4 py-3 text-sm shadow-xl backdrop-blur ${
-              t.type === 'err' ? 'border-rose-500/40 bg-rose-950/90 text-rose-100' : 'border-brand/40 bg-panel/95 text-slate-100'
-            }`}
+            className={`reveal-up max-w-sm rounded-2xl px-4 py-3 text-sm font-medium shadow-xl ${t.type === 'err' ? 'bg-rose-600 text-white' : 'bg-ink text-white'}`}
           >
             {t.msg}
           </div>

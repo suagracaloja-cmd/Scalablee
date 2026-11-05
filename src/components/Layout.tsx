@@ -1,14 +1,15 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useState, type FormEvent } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
   Bot,
   CheckCircle2,
   ClipboardList,
-  LayoutDashboard,
+  LayoutGrid,
   LogOut,
   Menu,
   MessageCircle,
+  Search,
   Settings,
   ShoppingBag,
   Sparkles,
@@ -18,132 +19,182 @@ import {
 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { supabase } from '../lib/supabase'
+import { Logo } from './ui'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/', label: 'Dashboard', icon: LayoutGrid },
   { to: '/assistente', label: 'Assistente IA', icon: Sparkles },
   { to: '/agentes', label: 'Agentes', icon: Bot },
   { to: '/aprovacoes', label: 'Aprovações', icon: CheckCircle2, badge: 'approvals' as const },
   { to: '/whatsapp', label: 'WhatsApp', icon: MessageCircle, badge: 'conversations' as const },
   { to: '/vendas', label: 'Vendas', icon: ShoppingBag },
-  { to: '/clientes', label: 'Clientes (CRM)', icon: Users },
+  { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet },
   { to: '/tarefas', label: 'Tarefas', icon: ClipboardList },
-  { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' as const },
-  { to: '/configuracoes', label: 'Configurações', icon: Settings },
 ]
-const MOBILE = ['/', '/assistente', '/aprovacoes', '/whatsapp']
-
-export function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <img src="/favicon.svg" alt="" className="h-8 w-8" />
-      <span className="text-lg font-extrabold tracking-tight">
-        Scala<span className="text-gradient">blee</span>
-      </span>
-    </div>
-  )
-}
+const MOBILE = ['/', '/agentes', '/assistente', '/whatsapp']
 
 export default function Layout() {
   const { company, counts } = useApp()
-  const [open, setOpen] = useState(false)
+  const [sheet, setSheet] = useState(false)
+  const [q, setQ] = useState('')
   const loc = useLocation()
+  const nav = useNavigate()
+  const isActive = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
+  const now = new Date()
+  const wd = now.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
+  const today = `${wd.charAt(0).toUpperCase()}${wd.slice(1)}, ${now.getDate()} de ${now.toLocaleDateString('pt-BR', { month: 'long' })}`
 
-  const links = (onClick?: () => void) =>
-    NAV.map((n, i) => {
-      const c = n.badge ? counts[n.badge] : 0
-      return (
-        <NavLink
-          key={n.to}
-          to={n.to}
-          end={n.to === '/'}
-          onClick={onClick}
-          className={({ isActive }) =>
-            `reveal group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-              isActive ? 'bg-gradient-to-r from-brand/25 to-transparent text-white' : 'text-muted hover:bg-panel-2 hover:text-slate-200'
-            }`
-          }
-          style={{ '--d': `${i * 40}ms` } as React.CSSProperties}
-        >
-          <n.icon size={18} />
-          <span className="flex-1">{n.label}</span>
-          {c > 0 && <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold text-white">{c}</span>}
-        </NavLink>
-      )
-    })
+  const search = (e: FormEvent) => {
+    e.preventDefault()
+    if (q.trim()) nav(`/clientes?q=${encodeURIComponent(q.trim())}`)
+  }
 
   return (
     <div className="min-h-screen md:flex">
-      {/* Sidebar desktop */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-panel/60 p-4 md:flex">
-        <div className="reveal mb-6 px-2">
-          <Logo />
-        </div>
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">{links()}</nav>
-        <div className="mt-4 border-t border-line pt-4">
-          <div className="truncate px-2 text-sm font-semibold">{company?.name}</div>
-          <div className="truncate px-2 text-xs text-muted">{company?.segment}</div>
-          <button onClick={() => supabase.auth.signOut()} className="mt-3 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm text-muted hover:bg-panel-2 hover:text-slate-200">
-            <LogOut size={16} /> Sair
+      {/* Trilho lateral (desktop) */}
+      <aside className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center py-6 md:flex">
+        <NavLink to="/" className="reveal mb-8">
+          <Logo size={46} word={false} />
+        </NavLink>
+        <nav className="flex flex-1 flex-col items-center gap-2.5 rounded-full bg-panel px-2.5 py-3 shadow-[0_1px_12px_rgba(16,24,40,0.05)]">
+          {NAV.map((n, i) => {
+            const c = n.badge ? counts[n.badge] : 0
+            const active = isActive(n.to)
+            return (
+              <NavLink
+                key={n.to}
+                to={n.to}
+                className={`reveal group relative flex h-11 w-11 items-center justify-center rounded-full transition ${
+                  active ? 'bg-brand text-white shadow-[0_8px_18px_-6px_rgba(38,139,253,0.8)]' : 'text-slate-500 hover:bg-panel-2 hover:text-ink'
+                }`}
+                style={{ '--d': `${i * 45}ms` } as React.CSSProperties}
+              >
+                <n.icon size={20} strokeWidth={active ? 2.2 : 1.9} />
+                {c > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">{c}</span>}
+                <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 whitespace-nowrap rounded-xl bg-ink px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                  {n.label}
+                </span>
+              </NavLink>
+            )
+          })}
+        </nav>
+        <div className="mt-4 flex flex-col items-center gap-2.5">
+          <NavLink to="/configuracoes" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/configuracoes') ? 'bg-brand text-white' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Configurações">
+            <Settings size={19} />
+          </NavLink>
+          <button onClick={() => supabase.auth.signOut()} className="flex h-11 w-11 items-center justify-center rounded-full bg-panel text-slate-500 hover:text-rose-600" title="Sair">
+            <LogOut size={18} />
           </button>
         </div>
       </aside>
 
-      {/* Topbar mobile */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur md:hidden">
-        <Logo />
-        <div className="flex items-center gap-1">
-          <NavLink to="/notificacoes" className="relative rounded-lg p-2 text-muted">
-            <Bell size={20} />
-            {counts.insights > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-brand pulse-dot" />}
-          </NavLink>
-          <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-muted" aria-label="Menu">
-            <Menu size={22} />
-          </button>
-        </div>
-      </header>
+      <div className="min-w-0 flex-1">
+        {/* Barra superior (desktop) */}
+        <header className="sticky top-0 z-30 hidden items-center gap-3 bg-bg/80 px-8 py-5 backdrop-blur-md md:flex">
+          <form onSubmit={search} className="reveal relative w-full max-w-sm">
+            <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+            <input className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </form>
+          <span className="reveal hidden rounded-full bg-panel px-4 py-2.5 text-sm font-semibold lg:inline" style={{ '--d': '60ms' } as React.CSSProperties}>
+            {today}
+          </span>
+          <div className="ml-auto flex items-center gap-2.5">
+            <NavLink to="/aprovacoes" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-panel text-ink hover:bg-white/70" title="Aprovações">
+              <CheckCircle2 size={19} />
+              {counts.approvals > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
+            </NavLink>
+            <NavLink to="/notificacoes" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-panel text-ink hover:bg-white/70" title="Notificações">
+              <Bell size={19} />
+              {counts.insights > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
+            </NavLink>
+            <NavLink to="/configuracoes" className="flex items-center gap-3 rounded-full bg-panel py-1.5 pl-1.5 pr-4">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">{company?.name?.[0]?.toUpperCase()}</span>
+              <span className="max-w-[160px] leading-tight">
+                <span className="block truncate text-sm font-bold">{company?.name}</span>
+                <span className="block truncate text-[11px] text-muted">{company?.segment ?? 'Minha empresa'}</span>
+              </span>
+            </NavLink>
+          </div>
+        </header>
 
-      {open && (
-        <div className="fixed inset-0 z-50 bg-black/60 md:hidden" onClick={() => setOpen(false)}>
-          <div className="reveal h-full w-72 overflow-y-auto border-r border-line bg-panel p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-6 flex items-center justify-between">
-              <Logo />
-              <button onClick={() => setOpen(false)} className="p-1 text-muted">
-                <X size={20} />
+        {/* Topo (celular) */}
+        <header className="sticky top-0 z-30 flex items-center justify-between bg-bg/85 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
+          <NavLink to="/" className="flex items-center gap-2.5">
+            <Logo size={38} word={false} />
+            <div className="leading-tight">
+              <div className="text-[11px] text-muted">Olá 👋</div>
+              <div className="max-w-[170px] truncate text-[15px] font-bold">{company?.name}</div>
+            </div>
+          </NavLink>
+          <div className="flex items-center gap-2">
+            <NavLink to="/aprovacoes" className="icon-btn relative">
+              <CheckCircle2 size={18} />
+              {counts.approvals > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
+            </NavLink>
+            <NavLink to="/notificacoes" className="icon-btn relative">
+              <Bell size={18} />
+              {counts.insights > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
+            </NavLink>
+          </div>
+        </header>
+
+        <main key={loc.pathname} className="px-4 pb-32 pt-2 sm:px-6 md:px-8 md:pb-10 md:pt-1">
+          <div className="mx-auto max-w-[1400px]">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+
+      {/* Menu flutuante (celular) */}
+      <nav className="fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-40 flex items-center justify-between rounded-full bg-ink p-2 shadow-2xl md:hidden">
+        {NAV.filter((n) => MOBILE.includes(n.to)).map((n) => {
+          const active = isActive(n.to)
+          const c = n.badge ? counts[n.badge] : 0
+          return (
+            <NavLink key={n.to} to={n.to} className={`relative flex h-12 flex-1 items-center justify-center rounded-full transition ${active ? 'bg-white text-ink' : 'text-white/60'}`} aria-label={n.label}>
+              <n.icon size={21} />
+              {c > 0 && <span className="absolute right-[24%] top-2 h-2 w-2 rounded-full bg-rose-500" />}
+            </NavLink>
+          )
+        })}
+        <button onClick={() => setSheet(true)} className="flex h-12 flex-1 items-center justify-center rounded-full text-white/60" aria-label="Mais">
+          <Menu size={21} />
+        </button>
+      </nav>
+
+      {sheet && (
+        <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm md:hidden" onClick={() => setSheet(false)}>
+          <div className="reveal-up absolute inset-x-0 bottom-0 rounded-t-[32px] bg-panel p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <Logo size={34} />
+              <button onClick={() => setSheet(false)} className="icon-btn">
+                <X size={18} />
               </button>
             </div>
-            <nav className="flex flex-col gap-1">{links(() => setOpen(false))}</nav>
-            <button onClick={() => supabase.auth.signOut()} className="mt-4 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted">
-              <LogOut size={16} /> Sair
+            <div className="grid grid-cols-3 gap-2.5">
+              {[...NAV, { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' as const }, { to: '/configuracoes', label: 'Configurações', icon: Settings }].map((n) => {
+                const c = 'badge' in n && n.badge ? counts[n.badge] : 0
+                return (
+                  <NavLink
+                    key={n.to}
+                    to={n.to}
+                    onClick={() => setSheet(false)}
+                    className={`relative flex flex-col items-center gap-2 rounded-3xl px-2 py-4 text-center text-xs font-semibold ${isActive(n.to) ? 'bg-brand text-white' : 'bg-panel-2 text-ink'}`}
+                  >
+                    <n.icon size={21} />
+                    {n.label}
+                    {c > 0 && <span className="absolute right-3 top-3 rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">{c}</span>}
+                  </NavLink>
+                )
+              })}
+            </div>
+            <button onClick={() => supabase.auth.signOut()} className="btn-ghost mt-4 w-full text-rose-600">
+              <LogOut size={16} /> Sair da conta
             </button>
           </div>
         </div>
       )}
-
-      <main key={loc.pathname} className="min-w-0 flex-1 px-4 pb-28 pt-5 sm:px-6 md:px-8 md:pb-10 md:pt-8">
-        <div className="mx-auto max-w-7xl">
-          <Outlet />
-        </div>
-      </main>
-
-      {/* Navegação inferior mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-panel/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-        {NAV.filter((n) => MOBILE.includes(n.to)).map((n) => {
-          const c = n.badge ? counts[n.badge] : 0
-          return (
-            <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex flex-col items-center gap-1 py-2.5 text-[10px] ${isActive ? 'text-white' : 'text-muted'}`}>
-              <n.icon size={20} />
-              {n.label.split(' ')[0]}
-              {c > 0 && <span className="absolute right-[22%] top-1.5 rounded-full bg-brand px-1 text-[9px] font-bold text-white">{c}</span>}
-            </NavLink>
-          )
-        })}
-        <button onClick={() => setOpen(true)} className="flex flex-col items-center gap-1 py-2.5 text-[10px] text-muted">
-          <Menu size={20} />
-          Mais
-        </button>
-      </nav>
     </div>
   )
 }

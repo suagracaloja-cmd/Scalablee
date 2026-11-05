@@ -4,9 +4,16 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Customer, Sale } from '../lib/types'
 import { addDays, brl, fmtDate, today } from '../lib/format'
-import { Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, STATUS_CHIP, STATUS_LABEL } from '../components/ui'
+import { Count, Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL, StatusCard } from '../components/ui'
 
 const empty = () => ({ description: '', amount: '', status: 'paid' as Sale['status'], sold_at: today(), customer_id: '' })
+const PERIODS = [
+  { v: '7', l: '7 dias' },
+  { v: '30', l: '30 dias' },
+  { v: '90', l: '90 dias' },
+  { v: '365', l: '1 ano' },
+  { v: 'all', l: 'Tudo' },
+]
 
 export default function Sales() {
   const { company, toast } = useApp()
@@ -14,13 +21,14 @@ export default function Sales() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
+  const [status, setStatus] = useState<'all' | Sale['status']>('all')
   const [period, setPeriod] = useState('30')
   const [form, setForm] = useState<ReturnType<typeof empty> | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = async () => {
-    let query = supabase.from('sales').select('*').order('sold_at', { ascending: false }).order('created_at', { ascending: false })
+    let query = supabase.from('sales').select('*').order('sold_at', { ascending: false }).order('created_at', { ascending: false }).limit(2000)
     if (period !== 'all') query = query.gte('sold_at', addDays(today(), -Number(period)))
     const [s, c] = await Promise.all([query, supabase.from('customers').select('*').order('name')])
     setItems(((s.data ?? []) as Sale[]).map((x) => ({ ...x, amount: Number(x.amount) })))
@@ -32,9 +40,9 @@ export default function Sales() {
   }, [period]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const names = useMemo(() => new Map(customers.map((c) => [c.id, c.name])), [customers])
-  const shown = items.filter((s) => (s.description + ' ' + (names.get(s.customer_id ?? '') ?? '')).toLowerCase().includes(q.toLowerCase()))
-  const total = shown.filter((s) => s.status !== 'cancelled').reduce((a, b) => a + b.amount, 0)
-  const pending = shown.filter((s) => s.status === 'pending').reduce((a, b) => a + b.amount, 0)
+  const sum = (a: Sale[]) => a.reduce((x, y) => x + y.amount, 0)
+  const byStatus = (st: Sale['status']) => items.filter((s) => s.status === st)
+  const shown = items.filter((s) => (status === 'all' || s.status === status) && (s.description + ' ' + (names.get(s.customer_id ?? '') ?? '')).toLowerCase().includes(q.toLowerCase()))
 
   async function save(e: FormEvent) {
     e.preventDefault()
@@ -56,6 +64,7 @@ export default function Sales() {
     await supabase.from('sales').delete().eq('id', s.id)
     load()
   }
+  const edit = (s: Sale) => (setEditId(s.id), setForm({ description: s.description, amount: String(s.amount), status: s.status, sold_at: s.sold_at, customer_id: s.customer_id ?? '' }))
 
   return (
     <div>
@@ -68,62 +77,107 @@ export default function Sales() {
           </button>
         }
       />
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Reveal i={1} className="card p-4">
-          <div className="text-xs text-muted">Total no período</div>
-          <Money value={total} className="text-xl font-bold" delay={200} />
-        </Reveal>
-        <Reveal i={2} className="card p-4">
-          <div className="text-xs text-muted">A receber (pendentes)</div>
-          <Money value={pending} className="text-xl font-bold text-amber-300" delay={300} />
-        </Reveal>
-        <Reveal i={3} className="card col-span-2 flex items-center gap-2 p-3 sm:col-span-1">
-          <Search size={16} className="text-muted" />
-          <input className="w-full bg-transparent text-sm outline-none" placeholder="Buscar…" value={q} onChange={(e) => setQ(e.target.value)} />
-          <select className="rounded-lg bg-panel-2 px-2 py-1 text-xs" value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="7">7 dias</option>
-            <option value="30">30 dias</option>
-            <option value="90">90 dias</option>
-            <option value="365">1 ano</option>
-            <option value="all">Tudo</option>
-          </select>
-        </Reveal>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatusCard i={1} tone="blue" label="Total no período" value={<Money value={sum(items.filter((s) => s.status !== 'cancelled'))} delay={200} />} sub={<><Count value={items.filter((s) => s.status !== 'cancelled').length} /> vendas</>} />
+        <StatusCard i={2} tone="green" label="Pagas" value={<Money value={sum(byStatus('paid'))} delay={300} />} sub={`${byStatus('paid').length} vendas`} />
+        <StatusCard i={3} tone="amber" label="Aguardando pagamento" value={<Money value={sum(byStatus('pending'))} delay={400} />} sub={`${byStatus('pending').length} vendas`} />
+        <StatusCard i={4} tone="slate" label="Canceladas" value={<Money value={sum(byStatus('cancelled'))} delay={500} />} sub={`${byStatus('cancelled').length} vendas`} />
       </div>
 
-      <Reveal i={4} className="card overflow-hidden">
+      <Reveal i={5} className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="relative flex-1 lg:max-w-sm">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+          <input className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none focus:ring-4 focus:ring-brand/10" placeholder="Buscar produto ou cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="no-scrollbar flex gap-2 overflow-x-auto">
+          {(['all', 'paid', 'pending', 'cancelled'] as const).map((st) => (
+            <button key={st} onClick={() => setStatus(st)} className={`h-10 shrink-0 rounded-full px-4 text-xs font-semibold ${status === st ? 'bg-ink text-white' : 'bg-panel text-ink'}`}>
+              {st === 'all' ? 'Todas' : STATUS_LABEL[st]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 rounded-full bg-panel p-1 lg:ml-auto">
+          {PERIODS.map((p) => (
+            <button key={p.v} onClick={() => setPeriod(p.v)} className={`h-8 flex-1 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${period === p.v ? 'bg-brand text-white' : 'text-muted'}`}>
+              {p.l}
+            </button>
+          ))}
+        </div>
+      </Reveal>
+
+      <Reveal i={6} className="card mt-4 overflow-hidden">
         {loading ? (
           <div className="p-6">
             <Spinner />
           </div>
         ) : shown.length === 0 ? (
-          <Empty icon={<ShoppingBag size={26} />} title="Nenhuma venda no período" action={<button className="btn-primary" onClick={() => setForm(empty())}>Registrar venda</button>} />
+          <Empty icon={<ShoppingBag size={24} />} title="Nenhuma venda encontrada" action={<button className="btn-primary" onClick={() => setForm(empty())}>Registrar venda</button>} />
         ) : (
-          <ul className="divide-y divide-line">
-            {shown.map((s, i) => (
-              <li key={s.id} className="reveal flex items-center gap-3 px-4 py-3" style={{ '--d': `${Math.min(i, 15) * 40 + 300}ms` } as React.CSSProperties}>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{s.description}</div>
-                  <div className="truncate text-xs text-muted">
-                    {fmtDate(s.sold_at)} {s.customer_id && `· ${names.get(s.customer_id) ?? ''}`}
-                  </div>
-                </div>
-                <span className={`chip ${STATUS_CHIP[s.status]}`}>{STATUS_LABEL[s.status]}</span>
-                <div className="w-24 text-right text-sm font-semibold tabular-nums sm:w-28">{brl(s.amount)}</div>
-                <button className="p-1.5 text-muted hover:text-slate-200" onClick={() => (setEditId(s.id), setForm({ description: s.description, amount: String(s.amount), status: s.status, sold_at: s.sold_at, customer_id: s.customer_id ?? '' }))}>
-                  <Pencil size={14} />
-                </button>
-                <button className="p-1.5 text-muted hover:text-rose-300" onClick={() => remove(s)}>
-                  <Trash2 size={14} />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            {/* Celular */}
+            <ul className="divide-y divide-line md:hidden">
+              {shown.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 px-4 py-3.5" onClick={() => edit(s)}>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+                    <ShoppingBag size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{s.description}</span>
+                    <span className="block truncate text-xs text-muted">
+                      {fmtDate(s.sold_at)} · {s.customer_id ? names.get(s.customer_id) : 'Sem cliente'}
+                    </span>
+                  </span>
+                  <span className="text-right">
+                    <span className="block text-sm font-bold tabular-nums">{brl(s.amount)}</span>
+                    <span className={`chip mt-0.5 ${STATUS_CHIP[s.status]}`}>{STATUS_LABEL[s.status]}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {/* Desktop */}
+            <table className="hidden w-full text-left text-sm md:table">
+              <thead className="bg-panel-2 text-xs text-muted">
+                <tr>
+                  <th className="px-6 py-3.5 font-semibold">Produto / serviço</th>
+                  <th className="px-4 py-3.5 font-semibold">Cliente</th>
+                  <th className="px-4 py-3.5 font-semibold">Data</th>
+                  <th className="px-4 py-3.5 text-right font-semibold">Valor</th>
+                  <th className="px-4 py-3.5 font-semibold">Status</th>
+                  <th className="px-6 py-3.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {shown.slice(0, 300).map((s, i) => (
+                  <tr key={s.id} className="reveal border-t border-line hover:bg-panel-2/60" style={{ '--d': `${Math.min(i, 15) * 35 + 300}ms` } as React.CSSProperties}>
+                    <td className="px-6 py-3.5 font-semibold">{s.description}</td>
+                    <td className="px-4 py-3.5 text-muted">{s.customer_id ? names.get(s.customer_id) : '—'}</td>
+                    <td className="px-4 py-3.5 text-muted">{fmtDate(s.sold_at)}</td>
+                    <td className="px-4 py-3.5 text-right font-bold tabular-nums">{brl(s.amount)}</td>
+                    <td className="px-4 py-3.5">
+                      <span className={`chip ${STATUS_CHIP[s.status]}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[s.status]}`} />
+                        {STATUS_LABEL[s.status]}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5 text-right">
+                      <button className="icon-btn h-8 w-8" onClick={() => edit(s)} title="Editar">
+                        <Pencil size={13} />
+                      </button>
+                      <button className="icon-btn ml-1.5 h-8 w-8 hover:text-rose-600" onClick={() => remove(s)} title="Excluir">
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </Reveal>
 
       <Modal open={!!form} onClose={() => setForm(null)} title={editId ? 'Editar venda' : 'Nova venda'}>
         {form && (
-          <form onSubmit={save} className="space-y-3">
+          <form onSubmit={save} className="space-y-4">
             <Field label="Produto / serviço">
               <input className="input" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Camiseta básica" list="sale-products" />
               <datalist id="sale-products">
@@ -151,15 +205,24 @@ export default function Sales() {
               </select>
             </Field>
             <Field label="Status">
-              <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Sale['status'] })}>
-                <option value="paid">Pago</option>
-                <option value="pending">Pendente (a receber)</option>
-                <option value="cancelled">Cancelada</option>
-              </select>
+              <div className="grid grid-cols-3 gap-2">
+                {(['paid', 'pending', 'cancelled'] as const).map((st) => (
+                  <button type="button" key={st} onClick={() => setForm({ ...form, status: st })} className={`h-10 rounded-full text-xs font-semibold ${form.status === st ? 'bg-ink text-white' : 'bg-panel-2'}`}>
+                    {STATUS_LABEL[st]}
+                  </button>
+                ))}
+              </div>
             </Field>
-            <button className="btn-primary w-full" disabled={busy}>
-              {busy && <Spinner />} Salvar
-            </button>
+            <div className="flex gap-2 pt-1">
+              {editId && (
+                <button type="button" className="btn-danger" onClick={() => { const s = items.find((x) => x.id === editId); setForm(null); if (s) remove(s) }}>
+                  <Trash2 size={15} />
+                </button>
+              )}
+              <button className="btn-primary flex-1" disabled={busy}>
+                {busy && <Spinner />} Salvar venda
+              </button>
+            </div>
           </form>
         )}
       </Modal>

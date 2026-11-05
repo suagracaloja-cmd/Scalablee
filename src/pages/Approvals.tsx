@@ -49,9 +49,9 @@ export default function Approvals() {
   return (
     <div>
       <PageHeader title="Aprovações" subtitle="Os agentes resolvem sozinhos e só pedem sua decisão quando realmente é necessário." />
-      <Reveal i={1} className="mb-4 inline-flex rounded-xl border border-line bg-panel p-1 text-sm">
+      <Reveal i={1} className="mb-4 inline-flex rounded-2xl border border-line bg-panel p-1 text-sm">
         {(['pending', 'done'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-1.5 ${tab === t ? 'bg-brand text-white' : 'text-muted'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 ${tab === t ? 'bg-brand text-white' : 'text-muted'}`}>
             {t === 'pending' ? 'Pendentes' : 'Histórico'}
           </button>
         ))}
@@ -92,10 +92,10 @@ function Item({ a, i, agent, onDecide }: { a: Approval; i: number; agent: Return
           </div>
         </div>
         {a.status !== 'pending' && (
-          <span className={`chip ${a.status === 'approved' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'}`}>{a.status === 'approved' ? 'Aprovado' : 'Recusado'}</span>
+          <span className={`chip ${a.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{a.status === 'approved' ? 'Aprovado' : 'Recusado'}</span>
         )}
       </div>
-      {a.reason && <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200">Motivo: {a.reason}</p>}
+      {a.reason && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-600">Motivo: {a.reason}</p>}
       {a.draft !== null &&
         (a.status === 'pending' ? (
           <textarea className="input mt-3 min-h-20 text-sm" value={text} onChange={(e) => setText(e.target.value)} />

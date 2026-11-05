@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
-import { Pencil, Play, Upload } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowUpRight, MessageSquareText, Pencil, Play } from 'lucide-react'
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Agent, Insight } from '../lib/types'
-import { AGENT_META, AVATAR_STYLES, presetAvatar } from '../lib/agents'
-import { AgentAvatar, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { AGENT_META } from '../lib/agents'
+import { AgentAvatar, PageHeader, Reveal, Spinner } from '../components/ui'
+import EditAgent from '../components/EditAgent'
 import { timeAgo } from '../lib/format'
 
 export default function Agents() {
-  const { agents, reloadAgents, toast, company, reloadCounts } = useApp()
+  const { agents, toast, reloadAgents, reloadCounts } = useApp()
+  const navigate = useNavigate()
   const [editing, setEditing] = useState<Agent | null>(null)
   const [running, setRunning] = useState<string | null>(null)
   const [insights, setInsights] = useState<Insight[]>([])
@@ -18,7 +21,7 @@ export default function Agents() {
       .from('insights')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(60)
+      .limit(80)
       .then(({ data }) => setInsights((data ?? []) as Insight[]))
   useEffect(() => {
     loadInsights()
@@ -29,7 +32,7 @@ export default function Agents() {
     try {
       const r = await api<{ results: { insights: number; tasks: number; approvals: number; aiError: string | null }[] }>('agents', { kind: a.kind })
       const x = r.results[0]
-      toast(x ? `${a.name}: ${x.insights} notificações, ${x.tasks} tarefas, ${x.approvals} aprovações` : `${a.name} está desativado`)
+      toast(x ? `${a.name}: ${x.insights} notificações, ${x.tasks} tarefas novas` : `${a.name} está desativado`)
       if (x?.aiError) toast(x.aiError, 'err')
       await Promise.all([loadInsights(), reloadAgents(), reloadCounts()])
     } catch (e) {
@@ -41,162 +44,58 @@ export default function Agents() {
 
   return (
     <div>
-      <PageHeader title="Agentes de IA" subtitle="Personalize o nome, a foto e o jeito de cada agente. Eles trabalham com os dados reais da sua empresa." />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <PageHeader title="Agentes de IA" subtitle="Seu time de IA trabalhando 24h. Toque em um agente para conversar com ele." />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {agents.map((a, i) => {
           const meta = AGENT_META[a.kind]
-          const mine = insights.filter((x) => x.agent_kind === a.kind).slice(0, 3)
+          const mine = insights.filter((x) => x.agent_kind === a.kind)
           return (
-            <Reveal key={a.id} i={i + 1} className="card flex flex-col p-5">
-              <div className="flex items-start gap-3">
-                <AgentAvatar agent={a} size={56} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="truncate text-lg font-bold">{a.name}</h3>
-                    <span className={`h-2 w-2 rounded-full ${a.enabled ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                  </div>
-                  <span className={`chip ${meta.color}`}>
-                    {meta.emoji} {meta.label}
-                  </span>
+            <Reveal key={a.id} i={i + 1} className="card group relative flex cursor-pointer flex-col overflow-hidden p-6 transition hover:-translate-y-1 hover:shadow-[0_18px_40px_-20px_rgba(16,24,40,0.25)]" onClick={() => navigate(`/agentes/${a.kind}`)}>
+              <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full opacity-[0.12]" style={{ background: meta.solid }} />
+              <div className="relative flex items-start justify-between">
+                <div className="relative">
+                  <AgentAvatar agent={a} size={68} rounded="rounded-3xl" />
+                  <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-[3px] border-white ${a.enabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                 </div>
-                <button className="rounded-lg p-2 text-muted hover:bg-panel-2" onClick={() => setEditing(a)} aria-label="Editar">
-                  <Pencil size={16} />
-                </button>
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button className="icon-btn" onClick={() => setEditing(a)} title="Personalizar">
+                    <Pencil size={15} />
+                  </button>
+                  <button className="icon-btn" disabled={!!running || !a.enabled} onClick={() => run(a)} title="Rodar análise agora">
+                    {running === a.kind ? <Spinner size={14} /> : <Play size={14} />}
+                  </button>
+                </div>
               </div>
-              <p className="mt-3 text-sm text-muted">{meta.desc}</p>
-              {a.personality && <p className="mt-2 text-xs italic text-slate-400">“{a.personality}”</p>}
-              <div className="mt-4 flex-1 space-y-2">
-                {mine.map((n) => (
-                  <div key={n.id} className="rounded-xl bg-panel-2 p-2.5">
-                    <div className="text-xs font-semibold">{n.title}</div>
-                    <div className="line-clamp-2 whitespace-pre-line text-[11px] text-muted">{n.body}</div>
-                  </div>
-                ))}
-                {!mine.length && <p className="text-xs text-muted">Nenhuma análise ainda.</p>}
+              <h3 className="relative mt-4 text-xl font-bold">{a.name}</h3>
+              <div className={`relative text-sm font-semibold ${meta.fg}`}>{meta.role}</div>
+              <p className="relative mt-3 text-sm text-muted">{meta.desc}</p>
+              <div className="relative mt-5 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-2xl bg-panel-2 p-3">
+                  <div className="text-muted">Análises</div>
+                  <div className="text-lg font-bold">{mine.length}</div>
+                </div>
+                <div className="rounded-2xl bg-panel-2 p-3">
+                  <div className="text-muted">Última análise</div>
+                  <div className="truncate text-sm font-bold">{a.last_run_at ? timeAgo(a.last_run_at) : 'nunca'}</div>
+                </div>
               </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-[11px] text-muted">{a.last_run_at ? `Última análise ${timeAgo(a.last_run_at)}` : 'Nunca executado'}</span>
-                <button className="btn-ghost px-3 py-1.5 text-xs" disabled={!!running || !a.enabled} onClick={() => run(a)}>
-                  {running === a.kind ? <Spinner size={12} /> : <Play size={14} />} Analisar agora
-                </button>
+              {mine[0] && (
+                <div className="relative mt-3 rounded-2xl border border-line p-3">
+                  <div className="text-xs font-bold">{mine[0].title}</div>
+                  <div className="mt-0.5 line-clamp-2 whitespace-pre-line text-xs text-muted">{mine[0].body}</div>
+                </div>
+              )}
+              <div className="relative mt-auto pt-5">
+                <span className="btn-primary w-full">
+                  <MessageSquareText size={16} /> Conversar com {a.name}
+                  <ArrowUpRight size={16} className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </span>
               </div>
             </Reveal>
           )
         })}
       </div>
-      {editing && company && (
-        <EditAgent
-          agent={editing}
-          companyId={company.id}
-          onClose={() => setEditing(null)}
-          onSaved={async () => {
-            await reloadAgents()
-            setEditing(null)
-            toast('Agente atualizado!')
-          }}
-        />
-      )}
+      {editing && <EditAgent agent={editing} onClose={() => setEditing(null)} />}
     </div>
-  )
-}
-
-function EditAgent({ agent, companyId, onClose, onSaved }: { agent: Agent; companyId: string; onClose: () => void; onSaved: () => void }) {
-  const { toast } = useApp()
-  const [f, setF] = useState({ ...agent })
-  const [busy, setBusy] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const file = useRef<HTMLInputElement>(null)
-
-  async function upload(fl: File) {
-    if (fl.size > 2 * 1024 * 1024) return toast('Imagem muito grande (máx. 2MB)', 'err')
-    setUploading(true)
-    const ext = fl.name.split('.').pop() || 'png'
-    const path = `${companyId}/${agent.kind}-${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('avatars').upload(path, fl, { upsert: true, contentType: fl.type })
-    setUploading(false)
-    if (error) return toast(error.message, 'err')
-    setF({ ...f, avatar_url: supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl })
-  }
-
-  async function save() {
-    if (!f.name.trim()) return toast('Dê um nome ao agente', 'err')
-    setBusy(true)
-    const { error } = await supabase
-      .from('agents')
-      .update({ name: f.name.trim(), avatar_url: f.avatar_url, personality: f.personality, enabled: f.enabled, auto_reply: f.auto_reply })
-      .eq('id', agent.id)
-    setBusy(false)
-    if (error) return toast(error.message, 'err')
-    onSaved()
-  }
-
-  return (
-    <Modal open onClose={onClose} title={`Editar agente de ${AGENT_META[agent.kind].label}`} wide>
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <AgentAvatar agent={f} size={72} />
-          <div className="flex flex-wrap gap-2">
-            <button className="btn-ghost text-xs" onClick={() => file.current?.click()} disabled={uploading}>
-              {uploading ? <Spinner size={12} /> : <Upload size={14} />} Enviar foto
-            </button>
-            {f.avatar_url && (
-              <button className="btn-ghost text-xs" onClick={() => setF({ ...f, avatar_url: null })}>
-                Remover
-              </button>
-            )}
-            <input ref={file} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
-          </div>
-        </div>
-        <div>
-          <span className="label">Ou escolha um avatar</span>
-          <div className="grid grid-cols-8 gap-2">
-            {AVATAR_STYLES.map((s) => {
-              const url = presetAvatar(s, f.name || agent.kind)
-              return (
-                <button
-                  key={s}
-                  onClick={() => setF({ ...f, avatar_url: url })}
-                  className={`aspect-square overflow-hidden rounded-full border-2 ${f.avatar_url === url ? 'border-brand' : 'border-transparent'}`}
-                >
-                  <img src={url} alt={s} className="h-full w-full" loading="lazy" />
-                </button>
-              )
-            })}
-          </div>
-        </div>
-        <Field label="Nome do agente">
-          <input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} maxLength={40} />
-        </Field>
-        <Field label="Personalidade / instruções">
-          <textarea
-            className="input min-h-24"
-            value={f.personality ?? ''}
-            onChange={(e) => setF({ ...f, personality: e.target.value })}
-            placeholder="Ex: Fala de forma descontraída, usa emojis, sempre oferece frete grátis acima de R$ 200…"
-          />
-        </Field>
-        <label className="flex items-center justify-between rounded-xl bg-panel-2 p-3 text-sm">
-          Agente ativo
-          <input type="checkbox" className="h-5 w-5 accent-violet-500" checked={f.enabled} onChange={(e) => setF({ ...f, enabled: e.target.checked })} />
-        </label>
-        {agent.kind === 'support' && (
-          <label className="flex items-center justify-between gap-4 rounded-xl bg-panel-2 p-3 text-sm">
-            <span>
-              Responder automaticamente no WhatsApp
-              <span className="block text-xs text-muted">Desligado: toda resposta passa pela sua aprovação. Ligado: só pede aprovação quando necessário (descontos, reclamações, dúvidas sem resposta).</span>
-            </span>
-            <input type="checkbox" className="h-5 w-5 shrink-0 accent-violet-500" checked={f.auto_reply} onChange={(e) => setF({ ...f, auto_reply: e.target.checked })} />
-          </label>
-        )}
-        <div className="flex justify-end gap-2 pt-2">
-          <button className="btn-ghost" onClick={onClose}>
-            Cancelar
-          </button>
-          <button className="btn-primary" onClick={save} disabled={busy}>
-            {busy && <Spinner />} Salvar
-          </button>
-        </div>
-      </div>
-    </Modal>
   )
 }

@@ -128,18 +128,18 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-slate-300">{a.summary}</p>
+              <p className="text-sm text-slate-600">{a.summary}</p>
               <div className="grid grid-cols-2 gap-1.5 text-xs">
                 {Object.entries(a.checks).map(([k, v]) => (
                   <div key={k} className="flex items-center gap-1.5">
-                    {v ? <CheckCircle2 size={14} className="text-emerald-400" /> : <XCircle size={14} className="text-rose-400" />}
+                    {v ? <CheckCircle2 size={14} className="text-emerald-600" /> : <XCircle size={14} className="text-rose-600" />}
                     {LABELS[k] ?? k}
                   </div>
                 ))}
               </div>
               {a.improvements?.length > 0 && (
                 <div>
-                  <div className="mb-1 text-xs font-semibold text-amber-300">O que melhorar</div>
+                  <div className="mb-1 text-xs font-semibold text-amber-600">O que melhorar</div>
                   <ul className="space-y-1 text-sm">
                     {a.improvements.map((x) => (
                       <li key={x}>• {x}</li>
@@ -149,8 +149,8 @@ export default function Settings() {
               )}
               {a.strengths?.length > 0 && (
                 <div>
-                  <div className="mb-1 text-xs font-semibold text-emerald-300">Pontos fortes</div>
-                  <ul className="space-y-1 text-sm text-slate-300">
+                  <div className="mb-1 text-xs font-semibold text-emerald-600">Pontos fortes</div>
+                  <ul className="space-y-1 text-sm text-slate-600">
                     {a.strengths.map((x) => (
                       <li key={x}>• {x}</li>
                     ))}

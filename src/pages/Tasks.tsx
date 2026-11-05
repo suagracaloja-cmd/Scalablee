@@ -76,7 +76,7 @@ export default function Tasks() {
         <div className="space-y-5">
           {(showDone ? [{ label: 'Concluídas', items }] : groups).map((g) => (
             <div key={g.label}>
-              <Reveal i={idx++} className={`mb-2 text-xs font-semibold uppercase tracking-wide ${g.label === 'Atrasadas' ? 'text-rose-300' : 'text-muted'}`}>
+              <Reveal i={idx++} className={`mb-2 text-xs font-semibold uppercase tracking-wide ${g.label === 'Atrasadas' ? 'text-rose-600' : 'text-muted'}`}>
                 {g.label} · {g.items.length}
               </Reveal>
               <div className="card divide-y divide-line">
@@ -84,8 +84,8 @@ export default function Tasks() {
                   const ag = x.agent_kind ? agentByKind(x.agent_kind) : undefined
                   return (
                     <Reveal key={x.id} i={idx++} step={40} className="flex items-center gap-3 px-4 py-3">
-                      <button onClick={() => toggle(x)} className="text-muted hover:text-emerald-300">
-                        {x.done ? <CheckCircle2 size={20} className="text-emerald-400" /> : <Circle size={20} />}
+                      <button onClick={() => toggle(x)} className="text-muted hover:text-emerald-600">
+                        {x.done ? <CheckCircle2 size={20} className="text-emerald-600" /> : <Circle size={20} />}
                       </button>
                       <div className="min-w-0 flex-1">
                         <div className={`text-sm ${x.done ? 'text-muted line-through' : ''}`}>{x.title}</div>
@@ -97,7 +97,7 @@ export default function Tasks() {
                         </span>
                       )}
                       <span className="text-[11px] text-muted">{relativeDay(x.due_date)}</span>
-                      <button onClick={() => remove(x)} className="p-1 text-muted hover:text-rose-300">
+                      <button onClick={() => remove(x)} className="p-1 text-muted hover:text-rose-600">
                         <Trash2 size={14} />
                       </button>
                     </Reveal>

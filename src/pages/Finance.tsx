@@ -5,7 +5,7 @@ import { useApp } from '../lib/store'
 import type { Transaction } from '../lib/types'
 import { brl, fmtDate, today } from '../lib/format'
 import { Bars } from '../components/LineChart'
-import { Empty, Field, Modal, Money, PageHeader, Reveal, Spinner } from '../components/ui'
+import { Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, StatusCard } from '../components/ui'
 
 const CATS = { expense: ['Fornecedores', 'Aluguel', 'Salários', 'Impostos', 'Marketing', 'Energia/Água/Internet', 'Outros'], income: ['Vendas', 'Serviços', 'Outros'] }
 const empty = (type: Transaction['type'] = 'expense') => ({ type, description: '', category: '', amount: '', due_date: today(), paid: false })
@@ -89,7 +89,7 @@ export default function Finance() {
         actions={
           <>
             <button className="btn-ghost" onClick={() => (setEditId(null), setForm(empty('income')))}>
-              <ArrowUpCircle size={16} className="text-emerald-300" /> A receber
+              <ArrowUpCircle size={16} className="text-emerald-600" /> A receber
             </button>
             <button className="btn-primary" onClick={() => (setEditId(null), setForm(empty('expense')))}>
               <Plus size={16} /> Conta a pagar
@@ -97,29 +97,22 @@ export default function Finance() {
           </>
         }
       />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          { l: 'A pagar (em aberto)', v: m.payable, c: 'text-rose-300' },
-          { l: 'Vencido', v: m.overdue, c: m.overdue ? 'text-rose-400' : '' },
-          { l: 'A receber', v: m.receivable, c: 'text-emerald-300' },
-          { l: 'Saldo pago no mês', v: m.balance, c: m.balance >= 0 ? 'text-emerald-300' : 'text-rose-300' },
-        ].map((k, i) => (
-          <Reveal key={k.l} i={i + 1} className="card p-4">
-            <div className="text-xs text-muted">{k.l}</div>
-            <Money value={k.v} className={`text-xl font-bold ${k.c}`} delay={200 + i * 100} />
-          </Reveal>
-        ))}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatusCard i={1} tone="rose" label="A pagar (em aberto)" value={<Money value={m.payable} delay={200} />} sub="contas em aberto" />
+        <StatusCard i={2} tone={m.overdue ? 'amber' : 'slate'} label="Vencido" value={<Money value={m.overdue} delay={300} />} sub={m.overdue ? 'pague o quanto antes' : 'nada vencido'} />
+        <StatusCard i={3} tone="green" label="A receber" value={<Money value={m.receivable} delay={400} />} sub="valores em aberto" />
+        <StatusCard i={4} tone="blue" label="Saldo pago no mês" value={<Money value={m.balance} delay={500} />} sub="entradas − saídas pagas" />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Reveal i={5} className="card overflow-hidden lg:col-span-2">
-          <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line p-4">
             {(['open', 'paid'] as const).map((x) => (
-              <button key={x} onClick={() => setTab(x)} className={`rounded-lg px-3 py-1.5 text-xs ${tab === x ? 'bg-brand text-white' : 'text-muted'}`}>
+              <button key={x} onClick={() => setTab(x)} className={`h-9 rounded-full px-4 text-xs font-semibold ${tab === x ? 'bg-ink text-white' : 'bg-panel-2 text-ink'}`}>
                 {x === 'open' ? 'Em aberto' : 'Pagos / recebidos'}
               </button>
             ))}
-            <select className="ml-auto rounded-lg bg-panel-2 px-2 py-1.5 text-xs" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+            <select className="ml-auto h-9 rounded-full bg-panel-2 px-3 text-xs font-semibold outline-none" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
               <option value="all">Tudo</option>
               <option value="expense">A pagar</option>
               <option value="income">A receber</option>
@@ -136,25 +129,25 @@ export default function Finance() {
               {shown.map((x, i) => {
                 const late = !x.paid_at && x.due_date < t
                 return (
-                  <li key={x.id} className="reveal flex items-center gap-3 px-4 py-3" style={{ '--d': `${Math.min(i, 15) * 40 + 300}ms` } as React.CSSProperties}>
-                    {x.type === 'expense' ? <ArrowDownCircle size={18} className="shrink-0 text-rose-300" /> : <ArrowUpCircle size={18} className="shrink-0 text-emerald-300" />}
+                  <li key={x.id} className="reveal flex items-center gap-3 px-5 py-3.5" style={{ '--d': `${Math.min(i, 15) * 40 + 300}ms` } as React.CSSProperties}>
+                    {x.type === 'expense' ? <ArrowDownCircle size={18} className="shrink-0 text-rose-600" /> : <ArrowUpCircle size={18} className="shrink-0 text-emerald-600" />}
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{x.description}</div>
-                      <div className={`text-xs ${late ? 'text-rose-300' : 'text-muted'}`}>
+                      <div className={`text-xs ${late ? 'text-rose-600' : 'text-muted'}`}>
                         {x.paid_at ? `Pago em ${fmtDate(x.paid_at)}` : `${late ? 'Venceu' : 'Vence'} ${fmtDate(x.due_date)}`} {x.category && `· ${x.category}`}
                       </div>
                     </div>
                     <div className="text-right text-sm font-semibold tabular-nums">{brl(x.amount)}</div>
-                    <button onClick={() => togglePaid(x)} className={`rounded-lg p-1.5 ${x.paid_at ? 'text-muted' : 'text-emerald-300'} hover:bg-panel-2`} title={x.paid_at ? 'Desfazer' : 'Marcar como pago'}>
+                    <button onClick={() => togglePaid(x)} className={`rounded-full p-1.5 ${x.paid_at ? 'text-muted' : 'text-emerald-600'} hover:bg-panel-2`} title={x.paid_at ? 'Desfazer' : 'Marcar como pago'}>
                       {x.paid_at ? <Undo2 size={15} /> : <Check size={15} />}
                     </button>
                     <button
-                      className="rounded-lg p-1.5 text-muted hover:bg-panel-2"
+                      className="rounded-full p-1.5 text-muted hover:bg-panel-2"
                       onClick={() => (setEditId(x.id), setForm({ type: x.type, description: x.description, category: x.category ?? '', amount: String(x.amount), due_date: x.due_date, paid: !!x.paid_at }))}
                     >
                       <Pencil size={14} />
                     </button>
-                    <button className="rounded-lg p-1.5 text-muted hover:bg-panel-2 hover:text-rose-300" onClick={() => remove(x)}>
+                    <button className="rounded-full p-1.5 text-muted hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(x)}>
                       <Trash2 size={14} />
                     </button>
                   </li>
@@ -163,8 +156,9 @@ export default function Finance() {
             </ul>
           )}
         </Reveal>
-        <Reveal i={6} className="card p-4">
-          <h2 className="mb-3 font-semibold">Despesas do mês por categoria</h2>
+        <Reveal i={6} className="card p-5 sm:p-6">
+          <h2 className="mb-1 text-lg font-bold">Despesas do mês</h2>
+          <p className="mb-5 text-xs text-muted">Por categoria</p>
           {m.cats.length ? <Bars data={m.cats} delay={800} /> : <p className="py-6 text-center text-sm text-muted">Sem despesas este mês.</p>}
         </Reveal>
       </div>
@@ -172,9 +166,9 @@ export default function Finance() {
       <Modal open={!!form} onClose={() => setForm(null)} title={form?.type === 'income' ? 'Valor a receber' : 'Conta a pagar'}>
         {form && (
           <form onSubmit={save} className="space-y-3">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-panel-2 p-1 text-sm">
+            <div className="grid grid-cols-2 gap-1 rounded-full bg-panel-2 p-1 text-sm">
               {(['expense', 'income'] as const).map((ty) => (
-                <button type="button" key={ty} onClick={() => setForm({ ...form, type: ty, category: '' })} className={`rounded-lg py-1.5 ${form.type === ty ? 'bg-brand text-white' : 'text-muted'}`}>
+                <button type="button" key={ty} onClick={() => setForm({ ...form, type: ty, category: '' })} className={`h-9 rounded-full font-semibold ${form.type === ty ? 'bg-ink text-white' : 'text-muted'}`}>
                   {ty === 'expense' ? 'A pagar' : 'A receber'}
                 </button>
               ))}
@@ -199,7 +193,7 @@ export default function Finance() {
               </select>
             </Field>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="accent-violet-500" checked={form.paid} onChange={(e) => setForm({ ...form, paid: e.target.checked })} /> Já está {form.type === 'expense' ? 'pago' : 'recebido'}
+              <input type="checkbox" className="accent-[#268bfd]" checked={form.paid} onChange={(e) => setForm({ ...form, paid: e.target.checked })} /> Já está {form.type === 'expense' ? 'pago' : 'recebido'}
             </label>
             <button className="btn-primary w-full" disabled={busy}>
               {busy && <Spinner />} Salvar

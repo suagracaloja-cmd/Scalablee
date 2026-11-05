@@ -35,33 +35,15 @@ Deno.serve(
     const ai = hasAI();
 
     let reply: string;
+    let aiError: string | null = null;
     if (ai) {
-      let hq = db.from("assistant_messages").select("role,content").eq("company_id", company.id).order("created_at", { ascending: false }).limit(20);
-      hq = kind ? hq.eq("agent_kind", kind) : hq.is("agent_kind", null);
-      const { data: history } = await hq;
-      const msgs = (history ?? []).reverse().map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
-      while (msgs.length && msgs[0].role !== "user") msgs.shift();
-
-      const who = kind
-        ? `Você é ${agent?.name ?? "um agente"}, ${ROLE[kind]}\nPersonalidade: ${agent?.personality ?? "profissional e direto"}.`
-        : `Você é a IA da Scalable, assistente pessoal de gestão do dono da empresa "${company.name}". Responde sobre vendas, financeiro, clientes, tarefas, marketing e atendimento.`;
-      const res = await ask({
-        system: `${who}
-Fale em português do Brasil, de forma natural, curta e direta, como um sócio experiente. Responda exatamente ao que foi perguntado.
-Use os dados abaixo para números (formate em R$). Não invente dados; se faltar algo, diga o que o dono precisa cadastrar.
-Use listas curtas quando ajudar e termine com uma recomendação prática quando fizer sentido.
-
-DADOS DA EMPRESA (atualizados agora):
-${snapshotText(snap)}
-
-DETALHES:
-${detailText(snap)}`,
-        messages: msgs,
-        effort: "low",
-        maxTokens: 4000,
-        webSearch: kind === "marketing",
-      });
-      reply = res.text || "Não consegui responder agora, tente de novo.";
+      try {
+        reply = await aiReply(db, company, kind, agent, snap);
+      } catch (e) {
+        aiError = e instanceof Error ? e.message : String(e);
+        console.error("[chat] erro da IA:", aiError);
+        reply = answer(message, snap, agent?.name ?? null, kind) + `\n\n_(A IA não respondeu agora: ${friendly(aiError)})_`;
+      }
     } else {
       reply = answer(message, snap, agent?.name ?? null, kind);
     }
@@ -71,9 +53,49 @@ ${detailText(snap)}`,
       .insert({ company_id: company.id, role: "assistant", content: reply, agent_kind: kind })
       .select("*")
       .single();
-    return json({ reply: saved, ai });
+    return json({ reply: saved, ai: ai && !aiError, aiError });
   }),
 );
+
+type Db = Awaited<ReturnType<typeof requireCompany>>["db"];
+type Co = Awaited<ReturnType<typeof requireCompany>>["company"];
+
+async function aiReply(db: Db, company: Co, kind: Kind | null, agent: { name: string; personality: string | null } | null, snap: Snapshot) {
+  let hq = db.from("assistant_messages").select("role,content").eq("company_id", company.id).order("created_at", { ascending: false }).limit(20);
+  hq = kind ? hq.eq("agent_kind", kind) : hq.is("agent_kind", null);
+  const { data: history } = await hq;
+  const msgs = (history ?? []).reverse().map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+  while (msgs.length && msgs[0].role !== "user") msgs.shift();
+
+  const who = kind
+    ? `Você é ${agent?.name ?? "um agente"}, ${ROLE[kind]}\nPersonalidade: ${agent?.personality ?? "profissional e direto"}.`
+    : `Você é a IA da Scalable, assistente pessoal de gestão do dono da empresa "${company.name}". Responde sobre vendas, financeiro, clientes, tarefas, marketing e atendimento — e também sobre qualquer outro assunto que o dono perguntar.`;
+  const res = await ask({
+    system: `${who}
+Fale em português do Brasil, de forma natural, curta e direta, como um sócio experiente. Responda exatamente ao que foi perguntado — se a pergunta não for sobre a empresa, responda normalmente.
+Para números da empresa, use os dados abaixo (formate em R$). Não invente dados; se faltar algo, diga o que o dono precisa cadastrar.
+Use listas curtas quando ajudar e termine com uma recomendação prática quando fizer sentido.
+
+DADOS DA EMPRESA (atualizados agora):
+${snapshotText(snap)}
+
+DETALHES:
+${detailText(snap)}`,
+    messages: msgs,
+    effort: "low",
+    maxTokens: 4000,
+    webSearch: kind === "marketing",
+  });
+  return res.text || "Não consegui responder agora, tente de novo.";
+}
+
+function friendly(err: string) {
+  const e = err.toLowerCase();
+  if (e.includes("api-key") || e.includes("api key") || e.includes("authentication") || e.includes("401")) return "a chave da IA foi recusada — confira se copiou a chave inteira";
+  if (e.includes("credit") || e.includes("billing") || e.includes("balance")) return "a conta da Anthropic está sem créditos";
+  if (e.includes("rate") || e.includes("429")) return "limite de uso atingido, tente em instantes";
+  return err.slice(0, 160);
+}
 
 function detailText(s: Snapshot) {
   const names = new Map(s.customers.map((c) => [c.id, c.name]));

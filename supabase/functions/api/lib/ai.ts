@@ -2,13 +2,36 @@ import Anthropic from "npm:@anthropic-ai/sdk@1.3.0";
 
 export const MODEL = "claude-opus-5-5";
 
+const KEY_NAMES = ["ANTHROPIC_API_KEY", "ANTHROPIC_KEY", "CLAUDE_API_KEY", "CLAUDE_KEY", "ANTHROPIC_TOKEN", "API_KEY"];
+let cachedKey: string | null = null;
+
+/** Encontra a chave da Anthropic: nomes comuns ou qualquer segredo no formato sk-ant-… */
+function apiKey(): string | null {
+  if (cachedKey) return cachedKey;
+  let found: string | null = null;
+  for (const n of KEY_NAMES) {
+    const v = Deno.env.get(n)?.trim();
+    if (v) {
+      found = v;
+      break;
+    }
+  }
+  const env = Deno.env.toObject();
+  if (!found) found = Object.values(env).map((v) => v.trim()).find((v) => v.startsWith("sk-ant-")) ?? null;
+  // Diagnóstico (só nomes, nunca valores)
+  const names = Object.keys(env).filter((k) => !k.startsWith("SUPABASE_") && /(KEY|TOKEN|SECRET|ANTHROPIC|CLAUDE|OPENAI|API)/i.test(k));
+  console.log(`[ai] chave encontrada: ${found ? "sim (" + (found.startsWith("sk-ant-") ? "formato Anthropic" : "formato desconhecido") + ")" : "não"}; segredos vistos: ${names.join(", ") || "nenhum"}`);
+  cachedKey = found;
+  return found;
+}
+
 export function hasAI() {
-  return !!Deno.env.get("ANTHROPIC_API_KEY");
+  return !!apiKey();
 }
 
 let client: Anthropic | null = null;
 function getClient() {
-  if (!client) client = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
+  if (!client) client = new Anthropic({ apiKey: apiKey() ?? undefined });
   return client;
 }
 

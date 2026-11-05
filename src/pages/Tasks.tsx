@@ -1,0 +1,129 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import { CheckCircle2, Circle, ClipboardList, Plus, Trash2 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { useApp } from '../lib/store'
+import type { Task } from '../lib/types'
+import { addDays, relativeDay, today } from '../lib/format'
+import { AgentAvatar, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+
+export default function Tasks() {
+  const { company, agentByKind, toast } = useApp()
+  const [items, setItems] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showDone, setShowDone] = useState(false)
+  const [form, setForm] = useState<{ title: string; description: string; due_date: string } | null>(null)
+
+  const load = async () => {
+    const { data } = await supabase.from('tasks').select('*').eq('done', showDone).order('due_date', { nullsFirst: false }).limit(200)
+    setItems((data ?? []) as Task[])
+    setLoading(false)
+  }
+  useEffect(() => {
+    load()
+  }, [showDone]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function toggle(t: Task) {
+    setItems((x) => x.filter((i) => i.id !== t.id))
+    await supabase.from('tasks').update({ done: !t.done }).eq('id', t.id)
+    if (!t.done) toast('Tarefa concluída ✅')
+  }
+  async function remove(t: Task) {
+    await supabase.from('tasks').delete().eq('id', t.id)
+    load()
+  }
+  async function save(e: FormEvent) {
+    e.preventDefault()
+    if (!form || !company) return
+    const { error } = await supabase.from('tasks').insert({ company_id: company.id, title: form.title, description: form.description || null, due_date: form.due_date || null })
+    if (error) return toast(error.message, 'err')
+    setForm(null)
+    load()
+  }
+
+  const t = today()
+  const groups = [
+    { label: 'Atrasadas', items: items.filter((x) => x.due_date && x.due_date < t) },
+    { label: 'Hoje', items: items.filter((x) => x.due_date === t) },
+    { label: 'Amanhã', items: items.filter((x) => x.due_date === addDays(t, 1)) },
+    { label: 'Próximos dias', items: items.filter((x) => x.due_date && x.due_date > addDays(t, 1)) },
+    { label: 'Sem data', items: items.filter((x) => !x.due_date) },
+  ].filter((g) => g.items.length)
+
+  let idx = 0
+  return (
+    <div>
+      <PageHeader
+        title="Tarefas"
+        subtitle="Os agentes antecipam tarefas para hoje, amanhã e depois. Você também pode criar as suas."
+        actions={
+          <>
+            <button className="btn-ghost" onClick={() => setShowDone(!showDone)}>
+              {showDone ? 'Ver pendentes' : 'Ver concluídas'}
+            </button>
+            <button className="btn-primary" onClick={() => setForm({ title: '', description: '', due_date: addDays(t, 1) })}>
+              <Plus size={16} /> Nova tarefa
+            </button>
+          </>
+        }
+      />
+      {loading ? (
+        <Spinner />
+      ) : items.length === 0 ? (
+        <Reveal i={1} className="card">
+          <Empty icon={<ClipboardList size={26} />} title={showDone ? 'Nenhuma tarefa concluída' : 'Nenhuma tarefa pendente'} text="Rode a análise dos agentes para eles sugerirem tarefas." />
+        </Reveal>
+      ) : (
+        <div className="space-y-5">
+          {(showDone ? [{ label: 'Concluídas', items }] : groups).map((g) => (
+            <div key={g.label}>
+              <Reveal i={idx++} className={`mb-2 text-xs font-semibold uppercase tracking-wide ${g.label === 'Atrasadas' ? 'text-rose-300' : 'text-muted'}`}>
+                {g.label} · {g.items.length}
+              </Reveal>
+              <div className="card divide-y divide-line">
+                {g.items.map((x) => {
+                  const ag = x.agent_kind ? agentByKind(x.agent_kind) : undefined
+                  return (
+                    <Reveal key={x.id} i={idx++} step={40} className="flex items-center gap-3 px-4 py-3">
+                      <button onClick={() => toggle(x)} className="text-muted hover:text-emerald-300">
+                        {x.done ? <CheckCircle2 size={20} className="text-emerald-400" /> : <Circle size={20} />}
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-sm ${x.done ? 'text-muted line-through' : ''}`}>{x.title}</div>
+                        {x.description && <div className="truncate text-xs text-muted">{x.description}</div>}
+                      </div>
+                      {ag && (
+                        <span className="hidden items-center gap-1 text-[11px] text-muted sm:flex">
+                          <AgentAvatar agent={ag} size={18} /> {ag.name}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-muted">{relativeDay(x.due_date)}</span>
+                      <button onClick={() => remove(x)} className="p-1 text-muted hover:text-rose-300">
+                        <Trash2 size={14} />
+                      </button>
+                    </Reveal>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <Modal open={!!form} onClose={() => setForm(null)} title="Nova tarefa">
+        {form && (
+          <form onSubmit={save} className="space-y-3">
+            <Field label="Tarefa">
+              <input className="input" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </Field>
+            <Field label="Detalhes">
+              <textarea className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </Field>
+            <Field label="Para quando">
+              <input className="input" type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
+            </Field>
+            <button className="btn-primary w-full">Salvar</button>
+          </form>
+        )}
+      </Modal>
+    </div>
+  )
+}

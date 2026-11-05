@@ -34,6 +34,7 @@ export function ChatView({ kind, agent, title, subtitle, suggestions, headerExtr
   const [busy, setBusy] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [basic, setBasic] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
   const end = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
 
@@ -56,9 +57,10 @@ export function ChatView({ kind, agent, title, subtitle, suggestions, headerExtr
     setMsgs((m) => [...m, { id: 'tmp' + Date.now(), role: 'user', content: msg, created_at: new Date().toISOString() }])
     setBusy(true)
     try {
-      const r = await callFn<{ reply: Msg; ai: boolean }>('chat', { message: msg, agent: kind })
+      const r = await callFn<{ reply: Msg; ai: boolean; aiError?: string | null }>('chat', { message: msg, agent: kind })
       setMsgs((m) => [...m, r.reply])
       setBasic(!r.ai)
+      setAiError(r.aiError ?? null)
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), 'err')
     } finally {
@@ -149,7 +151,13 @@ export function ChatView({ kind, agent, title, subtitle, suggestions, headerExtr
         {basic && (
           <div className="mb-2 flex items-start gap-2 rounded-2xl bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
             <Info size={14} className="mt-0.5 shrink-0" />
-            Modo básico: respondo com os seus dados, mas sem a IA completa. Ative a chave da IA (ANTHROPIC_API_KEY) no Supabase para conversar sobre qualquer assunto.
+            {aiError
+              ? /credit|balance|billing/i.test(aiError)
+                ? 'A IA está conectada, mas a conta da Anthropic está sem créditos. Adicione créditos em console.anthropic.com (Plans & Billing) — enquanto isso, respondo com os seus dados.'
+                : /api.?key|authentication|401/i.test(aiError)
+                  ? 'A chave da IA foi recusada pela Anthropic. Confira a chave ANTHROPIC_API_KEY no Supabase — enquanto isso, respondo com os seus dados.'
+                  : 'A IA não respondeu agora (instabilidade). Respondi com os seus dados; tente de novo em instantes.'
+              : 'Modo básico: respondo com os seus dados, mas sem a IA completa. Ative a chave da IA (ANTHROPIC_API_KEY) no Supabase para conversar sobre qualquer assunto.'}
           </div>
         )}
         {msgs.length > 0 && (

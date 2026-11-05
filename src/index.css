@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-bg: #0b0b14;
+  --color-panel: #12121f;
+  --color-panel-2: #191a2b;
+  --color-line: #262741;
+  --color-muted: #8b8ca8;
+  --color-brand: #8b5cf6;
+  --color-brand-2: #22d3ee;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+body {
+  background: var(--color-bg);
+  color: #e8e8f2;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-panel;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none;
+}
+@utility btn-primary {
+  @apply btn text-white bg-gradient-to-r from-brand to-[#6d4bf0] hover:brightness-110 shadow-lg shadow-brand/20;
+}
+@utility btn-ghost {
+  @apply btn border border-line bg-panel-2 hover:bg-line/60 text-slate-200;
+}
+@utility btn-danger {
+  @apply btn bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/30;
+}
+@utility input {
+  @apply w-full rounded-xl border border-line bg-panel-2 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-muted outline-none focus:border-brand focus:ring-2 focus:ring-brand/30;
+}
+@utility label {
+  @apply mb-1.5 block text-xs font-medium text-muted;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold;
+}
+@utility text-gradient {
+  @apply bg-gradient-to-r from-brand to-brand-2 bg-clip-text text-transparent;
+}
+
+/* ---------- Entrada progressiva ao recarregar ---------- */
+@keyframes reveal-x {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes reveal-y {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reveal {
+  opacity: 0;
+  animation: reveal-x 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: var(--d, 0ms);
+}
+.reveal-up {
+  opacity: 0;
+  animation: reveal-y 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Linha do gráfico sendo "desenhada" */
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.draw {
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: var(--len);
+  animation: draw 1.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: var(--d, 300ms);
+}
+@keyframes fade {
+  to {
+    opacity: 1;
+  }
+}
+.fade-late {
+  opacity: 0;
+  animation: fade 0.8s ease forwards;
+  animation-delay: var(--d, 1400ms);
+}
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.grow {
+  transform-origin: bottom;
+  transform: scaleY(0);
+  animation: grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@utility skeleton {
+  @apply relative overflow-hidden rounded-lg bg-panel-2;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: shimmer 1.3s infinite;
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 1.8s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-up,
+  .fade-late,
+  .grow,
+  .draw {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2b45;
+  border-radius: 8px;
+}

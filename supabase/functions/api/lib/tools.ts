@@ -89,10 +89,16 @@ function groupTop<T>(list: T[], key: (x: T) => string, val: (x: T) => number, n 
 }
 
 /** Cria um pedido na Central de Aprovações (nada é executado aqui). */
+/** Textos para clientes que prometem desconto, cupom ou brinde: a aprovação avisa o dono em destaque. */
+const OFFER = /\b\d{1,2}\s?%|\bcupo(m|ns)\b|\bc[oó]digo\b|\bdesconto|\boff\b|frete gr[aá]tis|\bbrinde|\bpresente especial/i;
+export const OFFER_WARNING = "⚠️ O texto oferece desconto, cupom ou brinde. Confirme se essa oferta existe antes de aprovar (você pode editar o texto).";
+
 async function propose(
   ctx: ToolCtx,
   a: { kind: string; area: Area; title: string; reason: string; payload: Json; draft?: string | null; customer_id?: string | null },
 ) {
+  const offer = !!a.draft && OFFER.test(a.draft);
+  if (offer) a = { ...a, reason: `${OFFER_WARNING} ${a.reason}`.slice(0, 500) };
   const r = await ctx.db
     .from("approvals")
     .insert({
@@ -109,7 +115,14 @@ async function propose(
     .select("id,kind,title,status,created_at")
     .single();
   const ap = check<{ id: string; kind: string; title: string; status: string; created_at: string }>(r);
-  return { aprovacao_criada: true, aprovacao_id: ap.id, status: "aguardando aprovação do dono", titulo: ap.title, observacao: "Nada foi executado. O dono precisa aprovar na Central de Aprovações." };
+  return {
+    aprovacao_criada: true,
+    aprovacao_id: ap.id,
+    status: "aguardando aprovação do dono",
+    titulo: ap.title,
+    observacao: "Nada foi executado. O dono precisa aprovar na Central de Aprovações.",
+    ...(offer ? { atencao: "O texto cita desconto/cupom/brinde que não veio dos dados. Avise o dono para confirmar se a oferta existe." } : {}),
+  };
 }
 
 async function ownRow(ctx: ToolCtx, table: string, id: string, cols = "id") {

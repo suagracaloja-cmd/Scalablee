@@ -176,7 +176,12 @@ export default function ApprovalCard({ a, onChange, compact = false }: { a: Appr
             <AreaChip kind={a.agent_kind} />
           </div>
           <div className="mt-0.5 font-semibold leading-snug">{a.title}</div>
-          {a.reason && <div className="mt-0.5 text-sm text-muted">{a.reason}</div>}
+          {a.reason &&
+            (a.reason.startsWith('⚠️') ? (
+              <div className="mt-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">{a.reason}</div>
+            ) : (
+              <div className="mt-0.5 text-sm text-muted">{a.reason}</div>
+            ))}
         </div>
         {statusChip}
       </div>

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
-import type { Company } from './types'
+import { api, OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
+import type { BillingView, Company } from './types'
 
 type Counts = { insights: number; approvals: number; conversations: number }
 
@@ -16,6 +16,9 @@ type Ctx = {
   /** Sessão aberta pelo link de recuperação: a pessoa precisa definir uma nova senha. */
   recovery: boolean
   endRecovery: () => void
+  /** Assinatura (null enquanto carrega ou se a cobrança não estiver ativada) */
+  billing: BillingView | null
+  reloadBilling: () => Promise<void>
 }
 
 const AppCtx = createContext<Ctx>(null as unknown as Ctx)
@@ -27,6 +30,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null)
   const [counts, setCounts] = useState<Counts>({ insights: 0, approvals: 0, conversations: 0 })
   const [recovery, setRecovery] = useState(OPENED_FROM_RECOVERY_LINK)
+  const [billing, setBilling] = useState<BillingView | null>(null)
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: 'ok' | 'err' }[]>([])
 
   const toast = useCallback((msg: string, type: 'ok' | 'err' = 'ok') => {
@@ -72,6 +76,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     Promise.all([reloadCompany(), reloadCounts()]).finally(() => setLoading(false))
   }, [userId, reloadCompany, reloadCounts])
 
+  const companyId = company?.id
+  const reloadBilling = useCallback(async () => {
+    if (!companyId) return setBilling(null)
+    setBilling(await api<BillingView>('assinatura', { action: 'status' }).catch(() => null))
+  }, [companyId])
+  useEffect(() => {
+    reloadBilling()
+  }, [reloadBilling])
+
   // Atualização em tempo real dos contadores
   useEffect(() => {
     if (!company) return
@@ -90,7 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [company, reloadCounts, toast])
 
   return (
-    <AppCtx.Provider value={{ session, loading, company, counts, reloadCompany, reloadCounts, toast, recovery, endRecovery: () => setRecovery(false) }}>
+    <AppCtx.Provider value={{ session, loading, company, counts, reloadCompany, reloadCounts, toast, recovery, endRecovery: () => setRecovery(false), billing, reloadBilling }}>
       {children}
       <div className="fixed inset-x-4 bottom-28 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:items-end">
         {toasts.map((t) => (

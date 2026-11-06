@@ -45,8 +45,11 @@ Os dados que você cadastra sobre os seus clientes pertencem à sua empresa. Voc
 ### 7. Disponibilidade
 A plataforma está em fase de lançamento e é oferecida "no estado em que se encontra". Podem ocorrer manutenções, instabilidades e mudanças de funcionalidades. Faremos o possível para avisar com antecedência sobre mudanças importantes.
 
-### 8. Preço
-Durante o período de lançamento, o uso é **gratuito**. Se passarem a existir planos pagos, os preços e as condições serão informados com antecedência e nada será cobrado sem a sua concordância.
+### 8. Assinatura e pagamento
+- O valor do plano, o período de teste grátis e as formas de pagamento (Pix, boleto ou cartão) aparecem na tela **Assinatura** antes de você assinar. Nada é cobrado sem que você assine.
+- A assinatura é **mensal e renova automaticamente**. A cobrança é feita pelo **Asaas**, em página segura dele; a ${EMPRESA} não vê nem guarda dados do seu cartão.
+- Você pode **cancelar a qualquer momento**, sem multa, na tela Assinatura. Não há novas cobranças depois do cancelamento, e o acesso continua até o fim do período já pago.
+- Se um pagamento atrasar, há alguns dias de tolerância; depois disso o acesso pode ser pausado até a regularização. Seus dados continuam guardados e podem ser exportados ou excluídos a qualquer momento.
 
 ### 9. Responsabilidade
 A ${EMPRESA} não garante resultados de vendas ou financeiros e não responde por decisões tomadas com base nas sugestões da IA. Nada nestes Termos afasta direitos garantidos por lei, inclusive pelo Código de Defesa do Consumidor, quando aplicável.
@@ -77,10 +80,12 @@ Esta Política explica como a **${EMPRESA}** (${identificacao}) trata dados pess
 - **Dados que você insere:** clientes (nome, telefone, e-mail, observações), vendas, lançamentos financeiros e tarefas.
 - **Conversas e aprovações:** perguntas feitas ao Agente SCALABLE, respostas e o registro de cada aprovação (o quê, quando e por quem).
 - **WhatsApp (se conectado):** mensagens trocadas com seus clientes e as credenciais da Meta, guardadas só no servidor.
+- **Assinatura:** nome ou razão social, CPF ou CNPJ, e-mail e celular informados para a cobrança, e a situação dos pagamentos. Dados de cartão são digitados direto no Asaas e não passam pela ${EMPRESA}.
 - **Dados técnicos:** registros de acesso e de erros, para segurança e funcionamento.
 
 ### 3. Para que usamos e com qual base legal
-- Prestar o serviço contratado: execução de contrato (art. 7º, V).
+- Prestar o serviço contratado e cobrar a assinatura: execução de contrato (art. 7º, V).
+- Guardar dados de cobrança e notas pelo prazo legal: cumprimento de obrigação legal (art. 7º, II).
 - Segurança, prevenção de fraudes e melhoria do serviço: legítimo interesse (art. 7º, IX).
 - Guardar registros de acesso pelo prazo legal: cumprimento de obrigação legal (art. 7º, II, e Marco Civil da Internet, art. 15).
 Não vendemos dados pessoais e não os usamos para publicidade.
@@ -94,6 +99,7 @@ Somente com fornecedores necessários para o serviço:
 - **Vercel** — hospedagem do site;
 - **Groq** e **Anthropic** — inteligência artificial;
 - **Meta (WhatsApp)** — envio e recebimento de mensagens, quando você conecta o WhatsApp;
+- **Asaas** — emissão de cobranças e processamento dos pagamentos da assinatura;
 - autoridades públicas, quando exigido por lei.
 
 ### 6. Transferência internacional

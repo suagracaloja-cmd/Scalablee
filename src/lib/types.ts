@@ -129,3 +129,21 @@ export type AgentMessage = {
   meta: { steps?: AgentStep[]; approvals?: string[]; ai?: boolean; aiError?: string | null } | null
   created_at: string
 }
+
+/** Assinatura pelo Asaas (resposta de /api/assinatura). `enabled: false` = cobrança ainda não ativada. */
+export type BillingView =
+  | { enabled: false }
+  | {
+      enabled: true
+      enforced: boolean
+      sandbox: boolean
+      plan: { name: string; value: number; trialDays: number }
+      status: 'trial' | 'active' | 'overdue' | 'canceled'
+      trialEndsAt: string | null
+      daysLeft: number | null
+      nextDueDate: string | null
+      lastPaymentAt: string | null
+      invoiceUrl: string | null
+      hasSubscription: boolean
+      allowed: boolean
+    }

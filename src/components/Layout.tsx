@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
   CheckCircle2,
   ClipboardList,
+  CreditCard,
   LayoutGrid,
   LogOut,
   Menu,
@@ -33,7 +34,7 @@ const NAV = [
 const MOBILE = ['/', '/agente', '/aprovacoes', '/whatsapp']
 
 export default function Layout() {
-  const { company, counts } = useApp()
+  const { company, counts, billing } = useApp()
   const [sheet, setSheet] = useState(false)
   const [q, setQ] = useState('')
   const loc = useLocation()
@@ -42,6 +43,20 @@ export default function Layout() {
   const now = new Date()
   const wd = now.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
   const today = `${wd.charAt(0).toUpperCase()}${wd.slice(1)}, ${now.getDate()} de ${now.toLocaleDateString('pt-BR', { month: 'long' })}`
+
+  // Cobrança: aviso de teste acabando/pagamento pendente e bloqueio (só quando COBRANCA_ATIVA=on)
+  const bill = billing && billing.enabled ? billing : null
+  const free = ['/assinatura', '/configuracoes'].some((p) => loc.pathname.startsWith(p))
+  const blocked = !!bill && bill.enforced && !bill.allowed && !free
+  const banner = !bill || loc.pathname.startsWith('/assinatura')
+    ? null
+    : !bill.allowed
+      ? 'O acesso está pausado: a assinatura não está em dia.'
+      : bill.status === 'overdue'
+        ? 'Pagamento pendente. Regularize para não perder o acesso.'
+        : bill.status === 'trial' && bill.daysLeft !== null && bill.daysLeft <= 3 && !bill.hasSubscription
+          ? `Seu teste grátis termina em ${bill.daysLeft} dia(s).`
+          : null
 
   const search = (e: FormEvent) => {
     e.preventDefault()
@@ -78,6 +93,11 @@ export default function Layout() {
           })}
         </nav>
         <div className="mt-4 flex flex-col items-center gap-2.5">
+          {bill && (
+            <NavLink to="/assinatura" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/assinatura') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Assinatura">
+              <CreditCard size={19} />
+            </NavLink>
+          )}
           <NavLink to="/configuracoes" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/configuracoes') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Configurações">
             <Settings size={19} />
           </NavLink>
@@ -139,7 +159,13 @@ export default function Layout() {
 
         <main key={loc.pathname} className="px-4 pb-32 pt-2 sm:px-6 md:px-8 md:pb-10 md:pt-1">
           <div className="mx-auto max-w-[1400px]">
-            <Outlet />
+            {banner && (
+            <div className="mb-4 flex flex-col gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+              <span>{banner}</span>
+              <Link to="/assinatura" className="font-semibold underline underline-offset-2">Ver assinatura</Link>
+            </div>
+          )}
+          {blocked ? <Navigate to="/assinatura" replace /> : <Outlet />}
           </div>
         </main>
       </div>
@@ -171,7 +197,7 @@ export default function Layout() {
               </button>
             </div>
             <div className="grid grid-cols-3 gap-2.5">
-              {[...NAV, { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' as const }, { to: '/configuracoes', label: 'Configurações', icon: Settings }].map((n) => {
+              {[...NAV, { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' as const }, ...(bill ? [{ to: '/assinatura', label: 'Assinatura', icon: CreditCard }] : []), { to: '/configuracoes', label: 'Configurações', icon: Settings }].map((n) => {
                 const c = 'badge' in n && n.badge ? counts[n.badge] : 0
                 return (
                   <NavLink

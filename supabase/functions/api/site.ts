@@ -1,4 +1,5 @@
 // A IA entra no site da empresa, avalia e explica o que melhorar.
+import { assertAccess } from "./lib/billing.ts";
 import { handle, HttpError, json, requireCompany } from "./lib/common.ts";
 import { hasAI, modelCreate } from "./lib/ai.ts";
 import { agentSiteReview } from "./lib/agent.ts";
@@ -18,6 +19,7 @@ type Analysis = {
 export default (
   handle(async (req) => {
     const { db, company } = await requireCompany(req);
+    await assertAccess(db, company);
     const body = await req.json().catch(() => ({}));
     let url: string = (body.url ?? company.website ?? "").trim();
     if (!url) throw new HttpError(400, "Informe o endereço do site.");

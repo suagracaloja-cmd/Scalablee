@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import Legal from './pages/Legal'
+import Billing from './pages/Billing'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Agent from './pages/Agent'
@@ -43,6 +44,7 @@ function Gate() {
         <Route path="tarefas" element={<Tasks />} />
         <Route path="notificacoes" element={<Notifications />} />
         <Route path="configuracoes" element={<Settings />} />
+        <Route path="assinatura" element={<Billing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

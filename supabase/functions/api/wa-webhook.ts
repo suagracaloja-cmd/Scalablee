@@ -4,6 +4,7 @@ import { admin, brl, cors, json } from "./lib/common.ts";
 import { hasAI, modelCreate } from "./lib/ai.ts";
 import { agentWhatsAppReply, AGENT_NAME } from "./lib/agent.ts";
 import { checkSignature, sendAndLog, type WaConfig, type WebhookPayload } from "./lib/whatsapp.ts";
+import { accessAllowed, billingConfig, ensureBilling } from "./lib/billing.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
@@ -109,6 +110,9 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
     .eq("id", companyId)
     .single();
   if (!co || co.agent_whatsapp === false || conv.ai_paused) return;
+  // Cobrança ativada e assinatura fora do prazo: a mensagem fica registrada, mas a IA não responde
+  const bcfg = billingConfig();
+  if (bcfg.enabled && bcfg.enforced && !accessAllowed(await ensureBilling(db, { id: companyId }, bcfg), bcfg)) return;
 
   const decision = await decideReply(db, companyId, co, conv.id, text);
   if (!decision) return;

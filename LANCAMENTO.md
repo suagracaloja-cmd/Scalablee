@@ -68,9 +68,34 @@ Também já funcionam: **exportar meus dados** e **excluir minha conta** (Config
 - Cada cliente conecta o WhatsApp com o app dele na Meta. A tela de conexão agora pede também a **chave secreta do app (App Secret)**, que liga a verificação de autenticidade das mensagens recebidas. Sem ela, a tela mostra um aviso.
 - Para mensagens enviadas fora da janela de 24h após a última mensagem do cliente, a Meta exige **modelos de mensagem aprovados**; para volume maior, a **verificação da empresa** na Meta.
 
-## 7. Cobrança
+## 7. Cobrança pelo Asaas
 
-Ainda não existe assinatura nem pagamento. Escolha o provedor (por exemplo, Asaas, Mercado Pago ou Stripe) e os planos/preços para a integração ser feita.
+A integração já está pronta e **desligada**. Ela liga sozinha quando os secrets abaixo existirem. Comece pelo **sandbox** (ambiente de testes do Asaas) e só depois troque para produção.
+
+**No Asaas** (sandbox: sandbox.asaas.com · produção: www.asaas.com):
+1. **Integrações → Chave de API**: gere a chave. Ela aparece uma vez só.
+2. **Integrações → Webhooks**: crie um webhook com
+   - **URL:** `https://tmaywgdxfveczoxxrpur.supabase.co/functions/v1/api/asaas-webhook`
+   - **Token de autenticação:** invente uma senha longa (só letras e números) e anote;
+   - **Eventos:** cobranças (criada, atualizada, confirmada, recebida, vencida, estornada) e assinaturas (removida/inativada);
+   - versão da API: v3. Deixe o webhook **ativado**.
+
+**No Supabase** → Edge Functions → **Secrets**:
+
+| Nome | Valor |
+|---|---|
+| `ASAAS_API_KEY` | a chave de API do Asaas |
+| `ASAAS_WEBHOOK_TOKEN` | o mesmo token que você inventou no webhook |
+| `PLANO_VALOR` | preço mensal, ex.: `97.00` |
+| `PLANO_NOME` | (opcional) nome do plano, ex.: `Scalable Pro` |
+| `PLANO_TESTE_DIAS` | (opcional) dias de teste grátis; padrão `7` |
+| `ASAAS_AMBIENTE` | (opcional) `sandbox` ou `producao` — chaves novas já indicam o ambiente sozinhas |
+| `COBRANCA_ATIVA` | `on` para **pausar o acesso** de quem não estiver em dia; sem isso, ninguém é bloqueado |
+| `PLANO_TOLERANCIA_DIAS` | (opcional) dias de tolerância após o vencimento; padrão `5` |
+
+Com `ASAAS_API_KEY` e `PLANO_VALOR` definidos, aparece o menu **Assinatura** para os clientes: assinar (Pix, boleto ou cartão na página do Asaas), ver faturas e cancelar. Os avisos do Asaas atualizam a situação sozinhos (paga, vencida, cancelada). Excluir a conta cancela a assinatura no Asaas antes.
+
+**Teste no sandbox:** assine com um CPF de teste, pague a fatura pelo painel do sandbox ("Confirmar pagamento") e veja a assinatura virar **Ativa** na tela.
 
 ## 8. Recomendados (não bloqueiam)
 

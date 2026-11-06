@@ -1,11 +1,12 @@
-import { useState, type FormEvent } from 'react'
-import { CheckCircle2, Globe, RefreshCw, XCircle } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { CheckCircle2, Download, Globe, RefreshCw, ShieldCheck, Trash2, XCircle } from 'lucide-react'
 import { AGENT_NAME } from '../lib/areas'
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { SiteAnalysis } from '../lib/types'
 import { fmtDate } from '../lib/format'
-import { AgentMark, Field, PageHeader, Reveal, Spinner } from '../components/ui'
+import { AgentMark, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 
 const LABELS: Record<string, string> = {
   https: 'Site seguro (HTTPS)',
@@ -36,6 +37,58 @@ export default function Settings() {
     agent_auto_reply: company?.agent_auto_reply ?? true,
   })
   const [savingAg, setSavingAg] = useState(false)
+  const [uso, setUso] = useState<{ used: number; limit: number; providers: string[] } | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [delOpen, setDelOpen] = useState(false)
+  const [delText, setDelText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    api<{ used: number; limit: number; providers: string[] }>('uso').then(setUso).catch(() => setUso(null))
+  }, [])
+
+  /** Portabilidade (LGPD): baixa todos os dados da empresa num arquivo JSON. */
+  async function exportData() {
+    setExporting(true)
+    try {
+      const tables = ['customers', 'sales', 'transactions', 'tasks', 'insights', 'approvals', 'agent_threads', 'assistant_messages', 'conversations', 'messages'] as const
+      const out: Record<string, unknown> = { exportado_em: new Date().toISOString(), conta: session?.user.email, empresa: company }
+      for (const t of tables) {
+        const rows: unknown[] = []
+        for (let from = 0; ; from += 1000) {
+          const { data, error } = await supabase.from(t).select('*').range(from, from + 999)
+          if (error) throw new Error(`${t}: ${error.message}`)
+          rows.push(...(data ?? []))
+          if (!data || data.length < 1000) break
+        }
+        out[t] = rows
+      }
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `scalable-dados-${new Date().toISOString().slice(0, 10)}.json`
+      link.click()
+      URL.revokeObjectURL(url)
+      toast('Arquivo com seus dados baixado')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e), 'err')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function deleteAccount() {
+    setDeleting(true)
+    try {
+      await api('conta', { action: 'excluir', confirmacao: delText })
+      toast('Conta excluída')
+      await supabase.auth.signOut()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e), 'err')
+      setDeleting(false)
+    }
+  }
   const [analyzing, setAnalyzing] = useState(false)
   const a = company?.site_analysis as SiteAnalysis | null
 
@@ -145,6 +198,25 @@ export default function Settings() {
             <button className="btn-primary w-full" disabled={savingAg}>
               {savingAg && <Spinner />} Salvar configurações do agente
             </button>
+            {uso && (
+              <div className="rounded-2xl bg-panel-2 p-3 text-xs text-muted">
+                <div className="flex items-center justify-between gap-2">
+                  <span>
+                    IA em uso: <b className="text-ink">{uso.providers.length ? uso.providers.map((p) => (p === 'groq' ? 'Groq (gratuita)' : 'Claude (Anthropic)')).join(' → ') : 'nenhuma (modo básico)'}</b>
+                  </span>
+                  {uso.limit > 0 && (
+                    <span>
+                      Hoje: <b className="text-ink">{uso.used}</b> de {uso.limit} perguntas
+                    </span>
+                  )}
+                </div>
+                {uso.limit > 0 && (
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (uso.used / uso.limit) * 100)}%` }} />
+                  </div>
+                )}
+              </div>
+            )}
           </form>
         </Reveal>
 
@@ -219,7 +291,36 @@ export default function Settings() {
             </div>
           )}
         </Reveal>
+        <Reveal i={4} className="card p-5 lg:col-span-2">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <ShieldCheck size={18} /> Privacidade e dados
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Seus dados pertencem à sua empresa. Baixe uma cópia completa quando quiser ou exclua a conta. Leia os{' '}
+            <Link to="/termos" className="font-medium text-ink underline underline-offset-2">Termos de Uso</Link> e a{' '}
+            <Link to="/privacidade" className="font-medium text-ink underline underline-offset-2">Política de Privacidade</Link>.
+          </p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button className="btn-ghost" onClick={exportData} disabled={exporting}>
+              {exporting ? <Spinner size={14} /> : <Download size={16} />} Exportar meus dados
+            </button>
+            <button className="btn-danger" onClick={() => (setDelText(''), setDelOpen(true))}>
+              <Trash2 size={16} /> Excluir minha conta
+            </button>
+          </div>
+        </Reveal>
       </div>
+      <Modal open={delOpen} onClose={() => setDelOpen(false)} title="Excluir conta">
+        <p className="text-sm text-muted">
+          Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da empresa: vendas, clientes, financeiro, tarefas, conversas, aprovações e a conexão do WhatsApp. Não dá para desfazer. Se quiser, exporte seus dados antes.
+        </p>
+        <Field label='Para confirmar, digite EXCLUIR'>
+          <input className="input" value={delText} onChange={(e) => setDelText(e.target.value)} placeholder="EXCLUIR" />
+        </Field>
+        <button className="btn-danger mt-3 w-full" disabled={deleting || delText.trim().toUpperCase() !== 'EXCLUIR'} onClick={deleteAccount}>
+          {deleting && <Spinner size={14} />} Excluir definitivamente
+        </button>
+      </Modal>
     </div>
   )
 }

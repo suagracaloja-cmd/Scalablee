@@ -59,7 +59,9 @@ O plano gratuito da Groq tem limites por minuto e por dia. Para caber neles, o a
 
 Quando todas as cotas acabam, a conversa responde em **modo básico** (com os dados reais) e avisa o motivo.
 
-Ajustes opcionais (secrets): `GROQ_MODEL` (modelo preferido), `GROQ_MAX_INPUT_TOKENS` (padrão 6000), `GROQ_MAX_OUTPUT_TOKENS` (padrão 4000).
+Ajustes opcionais (secrets): `GROQ_MODEL` (modelo preferido), `GROQ_MAX_INPUT_TOKENS` (padrão 6000), `GROQ_MAX_OUTPUT_TOKENS` (padrão 4000), `AGENT_DAILY_LIMIT` (perguntas com IA por empresa por dia; padrão 30, `0` = sem limite).
+
+Antes de lançar comercialmente, siga o [guia de lançamento](LANCAMENTO.md).
 
 ## Integrações preparadas e desligadas (só ative com autorização)
 
@@ -84,10 +86,12 @@ Observação: pela regra da Meta, mensagens iniciadas pela empresa (ex.: reativa
 
 ```
 src/                     front-end (páginas em src/pages; conversa em src/pages/Agent.tsx)
-supabase/migrations/     esquema do banco (0005 = agente central, threads e aprovações auditáveis)
+supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp)
 supabase/functions/api/  Edge Function com as rotas:
   agente.ts      POST /api/agente       conversa com o Agente SCALABLE
   aprovacoes.ts  POST /api/aprovacoes   aprovar/recusar operações
+  conta.ts       POST /api/conta        excluir conta e todos os dados (LGPD)
+  uso.ts         POST /api/uso          consumo de IA da empresa hoje
   analise.ts     POST /api/analise      análise geral (alias antigo: /api/agents)
   site.ts        POST /api/site         análise do site
   wa-send.ts     POST /api/wa-send      conectar e enviar no WhatsApp

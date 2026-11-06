@@ -55,6 +55,16 @@ export async function requireCompany(req: Request): Promise<{ db: SupabaseClient
   return { db, userDb, company: company as Company, user: { id: userData.user.id, email: userData.user.email ?? null } };
 }
 
+/** Usuário logado e o id da empresa dele (se já tiver cadastrado uma). */
+export async function requireUser(req: Request): Promise<{ db: SupabaseClient; user: AuthUser; companyId: string | null }> {
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const db = admin();
+  const { data: userData, error } = await db.auth.getUser(token);
+  if (error || !userData.user) throw new HttpError(401, "Sessão inválida. Faça login novamente.");
+  const { data: company } = await db.from("companies").select("id").eq("owner_id", userData.user.id).maybeSingle();
+  return { db, user: { id: userData.user.id, email: userData.user.email ?? null }, companyId: (company?.id as string | undefined) ?? null };
+}
+
 export function handle(fn: (req: Request) => Promise<Response>) {
   return async (req: Request) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: cors });

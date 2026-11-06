@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './lib/store'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
+import Legal from './pages/Legal'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Agent from './pages/Agent'
@@ -52,7 +53,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProvider>
-        <Gate />
+        <Routes>
+          {/* Páginas públicas (abrem mesmo sem login) */}
+          <Route path="/termos" element={<Legal kind="termos" />} />
+          <Route path="/privacidade" element={<Legal kind="privacidade" />} />
+          <Route path="/*" element={<Gate />} />
+        </Routes>
       </AppProvider>
     </BrowserRouter>
   )

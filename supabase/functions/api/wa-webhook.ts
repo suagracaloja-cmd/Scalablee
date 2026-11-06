@@ -3,7 +3,7 @@
 import { admin, brl, cors, json } from "./lib/common.ts";
 import { hasAI, modelCreate } from "./lib/ai.ts";
 import { agentWhatsAppReply, AGENT_NAME } from "./lib/agent.ts";
-import { sendAndLog, type WaConfig } from "./lib/whatsapp.ts";
+import { checkSignature, sendAndLog, type WaConfig, type WebhookPayload } from "./lib/whatsapp.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
@@ -25,11 +25,6 @@ export default (async (req: Request) => {
   }
 
   const raw = await req.text();
-  const secret = Deno.env.get("WHATSAPP_APP_SECRET");
-  if (secret && !(await validSignature(raw, req.headers.get("x-hub-signature-256"), secret))) {
-    return new Response("invalid signature", { status: 401 });
-  }
-
   let payload: WebhookPayload;
   try {
     payload = JSON.parse(raw);
@@ -37,23 +32,19 @@ export default (async (req: Request) => {
     return json({ ok: false }, 400);
   }
 
+  // Assinatura da Meta: cada empresa usa o App Secret do próprio app (cadastrado ao conectar o WhatsApp);
+  // WHATSAPP_APP_SECRET (global) vale para quem não cadastrou. Sem nenhum segredo, a mensagem é aceita
+  // (compatibilidade), e a tela do WhatsApp avisa que a verificação está desligada.
+  const check = await checkSignature(db, payload, raw, req.headers.get("x-hub-signature-256"));
+  if (!check.ok) {
+    console.warn(`[wa-webhook] assinatura inválida para ${check.phone}`);
+    return new Response("invalid signature", { status: 401 });
+  }
+
   // Responde 200 rápido para a Meta e processa em segundo plano.
   EdgeRuntime.waitUntil(processPayload(db, payload).catch((e) => console.error("webhook", e)));
   return json({ ok: true });
 });
-
-type WebhookPayload = {
-  entry?: {
-    changes?: {
-      value?: {
-        metadata?: { phone_number_id?: string };
-        contacts?: { wa_id: string; profile?: { name?: string } }[];
-        messages?: { id: string; from: string; type: string; text?: { body: string }; button?: { text: string }; interactive?: Record<string, { title?: string }> }[];
-        statuses?: { id: string; status: string; errors?: { title?: string }[] }[];
-      };
-    }[];
-  }[];
-};
 
 async function processPayload(db: SupabaseClient, payload: WebhookPayload) {
   for (const entry of payload.entry ?? []) {
@@ -182,11 +173,4 @@ async function decideReply(db: SupabaseClient, companyId: string, co: Co, conver
     console.error(`[wa-webhook] ${AGENT_NAME} indisponível:`, e instanceof Error ? e.message : e);
     return { reply: `Olá! Aqui é o atendimento da ${co.name}. Recebemos sua mensagem e já vamos te responder 😊`, needs_approval: true, reason: "A IA não respondeu (indisponível no momento)" };
   }
-}
-async function validSignature(body: string, header: string | null, secret: string) {
-  if (!header?.startsWith("sha256=")) return false;
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
-  const hex = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  return hex === header.slice(7);
 }

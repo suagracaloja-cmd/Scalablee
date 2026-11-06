@@ -2,7 +2,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const GRAPH = `https://graph.facebook.com/${Deno.env.get("WHATSAPP_GRAPH_VERSION") ?? "v23.0"}`;
 
-export type WaConfig = { company_id: string; phone_number_id: string; access_token: string; verify_token: string; connected: boolean };
+export type WaConfig = { company_id: string; phone_number_id: string; access_token: string; verify_token: string; connected: boolean; app_secret?: string | null };
 
 export async function getConfig(db: SupabaseClient, companyId: string): Promise<WaConfig | null> {
   const { data } = await db.from("whatsapp_configs").select("*").eq("company_id", companyId).maybeSingle();
@@ -68,4 +68,44 @@ export async function sendAndLog(
     .single();
   await db.from("conversations").update({ last_message_at: new Date().toISOString(), unread: 0 }).eq("id", conversationId);
   return { ...r, conversationId, messageId: msg?.id };
+}
+
+// ---------- Webhook: assinatura da Meta ----------
+
+export type WebhookPayload = {
+  entry?: {
+    changes?: {
+      value?: {
+        metadata?: { phone_number_id?: string };
+        contacts?: { wa_id: string; profile?: { name?: string } }[];
+        messages?: { id: string; from: string; type: string; text?: { body: string }; button?: { text: string }; interactive?: Record<string, { title?: string }> }[];
+        statuses?: { id: string; status: string; errors?: { title?: string }[] }[];
+      };
+    }[];
+  }[];
+};
+
+export async function validSignature(body: string, header: string | null, secret: string) {
+  if (!header?.startsWith("sha256=")) return false;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  const hex = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const given = header.slice(7).toLowerCase();
+  if (given.length !== hex.length) return false;
+  let diff = 0; // comparação em tempo constante
+  for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ given.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Confere a assinatura usando o App Secret de cada número citado no payload. */
+export async function checkSignature(db: SupabaseClient, payload: WebhookPayload, raw: string, header: string | null) {
+  const ids = [...new Set((payload.entry ?? []).flatMap((e) => (e.changes ?? []).map((c) => c.value?.metadata?.phone_number_id)).filter((x): x is string => !!x))];
+  if (!ids.length) return { ok: true as const, phone: null };
+  const { data } = await db.from("whatsapp_configs").select("phone_number_id,app_secret").in("phone_number_id", ids);
+  const globalSecret = Deno.env.get("WHATSAPP_APP_SECRET") ?? "";
+  for (const id of ids) {
+    const secret = (data ?? []).find((c) => c.phone_number_id === id)?.app_secret || globalSecret;
+    if (secret && !(await validSignature(raw, header, secret))) return { ok: false as const, phone: id };
+  }
+  return { ok: true as const, phone: null };
 }

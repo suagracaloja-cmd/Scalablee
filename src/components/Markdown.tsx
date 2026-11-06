@@ -143,7 +143,7 @@ function blocks(src: string): ReactNode[] {
 /** Negrito, itálico, código inline e links http(s). */
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = []
-  const re = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\((https?:\/\/[^\s)]+)\)|(?:^|(?<=\s))_[^_]+_(?=\s|$|[.,;:!?]))/g
+  const re = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(((?:https?:\/\/|\/(?!\/))[^\s)]+)\)|(?:^|(?<=\s))_[^_]+_(?=\s|$|[.,;:!?]))/g
   let last = 0
   let m: RegExpExecArray | null
   let k = 0
@@ -155,7 +155,7 @@ function inline(text: string): ReactNode[] {
     else if (t.startsWith('[')) {
       const label = t.slice(1, t.indexOf(']'))
       out.push(
-        <a key={k++} href={m[2]} target="_blank" rel="noreferrer" className="font-medium text-brand-dark underline underline-offset-2">
+        <a key={k++} href={m[2]} {...(m[2].startsWith('/') ? {} : { target: '_blank', rel: 'noreferrer' })} className="font-medium text-brand-dark underline underline-offset-2">
           {label}
         </a>,
       )

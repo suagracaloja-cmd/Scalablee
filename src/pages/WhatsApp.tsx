@@ -273,17 +273,26 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
   const { toast } = useApp()
   const [phoneId, setPhoneId] = useState(status?.phone_number_id ?? '')
   const [token, setToken] = useState('')
+  const [appSecret, setAppSecret] = useState('')
+  const [hasSecret, setHasSecret] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState<Status>(status)
+
+  useEffect(() => {
+    supabase.rpc('whatsapp_has_app_secret').then(({ data }) => setHasSecret(data === true))
+  }, [])
 
   async function save(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     try {
-      await api('wa-send', { action: 'connect', phone_number_id: phoneId, access_token: token })
+      await api('wa-send', { action: 'connect', phone_number_id: phoneId, access_token: token, app_secret: appSecret })
       const { data } = await supabase.rpc('whatsapp_status')
       setSaved(((data as Status[] | null) ?? [])[0] ?? null)
+      const { data: has } = await supabase.rpc('whatsapp_has_app_secret')
+      setHasSecret(has === true)
       setToken('')
+      setAppSecret('')
       onSaved()
     } catch (err) {
       toast(err instanceof Error ? err.message : String(err), 'err')
@@ -319,6 +328,16 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
         <Field label={saved ? 'Token de acesso (deixe vazio para manter o atual)' : 'Token de acesso'}>
           <input className="input" type="password" required={!saved} value={token} onChange={(e) => setToken(e.target.value)} placeholder="EAAG…" />
         </Field>
+        <Field label={hasSecret ? 'Chave secreta do app — App Secret (deixe vazio para manter a atual)' : 'Chave secreta do app — App Secret (recomendado)'}>
+          <input className="input" type="password" value={appSecret} onChange={(e) => setAppSecret(e.target.value)} placeholder="Configurações do app → Básico → Chave secreta do app" autoComplete="off" />
+        </Field>
+        {hasSecret !== null && (
+          <p className={`rounded-xl px-3 py-2 text-xs ${hasSecret ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
+            {hasSecret
+              ? '✓ Verificação de autenticidade ligada: só mensagens assinadas pela Meta são aceitas.'
+              : '⚠️ Sem a chave secreta do app, a Scalable não consegue confirmar que as mensagens recebidas vieram mesmo da Meta. Cole a chave para ligar essa proteção.'}
+          </p>
+        )}
         <button className="btn-primary w-full" disabled={busy}>
           {busy && <Spinner />} Validar e salvar
         </button>

@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { BellRing, MessageCircle, TrendingUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { LEGAL_VERSION } from '../lib/legal'
 import { Logo, Reveal, Spinner } from '../components/ui'
 
 export default function Login() {
@@ -9,6 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
+  const [accepted, setAccepted] = useState(false)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -17,9 +20,14 @@ export default function Login() {
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw new Error(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message)
+        if (error) throw error
       } else if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
+        if (!accepted) throw new Error('Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.')
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin, data: { terms_accepted_at: new Date().toISOString(), terms_version: LEGAL_VERSION } },
+        })
         if (error) throw error
         if (!data.session) setMsg({ t: 'ok', m: 'Conta criada! Confirme pelo link enviado ao seu e-mail e depois faça login.' })
       } else {
@@ -28,7 +36,7 @@ export default function Login() {
         setMsg({ t: 'ok', m: 'Enviamos um link de redefinição para o seu e-mail.' })
       }
     } catch (err) {
-      setMsg({ t: 'err', m: err instanceof Error ? err.message : String(err) })
+      setMsg({ t: 'err', m: authError(err instanceof Error ? err.message : String(err)) })
     } finally {
       setBusy(false)
     }
@@ -102,6 +110,16 @@ export default function Login() {
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
             )}
+            {mode === 'signup' && (
+              <label className="flex items-start gap-2.5 text-left text-xs text-muted">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#48a8fc]" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
+                <span>
+                  Li e aceito os{' '}
+                  <Link to="/termos" target="_blank" className="font-semibold text-ink underline underline-offset-2">Termos de Uso</Link> e a{' '}
+                  <Link to="/privacidade" target="_blank" className="font-semibold text-ink underline underline-offset-2">Política de Privacidade</Link>.
+                </span>
+              </label>
+            )}
             {msg && <p className={`rounded-2xl px-4 py-3 text-sm ${msg.t === 'err' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{msg.m}</p>}
             <button className="btn-primary h-12 w-full" disabled={busy}>
               {busy && <Spinner />} {mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar conta grátis' : 'Enviar link'}
@@ -126,8 +144,25 @@ export default function Login() {
               </button>
             )}
           </Reveal>
+          <p className="mt-8 text-center text-[11px] text-muted">
+            <Link to="/termos" className="hover:text-ink">Termos de Uso</Link> · <Link to="/privacidade" className="hover:text-ink">Privacidade</Link>
+          </p>
         </form>
       </div>
     </div>
   )
+}
+
+/** Mensagens de erro de login/cadastro em português e com orientação. */
+function authError(m: string) {
+  const e = m.toLowerCase()
+  if (e.includes('invalid login credentials')) return 'E-mail ou senha incorretos.'
+  if (e.includes('email not confirmed')) return 'Confirme seu e-mail pelo link que enviamos antes de entrar. Não achou? Veja a caixa de spam.'
+  if (e.includes('already registered') || e.includes('already been registered')) return 'Já existe uma conta com esse e-mail. Faça login ou use "Esqueci minha senha".'
+  if (e.includes('not authorized') || e.includes('sending') || e.includes('smtp') || e.includes('email address'))
+    return 'Não conseguimos enviar o e-mail agora. O envio de e-mails da Scalable está sendo ativado — tente de novo mais tarde.'
+  if (e.includes('rate limit') || e.includes('too many') || e.includes('security purposes')) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.'
+  if (e.includes('password') && (e.includes('at least') || e.includes('should be'))) return 'A senha precisa ter pelo menos 6 caracteres.'
+  if (e.includes('valid email') || e.includes('invalid email')) return 'Informe um e-mail válido.'
+  return m
 }

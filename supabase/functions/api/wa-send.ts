@@ -17,8 +17,11 @@ export default (
       if (!phone_number_id || !access_token) throw new HttpError(400, "Informe o Phone Number ID e o Token de acesso.");
       const check = await checkPhone({ phone_number_id, access_token });
       if (!check.ok) throw new HttpError(400, `A Meta recusou as credenciais: ${check.error}`);
+      // App Secret (opcional, recomendado): valida que as mensagens recebidas vieram mesmo da Meta
+      const app_secret = String(body.app_secret ?? "").trim() || current?.app_secret || null;
+      if (app_secret && !/^[a-z0-9]{16,64}$/i.test(app_secret)) throw new HttpError(400, "App Secret inválido. Copie em developers.facebook.com → seu app → Configurações do app → Básico → Chave secreta do app.");
       const { error } = await db.from("whatsapp_configs").upsert(
-        { company_id: company.id, phone_number_id, access_token, display_phone: check.display_phone, connected: current?.connected ?? false, updated_at: new Date().toISOString() },
+        { company_id: company.id, phone_number_id, access_token, app_secret, display_phone: check.display_phone, connected: current?.connected ?? false, updated_at: new Date().toISOString() },
         { onConflict: "company_id" },
       );
       if (error) throw new HttpError(400, error.message.includes("unique") ? "Esse número já está conectado em outra conta." : error.message);

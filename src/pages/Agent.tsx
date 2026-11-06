@@ -293,7 +293,7 @@ function AssistantMessage({ m, approvals, onApprovalChange }: { m: AgentMessage;
             ))}
           </div>
         )}
-        <Markdown text={m.content} />
+        <Markdown text={m.meta?.ai === false ? m.content.replace(/\n*_\(Modo básico:[\s\S]*?\)_\s*$/, '') : m.content} />
         {approvals.length > 0 && (
           <div className="mt-4 space-y-3">
             {approvals.map((a) => (

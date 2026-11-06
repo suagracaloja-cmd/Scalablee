@@ -85,7 +85,7 @@ export default function Finance() {
     <div>
       <PageHeader
         title="Financeiro"
-        subtitle="Contas a pagar e a receber. O agente financeiro avisa vencimentos e riscos."
+        subtitle="Contas a pagar e a receber. O Agente SCALABLE avisa vencimentos e riscos."
         actions={
           <>
             <button className="btn-ghost" onClick={() => (setEditId(null), setForm(empty('income')))}>
@@ -193,7 +193,7 @@ export default function Finance() {
               </select>
             </Field>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="accent-[#268bfd]" checked={form.paid} onChange={(e) => setForm({ ...form, paid: e.target.checked })} /> Já está {form.type === 'expense' ? 'pago' : 'recebido'}
+              <input type="checkbox" className="accent-[#48a8fc]" checked={form.paid} onChange={(e) => setForm({ ...form, paid: e.target.checked })} /> Já está {form.type === 'expense' ? 'pago' : 'recebido'}
             </label>
             <button className="btn-primary w-full" disabled={busy}>
               {busy && <Spinner />} Salvar

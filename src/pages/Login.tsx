@@ -45,11 +45,11 @@ export default function Login() {
           </Reveal>
           <div className="mt-16 max-w-lg">
             <Reveal i={1}>
-              <span className="chip bg-white/80 px-3 py-1.5 text-brand">5 agentes de IA trabalhando por você</span>
+              <span className="chip bg-white/80 px-3 py-1.5 text-brand">Agente SCALABLE · uma IA para toda a empresa</span>
               <h1 className="mt-4 text-[44px] font-extrabold leading-[1.05] tracking-tight text-ink">
                 Sua empresa no piloto automático.
               </h1>
-              <p className="mt-4 text-base text-slate-600">Marketing, vendas, financeiro, CRM e atendimento no WhatsApp — com você aprovando só o que importa.</p>
+              <p className="mt-4 text-base text-slate-600">Vendas, marketing, financeiro, atendimento e gestão em uma única conversa — com você aprovando só o que importa.</p>
             </Reveal>
           </div>
           <div className="relative mt-auto h-72">
@@ -58,7 +58,7 @@ export default function Login() {
                 <BellRing size={15} /> Alerta financeiro
               </div>
               <p className="mt-1.5 text-sm font-semibold">Aluguel vence amanhã</p>
-              <p className="text-xs text-muted">R$ 3.500,00 · Clara, agente financeira</p>
+              <p className="text-xs text-muted">R$ 3.500,00 · Agente SCALABLE</p>
             </Reveal>
             <Reveal i={4} className="absolute left-48 top-28 w-72 rotate-2 rounded-3xl bg-brand p-5 text-white shadow-2xl">
               <div className="flex items-center gap-2 text-xs font-semibold text-white/80">

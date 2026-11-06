@@ -1,23 +1,23 @@
-# Scalablee — Gestão empresarial com 5 agentes de IA
+# Scalable — Gestão empresarial com o Agente SCALABLE
 
 Plataforma web (desktop e celular) onde o dono da empresa faz login e tem:
 
-- **5 agentes de IA** personalizáveis (nome, foto, personalidade):
-  - 📣 **Marketing** – pesquisa na internet o que está bombando no segmento, analisa site/Instagram e manda ideias de posts e campanhas.
-  - 💼 **Vendas** – compara o mês com o anterior, aponta clientes sem comprar há 30+ dias, cria tarefas e sugere mensagens de reativação (com aprovação).
-  - 💰 **Financeiro** – contas vencidas, a vencer em 7 dias, cobranças, saldo do mês.
-  - 🤝 **CRM** – leads esfriando, follow-ups e pós-venda, antecipando tarefas para amanhã e depois.
-  - 💬 **Atendimento** – responde clientes no **WhatsApp Business** sozinho e pede aprovação do dono quando necessário (desconto, reclamação, informação que não tem).
-- **Assistente IA separado**: “como estão minhas vendas?” → resposta com os dados reais.
-- **Análise de site**: a IA entra no site, faz verificações técnicas (HTTPS, celular, SEO, WhatsApp, pixel…) e explica o que melhorar.
-- **Dashboard** com animação de entrada (da esquerda para a direita), linha de vendas sendo “desenhada”, números subindo e atualização em tempo real.
-- Vendas, Clientes (CRM), Financeiro (a pagar / a receber), Tarefas, Aprovações e Notificações — tudo salvo no Supabase.
+- **Agente SCALABLE** — um único agente de IA, numa conversa estilo ChatGPT/Claude (histórico de conversas, respostas formatadas, sugestões iniciais), que cobre todas as áreas da empresa:
+  - **Vendas** – resumo e lista de vendas, desempenho por produto, leads, funil, clientes inativos, registro de vendas.
+  - **Marketing** – textos, campanhas, estratégias, calendário de conteúdo (com datas comemorativas), análise de resultados com os dados reais.
+  - **Financeiro** – receitas e despesas, movimentações, comparação de períodos, preparação de lançamentos e alterações.
+  - **Atendimento** – consulta de clientes, histórico do WhatsApp, preparação de respostas e mensagens, cadastro de clientes.
+  - **Gestão** – indicadores, tarefas e pendências, planos de ação, aprovações pendentes, exclusões.
+- **Central de Aprovações** — tudo que é relevante (enviar mensagens, e-mails, publicar campanhas, lançamentos e alterações financeiras, registro de vendas, cadastro e exclusão de dados) é **preparado** pelo agente e só é executado depois que o dono aprova. Cada decisão registra operação, dados, data/hora, status, resultado e quem decidiu.
+- **WhatsApp Business** — o agente responde clientes (sozinho em dúvidas simples, se ligado em Configurações) e pede aprovação para descontos, reclamações e assuntos sensíveis.
+- **Análise geral** (botão "Rodar análise" no Dashboard) — alertas, tarefas e mensagens de reativação para aprovação.
+- **Análise de site**, Dashboard animado, Vendas, Clientes (CRM), Financeiro, Tarefas e Notificações — tudo salvo no Supabase.
 
 ## Stack
 
 - React + Vite + TypeScript + Tailwind CSS v4
-- Supabase: Auth, Postgres (com RLS por empresa), Realtime, Storage (fotos dos agentes), Edge Function `api`
-- Claude (Anthropic API) nos agentes, com busca na web para o agente de marketing
+- Supabase: Auth, Postgres (com RLS por empresa), Realtime, Storage, Edge Function `api`
+- Claude (Anthropic API) no Agente SCALABLE
 
 ## Rodar localmente
 
@@ -28,14 +28,37 @@ npm run dev
 
 O `.env` já aponta para o projeto Supabase **Scalablee** (`tmaywgdxfveczoxxrpur`). A chave usada é a *publishable* (pública).
 
-## Ativar a IA completa
+## Arquitetura do agente
 
-Sem chave, a plataforma funciona em **modo básico** (agentes por regras, assistente com resumo numérico, resposta padrão no WhatsApp).
-Para ligar a IA, adicione o secret na Edge Function:
+```
+Conversa (/api/agente) ─┐
+WhatsApp (webhook) ─────┼─▶ lib/agent.ts  (único ponto de IA: prompt, loop de ferramentas, erros)
+Análise (/api/analise) ─┤        │
+Site (/api/site) ───────┘        ▼
+                          lib/tools.ts  (27 ferramentas por área; as "_preparar" só criam aprovações)
+                                 │
+                                 ▼
+          Central de Aprovações (/api/aprovacoes → lib/approvals.ts executa após aprovação)
+```
 
-Supabase → Project Settings → Edge Functions → Secrets → `ANTHROPIC_API_KEY`
+- As consultas do agente usam o **cliente do próprio usuário** (RLS), então uma empresa nunca vê dados de outra.
+- Histórico persistente em `agent_threads` + `assistant_messages` (com as ferramentas usadas em `meta`).
+- Sem IA disponível (sem chave ou sem créditos), a conversa responde em **modo básico** com os dados reais e avisa o motivo.
 
-Opcional: `WHATSAPP_APP_SECRET` (valida a assinatura dos webhooks da Meta) e `WHATSAPP_GRAPH_VERSION` (padrão `v23.0`).
+## IA (Anthropic)
+
+Secret da Edge Function: Supabase → Project Settings → Edge Functions → Secrets → `ANTHROPIC_API_KEY`.
+
+## Integrações preparadas e desligadas (só ative com autorização)
+
+| Recurso | Situação | Como ativar |
+|---|---|---|
+| Busca na web pelo agente (pesquisa de tendências) | **Desligada** — cobra por busca na API da Anthropic | Secret `AGENT_WEB_SEARCH=on` |
+| Envio de e-mail | **Não integrado** — aprovar só registra a decisão; o envio é manual | Exige um provedor de e-mail (não contratado) |
+| Publicação em Instagram/outras redes | **Não integrada** — aprovar só registra a decisão; a publicação é manual | Exige integração com a Meta (não configurada) |
+| Métricas de redes sociais | **Não integradas** — o agente avisa que não tem esses dados | — |
+
+Opcional para WhatsApp: `WHATSAPP_APP_SECRET` (valida a assinatura dos webhooks da Meta) e `WHATSAPP_GRAPH_VERSION` (padrão `v23.0`).
 
 ## WhatsApp Business (API oficial da Meta)
 
@@ -48,13 +71,14 @@ Observação: pela regra da Meta, mensagens iniciadas pela empresa (ex.: reativa
 ## Estrutura
 
 ```
-src/                     front-end (páginas em src/pages)
-supabase/migrations/     esquema do banco (tabelas, RLS, gatilhos, storage)
+src/                     front-end (páginas em src/pages; conversa em src/pages/Agent.tsx)
+supabase/migrations/     esquema do banco (0005 = agente central, threads e aprovações auditáveis)
 supabase/functions/api/  Edge Function com as rotas:
-  agents.ts      POST /api/agents       roda os agentes
-  assistant.ts   POST /api/assistant    IA assistente
+  agente.ts      POST /api/agente       conversa com o Agente SCALABLE
+  aprovacoes.ts  POST /api/aprovacoes   aprovar/recusar operações
+  analise.ts     POST /api/analise      análise geral (alias antigo: /api/agents)
   site.ts        POST /api/site         análise do site
-  wa-send.ts     POST /api/wa-send      conectar, enviar, aprovar/recusar
+  wa-send.ts     POST /api/wa-send      conectar e enviar no WhatsApp
   wa-webhook.ts  GET|POST /api/wa-webhook  webhook da Meta
 ```
 

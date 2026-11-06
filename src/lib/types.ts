@@ -1,5 +1,3 @@
-export type AgentKind = 'marketing' | 'sales' | 'finance' | 'crm' | 'support'
-
 export type Company = {
   id: string
   name: string
@@ -9,6 +7,10 @@ export type Company = {
   instagram: string | null
   site_analysis: SiteAnalysis | null
   site_analyzed_at: string | null
+  agent_whatsapp?: boolean
+  agent_auto_reply?: boolean
+  agent_instructions?: string | null
+  agent_last_run_at?: string | null
 }
 export type SiteAnalysis = {
   score: number
@@ -20,16 +22,6 @@ export type SiteAnalysis = {
   checks: Record<string, boolean>
   stats: Record<string, number | string>
   analyzed_url: string
-}
-export type Agent = {
-  id: string
-  kind: AgentKind
-  name: string
-  avatar_url: string | null
-  personality: string | null
-  enabled: boolean
-  auto_reply: boolean
-  last_run_at: string | null
 }
 export type Customer = {
   id: string
@@ -61,7 +53,7 @@ export type Transaction = {
 }
 export type Task = {
   id: string
-  agent_kind: AgentKind | null
+  agent_kind: string | null
   customer_id: string | null
   title: string
   description: string | null
@@ -71,7 +63,7 @@ export type Task = {
 }
 export type Insight = {
   id: string
-  agent_kind: AgentKind | 'assistant'
+  agent_kind: string
   title: string
   body: string
   priority: 'low' | 'normal' | 'high'
@@ -98,15 +90,42 @@ export type Message = {
   error: string | null
   created_at: string
 }
+export type ApprovalKind =
+  | 'whatsapp_reply'
+  | 'whatsapp_outreach'
+  | 'action'
+  | 'campaign_whatsapp'
+  | 'campaign_external'
+  | 'email_send'
+  | 'finance_create'
+  | 'finance_update'
+  | 'sale_create'
+  | 'customer_upsert'
+  | 'record_delete'
 export type Approval = {
   id: string
   agent_kind: string
-  kind: 'whatsapp_reply' | 'whatsapp_outreach' | 'action'
+  kind: ApprovalKind
   conversation_id: string | null
   customer_id: string | null
   title: string
   reason: string | null
   draft: string | null
   status: 'pending' | 'approved' | 'rejected'
+  payload: Record<string, unknown> | null
+  result: string | null
+  decided_at: string | null
+  decided_by: string | null
+  decided_by_email: string | null
+  thread_id: string | null
+  created_at: string
+}
+export type Thread = { id: string; title: string; created_at: string; updated_at: string }
+export type AgentStep = { tool: string; label: string; area: string | null; areaLabel: string | null; ok: boolean }
+export type AgentMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  meta: { steps?: AgentStep[]; approvals?: string[]; ai?: boolean; aiError?: string | null } | null
   created_at: string
 }

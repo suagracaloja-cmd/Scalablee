@@ -4,9 +4,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
-import Agents from './pages/Agents'
-import AgentChat from './pages/AgentChat'
-import Assistant from './pages/Assistant'
+import Agent from './pages/Agent'
 import Sales from './pages/Sales'
 import Customers from './pages/Customers'
 import Finance from './pages/Finance'
@@ -30,9 +28,10 @@ function Gate() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="assistente" element={<Assistant />} />
-        <Route path="agentes" element={<Agents />} />
-        <Route path="agentes/:kind" element={<AgentChat />} />
+        <Route path="agente" element={<Agent />} />
+        <Route path="agente/:threadId" element={<Agent />} />
+        <Route path="assistente" element={<Navigate to="/agente" replace />} />
+        <Route path="agentes/*" element={<Navigate to="/agente" replace />} />
         <Route path="aprovacoes" element={<Approvals />} />
         <Route path="whatsapp" element={<WhatsApp />} />
         <Route path="vendas" element={<Sales />} />

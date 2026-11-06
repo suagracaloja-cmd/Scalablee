@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import type { Agent, AgentKind, Company } from './types'
+import type { Company } from './types'
 
 type Counts = { insights: number; approvals: number; conversations: number }
 
@@ -9,11 +9,8 @@ type Ctx = {
   session: Session | null
   loading: boolean
   company: Company | null
-  agents: Agent[]
-  agentByKind: (k: AgentKind) => Agent | undefined
   counts: Counts
   reloadCompany: () => Promise<void>
-  reloadAgents: () => Promise<void>
   reloadCounts: () => Promise<void>
   toast: (msg: string, type?: 'ok' | 'err') => void
 }
@@ -25,7 +22,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<Company | null>(null)
-  const [agents, setAgents] = useState<Agent[]>([])
   const [counts, setCounts] = useState<Counts>({ insights: 0, approvals: 0, conversations: 0 })
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: 'ok' | 'err' }[]>([])
 
@@ -38,11 +34,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const reloadCompany = useCallback(async () => {
     const { data } = await supabase.from('companies').select('*').maybeSingle()
     setCompany(data as Company | null)
-  }, [])
-  const reloadAgents = useCallback(async () => {
-    const { data } = await supabase.from('agents').select('*').order('created_at')
-    const order: AgentKind[] = ['marketing', 'sales', 'finance', 'crm', 'support']
-    setAgents(((data ?? []) as Agent[]).sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind)))
   }, [])
   const reloadCounts = useCallback(async () => {
     const [i, a, c] = await Promise.all([
@@ -62,7 +53,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSession(s)
       if (!s) {
         setCompany(null)
-        setAgents([])
         setLoading(false)
       }
     })
@@ -73,8 +63,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userId) return
     setLoading(true)
-    Promise.all([reloadCompany(), reloadAgents(), reloadCounts()]).finally(() => setLoading(false))
-  }, [userId, reloadCompany, reloadAgents, reloadCounts])
+    Promise.all([reloadCompany(), reloadCounts()]).finally(() => setLoading(false))
+  }, [userId, reloadCompany, reloadCounts])
 
   // Atualização em tempo real dos contadores
   useEffect(() => {
@@ -93,10 +83,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [company, reloadCounts, toast])
 
-  const agentByKind = useCallback((k: AgentKind) => agents.find((a) => a.kind === k), [agents])
-
   return (
-    <AppCtx.Provider value={{ session, loading, company, agents, agentByKind, counts, reloadCompany, reloadAgents, reloadCounts, toast }}>
+    <AppCtx.Provider value={{ session, loading, company, counts, reloadCompany, reloadCounts, toast }}>
       {children}
       <div className="fixed inset-x-4 bottom-28 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:items-end">
         {toasts.map((t) => (

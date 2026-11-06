@@ -5,14 +5,15 @@ import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval, Customer, Insight, Sale, Task, Transaction } from '../lib/types'
 import { addDays, brl, brlShort, fmtDate, relativeDay, timeAgo, toISO, today } from '../lib/format'
-import { AgentAvatar, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
+import { AgentMark, AreaChip, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
 import { DONUT_COLORS, Donut, DualBars, LineChart } from '../components/LineChart'
-import { AGENT_META } from '../lib/agents'
+import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
 
 type Range = 7 | 30 | 90
 
 export default function Dashboard() {
-  const { company, agents, agentByKind, toast, reloadCounts } = useApp()
+  const { company, toast, reloadCounts } = useApp()
+  const [ask, setAsk] = useState('')
   const navigate = useNavigate()
   const [sales, setSales] = useState<Sale[]>([])
   const [txs, setTxs] = useState<Transaction[]>([])
@@ -137,12 +138,9 @@ export default function Dashboard() {
   async function runAgents() {
     setRunning(true)
     try {
-      const r = await api<{ ai: boolean; results: { kind: string; insights: number; tasks: number; approvals: number; aiError: string | null }[] }>('agents')
-      const n = r.results.reduce((a, b) => a + b.insights, 0)
-      const tk = r.results.reduce((a, b) => a + b.tasks, 0)
-      toast(`Agentes concluíram: ${n} notificações e ${tk} tarefas novas`)
-      const err = r.results.find((x) => x.aiError)
-      if (err) toast(`IA (${err.kind}): ${err.aiError}`, 'err')
+      const r = await api<{ ai: boolean; aiError: string | null; insights: number; tasks: number; approvals: number }>('analise')
+      toast(`${AGENT_NAME} analisou a empresa: ${r.insights} notificações, ${r.tasks} tarefas novas${r.approvals ? ` e ${r.approvals} aprovação(ões)` : ''}`)
+      if (r.aiError) toast(`Análise feita com regras (IA: ${r.aiError})`, 'err')
       await load()
       reloadCounts()
     } catch (e) {
@@ -161,7 +159,7 @@ export default function Dashboard() {
     ...m.overdue.map((x) => ({ key: x.id, icon: AlertTriangle, text: x.description, sub: `Venceu ${fmtDate(x.due_date)} · ${brl(x.amount)}`, to: '/financeiro', tone: 'bg-rose-50 text-rose-600' })),
     ...insights
       .filter((i) => i.priority === 'high' && !i.read)
-      .map((i) => ({ key: i.id, icon: Sparkles, text: i.title, sub: 'Alerta dos agentes', to: i.agent_kind === 'assistant' ? '/notificacoes' : `/agentes/${i.agent_kind}`, tone: 'bg-amber-50 text-amber-600' })),
+      .map((i) => ({ key: i.id, icon: Sparkles, text: i.title, sub: `Alerta · ${areaOf(i.agent_kind).label}`, to: '/notificacoes', tone: 'bg-amber-50 text-amber-600' })),
   ].slice(0, 5)
 
   return (
@@ -175,8 +173,8 @@ export default function Dashboard() {
           <p className="mt-1 text-sm text-muted">Veja o que está acontecendo na sua empresa este mês.</p>
         </div>
         <div className="flex gap-2">
-          <Link to="/assistente" className="btn-ghost flex-1 sm:flex-none">
-            <Sparkles size={16} className="text-brand" /> Perguntar à IA
+          <Link to="/agente" className="btn-ghost flex-1 sm:flex-none">
+            <Sparkles size={16} className="text-brand-dark" /> Falar com o agente
           </Link>
           <button className="btn-primary flex-1 sm:flex-none" onClick={runAgents} disabled={running}>
             {running ? <Spinner /> : <Play size={15} fill="currentColor" />} {running ? 'Analisando…' : 'Rodar análise'}
@@ -186,7 +184,7 @@ export default function Dashboard() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <Reveal i={1} className="relative col-span-2 overflow-hidden rounded-[26px] bg-brand p-5 text-white shadow-[0_18px_40px_-18px_rgba(38,139,253,0.9)] sm:col-span-1 sm:p-6">
+        <Reveal i={1} className="relative col-span-2 overflow-hidden rounded-[26px] bg-brand p-5 text-white shadow-[0_18px_40px_-18px_rgba(72,168,252,0.9)] sm:col-span-1 sm:p-6">
           <img src="/logo-mark-white.png" alt="" className="pointer-events-none absolute -bottom-6 -right-4 w-32 rotate-12 opacity-[0.13]" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-2.5 text-sm font-semibold">
@@ -295,42 +293,48 @@ export default function Dashboard() {
         </Reveal>
       </div>
 
-      {/* Agentes */}
-      <Reveal i={7} className="card mt-4 p-5 sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold">Seus agentes de IA</h2>
-            <p className="text-xs text-muted">Toque em um agente para conversar com ele</p>
+      {/* Agente SCALABLE */}
+      <Reveal i={7} className="card mt-4 overflow-hidden">
+        <div className="grid lg:grid-cols-[1.1fr_1fr]">
+          <div className="relative overflow-hidden bg-graphite p-6 text-white sm:p-7">
+            <img src="/logo-mark-white.png" alt="" className="pointer-events-none absolute -bottom-10 -right-6 w-44 rotate-12 opacity-[0.07]" />
+            <div className="relative flex items-center gap-3">
+              <AgentMark size={44} rounded="rounded-2xl" />
+              <div>
+                <div className="text-lg font-bold">{AGENT_NAME}</div>
+                <div className="flex items-center gap-1.5 text-xs text-white/60">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Vendas, marketing, financeiro, atendimento e gestão
+                </div>
+              </div>
+            </div>
+            <form
+              className="relative mt-6 flex items-center gap-2 rounded-full bg-white/10 p-1.5 pl-5 focus-within:bg-white/15"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (ask.trim()) navigate(`/agente?q=${encodeURIComponent(ask.trim())}`)
+              }}
+            >
+              <input className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/45" placeholder="Pergunte qualquer coisa sobre a sua empresa…" value={ask} onChange={(e) => setAsk(e.target.value)} />
+              <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-ink" aria-label="Perguntar">
+                <ArrowUpRight size={18} />
+              </button>
+            </form>
           </div>
-          <Link to="/agentes" className="flex h-9 w-9 items-center justify-center rounded-full border border-line hover:bg-panel-2">
-            <ArrowUpRight size={16} />
-          </Link>
-        </div>
-        <div className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-5 lg:overflow-visible">
-          {agents.map((a, i) => {
-            const meta = AGENT_META[a.kind]
-            const last = insights.find((x) => x.agent_kind === a.kind)
-            return (
-              <Reveal key={a.id} i={8 + i} step={70} className="min-w-[230px] snap-start lg:min-w-0">
-                <button onClick={() => navigate(`/agentes/${a.kind}`)} className="group flex h-full w-full flex-col rounded-3xl bg-panel-2 p-4 text-left transition hover:-translate-y-0.5 hover:bg-brand-soft">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <AgentAvatar agent={a} size={46} />
-                      <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-panel-2 ${a.enabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate font-bold">{a.name}</div>
-                      <div className={`text-xs font-semibold ${meta.fg}`}>{meta.label}</div>
-                    </div>
-                  </div>
-                  <p className="mt-3 line-clamp-2 min-h-[2.5rem] text-xs text-muted">{last ? last.title : 'Pronto para te ajudar. Toque para conversar.'}</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand">
-                    Conversar <ChevronRight size={14} className="transition group-hover:translate-x-0.5" />
+          <div className="flex flex-col gap-2 p-5 sm:p-6">
+            <div className="mb-1 text-xs font-semibold text-muted">Comece por aqui</div>
+            {SUGGESTIONS.slice(0, 4).map((sg) => {
+              const a = areaOf(sg.area)
+              return (
+                <button key={sg.text} onClick={() => navigate(`/agente?q=${encodeURIComponent(sg.text)}`)} className="group flex items-center gap-3 rounded-2xl p-2.5 text-left text-sm transition hover:bg-panel-2">
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${a.cls}`}>
+                    <a.icon size={15} />
                   </span>
+                  <span className="min-w-0 flex-1 font-medium">{sg.text}</span>
+                  <ChevronRight size={15} className="shrink-0 text-muted transition group-hover:translate-x-0.5" />
                 </button>
-              </Reveal>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </Reveal>
 
@@ -387,13 +391,19 @@ export default function Dashboard() {
           ) : (
             <ul className="space-y-2">
               {m.tasksSoon.map((t) => {
-                const ag = t.agent_kind ? agentByKind(t.agent_kind) : undefined
                 const rel = relativeDay(t.due_date)
                 return (
                   <li key={t.id} className="flex items-center gap-3 rounded-2xl bg-panel-2 p-3">
-                    {ag ? <AgentAvatar agent={ag} size={32} rounded="rounded-xl" /> : <span className="h-8 w-8 rounded-xl bg-brand-soft" />}
+                    {(() => {
+                      const a = areaOf(t.agent_kind)
+                      return (
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${a.cls}`}>
+                          <a.icon size={15} />
+                        </span>
+                      )
+                    })()}
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.title}</span>
-                    <span className={`chip ${rel === 'Atrasada' ? 'bg-rose-50 text-rose-600' : rel === 'Hoje' ? 'bg-brand text-white' : 'bg-panel text-ink'}`}>{rel}</span>
+                    <span className={`chip ${rel === 'Atrasada' ? 'bg-rose-50 text-rose-600' : rel === 'Hoje' ? 'bg-brand text-ink' : 'bg-panel text-ink'}`}>{rel}</span>
                   </li>
                 )
               })}
@@ -402,7 +412,7 @@ export default function Dashboard() {
         </Reveal>
       </div>
 
-      {/* Vendas recentes + últimas dos agentes */}
+      {/* Vendas recentes + últimas do agente */}
       <div className="mt-4 grid gap-4 xl:grid-cols-3 [&>*]:min-w-0">
         <Reveal i={16} className="card p-5 sm:p-6 xl:col-span-2">
           <div className="mb-3 flex items-center justify-between">
@@ -469,17 +479,20 @@ export default function Dashboard() {
 
         <Reveal i={17} className="card p-5 sm:p-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Últimas dos agentes</h2>
+            <h2 className="text-lg font-bold">Alertas do agente</h2>
             <Link to="/notificacoes" className="text-xs font-bold text-brand">
               Ver todas
             </Link>
           </div>
           <div className="space-y-1">
             {insights.slice(0, 4).map((n) => (
-              <Link key={n.id} to={n.agent_kind === 'assistant' ? '/notificacoes' : `/agentes/${n.agent_kind}`} className="flex gap-3 rounded-2xl p-2.5 transition hover:bg-panel-2">
-                <AgentAvatar agent={n.agent_kind !== 'assistant' ? agentByKind(n.agent_kind) : undefined} kind={n.agent_kind} size={36} rounded="rounded-xl" />
+              <Link key={n.id} to="/notificacoes" className="flex gap-3 rounded-2xl p-2.5 transition hover:bg-panel-2">
+                <AgentMark size={36} rounded="rounded-xl" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold">{n.title}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-sm font-semibold">{n.title}</span>
+                  </div>
+                  <AreaChip kind={n.agent_kind} className="mt-0.5" />
                   <p className="line-clamp-1 text-xs text-muted">{n.body}</p>
                 </div>
                 <span className="shrink-0 text-[10px] text-muted">{timeAgo(n.created_at)}</span>

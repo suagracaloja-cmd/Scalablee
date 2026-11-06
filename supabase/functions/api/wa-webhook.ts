@@ -1,7 +1,8 @@
-// Webhook da WhatsApp Cloud API (Meta). Recebe mensagens dos clientes,
-// o agente de atendimento responde sozinho e, quando precisa, pede aprovação ao dono.
+// Webhook da WhatsApp Cloud API (Meta). Recebe mensagens dos clientes;
+// o Agente SCALABLE responde sozinho e, quando precisa, pede aprovação ao dono.
 import { admin, brl, cors, json } from "./lib/common.ts";
-import { ask, hasAI, parseJSON } from "./lib/ai.ts";
+import { hasAI, modelCreate } from "./lib/ai.ts";
+import { agentWhatsAppReply, AGENT_NAME } from "./lib/agent.ts";
 import { sendAndLog, type WaConfig } from "./lib/whatsapp.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
@@ -110,13 +111,18 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
   if (dup) return; // mensagem repetida (Meta reenviou)
   await db.from("conversations").update({ unread: (conv.unread ?? 0) + 1 }).eq("id", conv.id);
 
-  const { data: agent } = await db.from("agents").select("*").eq("company_id", companyId).eq("kind", "support").maybeSingle();
-  if (!agent?.enabled || conv.ai_paused) return;
+  // Configuração do Agente SCALABLE para o WhatsApp (por empresa)
+  const { data: co } = await db
+    .from("companies")
+    .select("name,segment,description,website,instagram,site_analysis,agent_whatsapp,agent_auto_reply,agent_instructions")
+    .eq("id", companyId)
+    .single();
+  if (!co || co.agent_whatsapp === false || conv.ai_paused) return;
 
-  const decision = await decideReply(db, companyId, agent, conv.id, text);
+  const decision = await decideReply(db, companyId, co, conv.id, text);
   if (!decision) return;
 
-  if (decision.needs_approval || !agent.auto_reply) {
+  if (decision.needs_approval || !co.agent_auto_reply) {
     const { data: draft } = await db
       .from("messages")
       .insert({ company_id: companyId, conversation_id: conv.id, direction: "out", author: "agent", body: decision.reply, status: "pending_approval" })
@@ -130,8 +136,9 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
       customer_id: customer!.id,
       message_id: draft!.id,
       title: `Resposta para ${name}`,
-      reason: decision.reason || (agent.auto_reply ? "O agente pediu sua aprovação" : "Resposta automática desligada"),
+      reason: decision.reason || (co.agent_auto_reply ? "O Agente SCALABLE pediu sua aprovação" : "Resposta automática desligada"),
       draft: decision.reply,
+      payload: { cliente: name, mensagem_do_cliente: text.slice(0, 500), resposta_sugerida: decision.reply },
     });
     await db.from("insights").insert({
       company_id: companyId,
@@ -147,23 +154,12 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
 }
 
 type Decision = { reply: string; needs_approval: boolean; reason?: string };
+type Co = { name: string; segment: string | null; description: string | null; website: string | null; instagram: string | null; site_analysis: unknown; agent_instructions: string | null };
 
-async function decideReply(
-  db: SupabaseClient,
-  companyId: string,
-  agent: { name: string; personality: string | null },
-  conversationId: string,
-  text: string,
-): Promise<Decision | null> {
-  const { data: company } = await db.from("companies").select("name,segment,description,website,site_analysis").eq("id", companyId).single();
-
+async function decideReply(db: SupabaseClient, companyId: string, co: Co, conversationId: string, text: string): Promise<Decision | null> {
   if (!hasAI()) {
-    return {
-      reply: `Olá! Aqui é ${agent.name}, da ${company?.name}. Recebemos sua mensagem e já vamos te responder 😊`,
-      needs_approval: false,
-    };
+    return { reply: `Olá! Aqui é o atendimento da ${co.name}. Recebemos sua mensagem e já vamos te responder 😊`, needs_approval: false };
   }
-
   const { data: history } = await db
     .from("messages")
     .select("direction,body,status")
@@ -176,35 +172,17 @@ async function decideReply(
     .reverse()
     .map((m) => `${m.direction === "in" ? "Cliente" : "Empresa"}: ${m.body}`)
     .join("\n");
-
-  // Produtos mais vendidos ajudam o agente a responder sobre preços.
   const { data: sales } = await db.from("sales").select("description,amount").eq("company_id", companyId).order("sold_at", { ascending: false }).limit(40);
   const catalog = [...new Map((sales ?? []).map((s) => [s.description.toLowerCase(), `${s.description}: ${brl(Number(s.amount))}`])).values()].slice(0, 15);
-  const site = company?.site_analysis as { business?: string; products?: string[] } | null;
-
-  const res = await ask({
-    system: `Você é ${agent.name}, atendente virtual no WhatsApp da empresa "${company?.name}"${company?.segment ? ` (${company.segment})` : ""}.
-Personalidade: ${agent.personality ?? "simpática e objetiva"}.
-Sobre a empresa: ${company?.description ?? site?.business ?? "—"}
-${site?.products?.length ? `Produtos/serviços: ${site.products.join(", ")}` : ""}
-${catalog.length ? `Preços praticados recentemente: ${catalog.join("; ")}` : ""}
-${company?.website ? `Site: ${company.website}` : ""}
-
-Regras:
-- Responda como no WhatsApp: curto, humano, em português do Brasil, no máximo 3 frases.
-- Nunca invente preços, prazos, estoque ou políticas que não estejam acima.
-- Marque needs_approval=true quando: o cliente pedir desconto, reembolso, troca, negociação, orçamento sob medida, reclamar, ou quando você não tiver a informação para responder com segurança. Nesse caso escreva mesmo assim uma resposta sugerida para o dono aprovar.
-- Para saudações e dúvidas simples já respondidas pelas informações acima, needs_approval=false.
-Responda SOMENTE com JSON: {"reply":"...","needs_approval":true|false,"reason":"motivo curto se precisar aprovação"}`,
-    messages: [{ role: "user", content: `Conversa até agora:\n${transcript}\n\nÚltima mensagem do cliente: ${text}` }],
-    effort: "low",
-    maxTokens: 2000,
-  });
-  const d = parseJSON<Decision>(res.text);
-  if (!d?.reply) return { reply: res.text || "Recebemos sua mensagem, já te respondemos!", needs_approval: true, reason: "Resposta não estruturada" };
-  return d;
+  const site = co.site_analysis as { products?: string[] } | null;
+  try {
+    return await agentWhatsAppReply({ company: co, products: site?.products ?? [], catalog, transcript, lastMessage: text, create: modelCreate });
+  } catch (e) {
+    // IA indisponível: não responde sozinho, deixa para o dono
+    console.error(`[wa-webhook] ${AGENT_NAME} indisponível:`, e instanceof Error ? e.message : e);
+    return { reply: `Olá! Aqui é o atendimento da ${co.name}. Recebemos sua mensagem e já vamos te responder 😊`, needs_approval: true, reason: "A IA não respondeu (indisponível no momento)" };
+  }
 }
-
 async function validSignature(body: string, header: string | null, secret: string) {
   if (!header?.startsWith("sha256=")) return false;
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);

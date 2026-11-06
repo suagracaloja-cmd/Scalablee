@@ -1,7 +1,6 @@
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { ArrowDownRight, ArrowUpRight, X } from 'lucide-react'
-import { AGENT_META } from '../lib/agents'
-import type { Agent, AgentKind } from '../lib/types'
+import { areaOf } from '../lib/areas'
 import { useCountUp } from '../hooks/useCountUp'
 import { brl } from '../lib/format'
 
@@ -35,22 +34,23 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   )
 }
 
-/** Foto do agente: imagem escolhida pelo dono ou ícone da área. */
-export function AgentAvatar({ agent, kind, size = 40, rounded = 'rounded-2xl' }: { agent?: Agent; kind?: AgentKind | 'assistant'; size?: number; rounded?: string }) {
-  const k = agent?.kind ?? kind ?? 'assistant'
-  if (agent?.avatar_url)
-    return <img src={agent.avatar_url} alt={agent.name} className={`shrink-0 object-cover ${rounded} bg-panel-2`} style={{ width: size, height: size }} />
-  if (k === 'assistant')
-    return (
-      <div className={`flex shrink-0 items-center justify-center bg-brand ${rounded}`} style={{ width: size, height: size }}>
-        <img src="/logo-mark-white.png" alt="" style={{ width: size * 0.55 }} />
-      </div>
-    )
-  const m = AGENT_META[k]
+/** Identidade única do Agente SCALABLE (símbolo da marca). */
+export function AgentMark({ size = 36, rounded = 'rounded-2xl', className = '' }: { size?: number; rounded?: string; className?: string }) {
   return (
-    <div className={`flex shrink-0 items-center justify-center ${m.soft} ${m.fg} ${rounded}`} style={{ width: size, height: size }}>
-      <m.icon size={size * 0.48} strokeWidth={2} />
+    <div className={`flex shrink-0 items-center justify-center bg-brand ${rounded} ${className}`} style={{ width: size, height: size }}>
+      <img src="/logo-mark-white.png" alt="Agente SCALABLE" style={{ width: size * 0.56 }} />
     </div>
+  )
+}
+
+/** Etiqueta da área (Vendas, Marketing, Financeiro, Atendimento, Gestão). */
+export function AreaChip({ kind, className = '' }: { kind?: string | null; className?: string }) {
+  const a = areaOf(kind)
+  return (
+    <span className={`chip ${a.cls} ${className}`}>
+      <a.icon size={11} strokeWidth={2.4} />
+      {a.label}
+    </span>
   )
 }
 
@@ -159,7 +159,7 @@ export const STATUS_LABEL: Record<string, string> = {
 /** Cartão de status com faixa colorida no topo (estilo "Order list"). */
 export function StatusCard({ i = 0, label, value, sub, tone }: { i?: number; label: string; value: ReactNode; sub?: ReactNode; tone: 'blue' | 'green' | 'amber' | 'rose' | 'slate' | 'violet' }) {
   const tones = {
-    blue: 'bg-brand text-white',
+    blue: 'bg-brand text-ink',
     green: 'bg-emerald-400 text-emerald-950',
     amber: 'bg-amber-300 text-amber-950',
     rose: 'bg-rose-400 text-white',

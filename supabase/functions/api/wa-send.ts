@@ -1,10 +1,11 @@
-// Ações do dono: conectar WhatsApp, enviar mensagens e aprovar/recusar o que os agentes sugeriram.
+// Ações do dono no WhatsApp: conectar e enviar mensagens. (approve/reject mantidos por compatibilidade → Central de Aprovações)
 import { handle, HttpError, json, requireCompany } from "./lib/common.ts";
-import { checkPhone, getConfig, sendAndLog, sendText } from "./lib/whatsapp.ts";
+import { checkPhone, getConfig, sendAndLog } from "./lib/whatsapp.ts";
+import { ApprovalError, decideApproval } from "./lib/approvals.ts";
 
 export default (
   handle(async (req) => {
-    const { db, company } = await requireCompany(req);
+    const { db, userDb, company, user } = await requireCompany(req);
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
 
@@ -38,40 +39,13 @@ export default (
     }
 
     if (action === "approve" || action === "reject") {
-      const { data: ap } = await db.from("approvals").select("*").eq("id", body.approval_id).eq("company_id", company.id).single();
-      if (!ap) throw new HttpError(404, "Aprovação não encontrada");
-      if (ap.status !== "pending") throw new HttpError(409, "Essa aprovação já foi decidida.");
-      const decided = { decided_at: new Date().toISOString() };
-
-      if (action === "reject") {
-        await db.from("approvals").update({ status: "rejected", ...decided }).eq("id", ap.id);
-        if (ap.message_id) await db.from("messages").update({ status: "rejected" }).eq("id", ap.message_id);
-        return json({ ok: true });
+      const env = { db: userDb, admin: db, companyId: company.id, userId: user.id, userEmail: user.email };
+      try {
+        return json(await decideApproval(env, { action, id: body.approval_id, text: body.text }));
+      } catch (e) {
+        if (e instanceof ApprovalError) throw new HttpError(e.status, e.message);
+        throw e;
       }
-
-      const text = String(body.text ?? ap.draft ?? "").trim();
-      if (ap.kind === "whatsapp_reply" || ap.kind === "whatsapp_outreach") {
-        if (!cfg) throw new HttpError(400, "Conecte o WhatsApp primeiro.");
-        if (!text) throw new HttpError(400, "Mensagem vazia");
-        if (ap.kind === "whatsapp_reply") {
-          const { data: conv } = await db.from("conversations").select("*").eq("id", ap.conversation_id).single();
-          const r = await sendText(cfg, conv.wa_id, text);
-          await db
-            .from("messages")
-            .update({ body: text, status: r.error ? "failed" : "sent", wa_message_id: r.id ?? null, error: r.error ?? null, created_at: new Date().toISOString() })
-            .eq("id", ap.message_id);
-          await db.from("conversations").update({ last_message_at: new Date().toISOString(), unread: 0 }).eq("id", conv.id);
-          if (r.error) throw new HttpError(400, r.error);
-        } else {
-          const { data: cust } = await db.from("customers").select("*").eq("id", ap.customer_id).single();
-          if (!cust?.phone) throw new HttpError(400, "Cliente sem telefone cadastrado.");
-          const r = await sendAndLog(db, cfg, { companyId: company.id, waId: cust.phone, body: text, author: "agent", customerId: cust.id, contactName: cust.name });
-          if (r.error) throw new HttpError(400, r.error);
-          await db.from("customers").update({ last_contact_at: new Date().toISOString() }).eq("id", cust.id);
-        }
-      }
-      await db.from("approvals").update({ status: "approved", draft: text || ap.draft, ...decided }).eq("id", ap.id);
-      return json({ ok: true });
     }
 
     throw new HttpError(400, "Ação inválida");

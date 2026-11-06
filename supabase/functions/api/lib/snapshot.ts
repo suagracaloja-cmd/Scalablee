@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
-import { addDays, brl, isoDate, type Company } from "./common.ts";
+import { addDays, brl, isoDate } from "./util.ts";
+import type { Company } from "./common.ts";
 
 type Customer = { id: string; name: string; phone: string | null; status: string; last_contact_at: string | null; created_at: string };
 type Sale = { id: string; customer_id: string | null; description: string; amount: number; status: string; sold_at: string };

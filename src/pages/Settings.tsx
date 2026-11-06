@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { CheckCircle2, Globe, RefreshCw, XCircle } from 'lucide-react'
+import { AGENT_NAME } from '../lib/areas'
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { SiteAnalysis } from '../lib/types'
 import { fmtDate } from '../lib/format'
-import { Field, PageHeader, Reveal, Spinner } from '../components/ui'
+import { AgentMark, Field, PageHeader, Reveal, Spinner } from '../components/ui'
 
 const LABELS: Record<string, string> = {
   https: 'Site seguro (HTTPS)',
@@ -29,6 +30,12 @@ export default function Settings() {
     instagram: company?.instagram ?? '',
   })
   const [busy, setBusy] = useState(false)
+  const [ag, setAg] = useState({
+    agent_instructions: company?.agent_instructions ?? '',
+    agent_whatsapp: company?.agent_whatsapp ?? true,
+    agent_auto_reply: company?.agent_auto_reply ?? true,
+  })
+  const [savingAg, setSavingAg] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const a = company?.site_analysis as SiteAnalysis | null
 
@@ -43,6 +50,19 @@ export default function Settings() {
     if (error) return toast(error.message, 'err')
     await reloadCompany()
     toast('Dados salvos')
+  }
+
+  async function saveAgent(e: FormEvent) {
+    e.preventDefault()
+    setSavingAg(true)
+    const { error } = await supabase
+      .from('companies')
+      .update({ ...ag, agent_instructions: ag.agent_instructions.trim() || null })
+      .eq('id', company!.id)
+    setSavingAg(false)
+    if (error) return toast(error.message, 'err')
+    await reloadCompany()
+    toast('Configurações do agente salvas')
   }
 
   async function analyze() {
@@ -61,7 +81,7 @@ export default function Settings() {
 
   return (
     <div>
-      <PageHeader title="Configurações" subtitle="Dados da empresa usados pelos agentes." />
+      <PageHeader title="Configurações" subtitle="Dados da empresa e configurações do Agente SCALABLE." />
       <div className="grid gap-4 lg:grid-cols-2">
         <Reveal i={1} className="card p-5">
           <form onSubmit={save} className="space-y-3">
@@ -90,6 +110,45 @@ export default function Settings() {
         </Reveal>
 
         <Reveal i={2} className="card p-5">
+          <form onSubmit={saveAgent} className="space-y-4">
+            <div className="flex items-center gap-3">
+              <AgentMark size={40} />
+              <div>
+                <h2 className="font-semibold">{AGENT_NAME}</h2>
+                <p className="text-xs text-muted">
+                  Um único agente para vendas, marketing, financeiro, atendimento e gestão.
+                  {company?.agent_last_run_at ? ` Última análise: ${fmtDate(company.agent_last_run_at)}.` : ''}
+                </p>
+              </div>
+            </div>
+            <Field label="Instruções para o agente (tom de voz, regras, o que evitar…)">
+              <textarea
+                className="input min-h-28"
+                value={ag.agent_instructions}
+                onChange={(e) => setAg({ ...ag, agent_instructions: e.target.value })}
+                placeholder="Ex.: Fale de forma próxima e use “você”. Nunca ofereça desconto acima de 10%. Entregamos só na capital."
+              />
+            </Field>
+            <Toggle
+              checked={ag.agent_whatsapp}
+              onChange={(v) => setAg({ ...ag, agent_whatsapp: v })}
+              title="Atender clientes no WhatsApp"
+              text="O agente lê as mensagens recebidas e prepara as respostas."
+            />
+            <Toggle
+              checked={ag.agent_auto_reply}
+              disabled={!ag.agent_whatsapp}
+              onChange={(v) => setAg({ ...ag, agent_auto_reply: v })}
+              title="Responder sozinho dúvidas simples"
+              text="Desligado: toda resposta vai para a Central de Aprovações antes de ser enviada. Pedidos de desconto, reclamações e assuntos sensíveis sempre pedem sua aprovação."
+            />
+            <button className="btn-primary w-full" disabled={savingAg}>
+              {savingAg && <Spinner />} Salvar configurações do agente
+            </button>
+          </form>
+        </Reveal>
+
+        <Reveal i={3} className="card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-semibold">
               <Globe size={18} /> Análise do site pela IA
@@ -106,7 +165,7 @@ export default function Settings() {
               <div className="flex items-center gap-4">
                 <div className="relative h-20 w-20 shrink-0">
                   <svg viewBox="0 0 36 36" className="h-20 w-20 -rotate-90">
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#262741" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#eef0f3" strokeWidth="3" />
                     <circle
                       cx="18"
                       cy="18"
@@ -162,5 +221,20 @@ export default function Settings() {
         </Reveal>
       </div>
     </div>
+  )
+}
+
+function Toggle({ checked, onChange, title, text, disabled }: { checked: boolean; onChange: (v: boolean) => void; title: string; text: string; disabled?: boolean }) {
+  return (
+    <label className={`flex cursor-pointer items-start gap-3 rounded-2xl bg-panel-2 p-3 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}>
+      <input type="checkbox" className="peer sr-only" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span className={`relative mt-0.5 h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-brand ${checked ? 'bg-brand' : 'bg-slate-300'}`}>
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'left-[18px]' : 'left-0.5'}`} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-xs text-muted">{text}</span>
+      </span>
+    </label>
   )
 }

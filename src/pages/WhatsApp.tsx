@@ -2,14 +2,15 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, Bot, Check, Copy, MessageCircle, Send, Settings2, X } from 'lucide-react'
 import { api, supabase, WEBHOOK_URL } from '../lib/supabase'
 import { useApp } from '../lib/store'
+import { AGENT_NAME } from '../lib/areas'
 import type { Approval, Conversation, Message } from '../lib/types'
 import { fmtTime, timeAgo } from '../lib/format'
-import { AgentAvatar, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { AgentMark, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 
 type Status = { phone_number_id: string; display_phone: string | null; verify_token: string; connected: boolean } | null
 
 export default function WhatsApp() {
-  const { company, agentByKind, toast, reloadCounts } = useApp()
+  const { company, toast, reloadCounts } = useApp()
   const [status, setStatus] = useState<Status | undefined>(undefined)
   const [showSetup, setShowSetup] = useState(false)
   const [convs, setConvs] = useState<Conversation[]>([])
@@ -19,7 +20,6 @@ export default function WhatsApp() {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const end = useRef<HTMLDivElement>(null)
-  const agent = agentByKind('support')
 
   const loadStatus = useCallback(async () => {
     const { data } = await supabase.rpc('whatsapp_status')
@@ -86,7 +86,7 @@ export default function WhatsApp() {
 
   async function decide(a: Approval, action: 'approve' | 'reject', body?: string) {
     try {
-      await api('wa-send', { action, approval_id: a.id, text: body })
+      await api('aprovacoes', { action, id: a.id, text: body })
       toast(action === 'approve' ? 'Mensagem enviada!' : 'Sugestão descartada')
       if (active) loadMsgs(active.id)
       reloadCounts()
@@ -131,7 +131,7 @@ export default function WhatsApp() {
           <Empty
             icon={<MessageCircle size={28} />}
             title="WhatsApp ainda não conectado"
-            text={`Conecte o WhatsApp Business (API oficial da Meta). ${agent?.name ?? 'Seu agente'} vai responder seus clientes automaticamente e pedir sua aprovação quando for necessário.`}
+            text={`Conecte o WhatsApp Business (API oficial da Meta). ${AGENT_NAME} vai responder seus clientes automaticamente e pedir sua aprovação quando for necessário.`}
             action={
               <button className="btn-primary" onClick={() => setShowSetup(true)}>
                 Conectar agora
@@ -193,14 +193,14 @@ export default function WhatsApp() {
                               ? 'rounded-br-md border border-dashed border-amber-400/60 bg-amber-50'
                               : m.status === 'rejected'
                                 ? 'rounded-br-md bg-slate-100 text-muted line-through'
-                                : 'rounded-br-md bg-brand text-white'
+                                : 'rounded-br-md bg-brand-soft text-ink'
                         }`}
                       >
                         {m.direction === 'out' && (
                           <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
                             {m.author === 'agent' ? (
                               <>
-                                <AgentAvatar agent={agent} size={14} /> {agent?.name ?? 'IA'}
+                                <AgentMark size={14} rounded="rounded" /> {AGENT_NAME}
                               </>
                             ) : (
                               'Você'

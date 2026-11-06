@@ -1,6 +1,7 @@
 // A IA entra no site da empresa, avalia e explica o que melhorar.
 import { handle, HttpError, json, requireCompany } from "./lib/common.ts";
-import { ask, hasAI, parseJSON } from "./lib/ai.ts";
+import { hasAI, modelCreate } from "./lib/ai.ts";
+import { agentSiteReview } from "./lib/agent.ts";
 
 type Analysis = {
   score: number;
@@ -84,19 +85,16 @@ export default (
     };
 
     if (hasAI()) {
-      const res = await ask({
-        system: `Você é um consultor de marketing digital e vendas online. Avalie o site de uma empresa brasileira e explique ao dono, em linguagem simples, o que está bom e o que melhorar para vender mais.
-Responda SOMENTE com JSON: {"score":0-100,"summary":"3-4 frases","business":"o que a empresa vende, em 1 frase","strengths":["..."],"improvements":["ação concreta ..."],"products":["produtos/serviços identificados"]}. Máximo 5 itens por lista.`,
-        messages: [
-          {
-            role: "user",
-            content: `URL: ${finalUrl}\nTítulo: ${title}\nMeta descrição: ${metaDesc}\nTítulos (h1-h3): ${headings.join(" | ")}\nVerificações técnicas: ${JSON.stringify(checks)}\nEstatísticas: ${JSON.stringify(stats)}\n\nTexto da página:\n${text}`,
-          },
-        ],
-        effort: "low",
-      });
-      const p = parseJSON<Partial<Analysis>>(res.text);
-      if (p) analysis = { ...analysis, ...p, score: Math.round(((Number(p.score) || base) + base) / 2), checks, stats, analyzed_url: finalUrl };
+      try {
+        const p = (await agentSiteReview({
+          company,
+          pageInfo: `URL: ${finalUrl}\nTítulo: ${title}\nMeta descrição: ${metaDesc}\nTítulos (h1-h3): ${headings.join(" | ")}\nVerificações técnicas: ${JSON.stringify(checks)}\nEstatísticas: ${JSON.stringify(stats)}\n\nTexto da página:\n${text}`,
+          create: modelCreate,
+        })) as Partial<Analysis> | null;
+        if (p) analysis = { ...analysis, ...p, score: Math.round(((Number(p.score) || base) + base) / 2), checks, stats, analyzed_url: finalUrl };
+      } catch (e) {
+        console.error("[site] IA indisponível, usando só a verificação técnica:", e instanceof Error ? e.message : e);
+      }
     }
 
     await db.from("companies").update({ website: url, site_analysis: analysis, site_analyzed_at: new Date().toISOString() }).eq("id", company.id);

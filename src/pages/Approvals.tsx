@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, CheckCircle2, X } from 'lucide-react'
-import { api, supabase } from '../lib/supabase'
+import { CheckCircle2 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval } from '../lib/types'
-import { timeAgo } from '../lib/format'
-import { AgentAvatar, Empty, PageHeader, Reveal, Spinner } from '../components/ui'
-
-const KIND_LABEL = { whatsapp_reply: 'Resposta no WhatsApp', whatsapp_outreach: 'Mensagem para cliente', action: 'Ação' }
+import { AREA_FILTERS, AGENT_NAME, areaOf } from '../lib/areas'
+import { Empty, PageHeader, Reveal, Spinner } from '../components/ui'
+import ApprovalCard from '../components/ApprovalCard'
 
 export default function Approvals() {
-  const { agentByKind, reloadCounts, toast, company } = useApp()
+  const { company } = useApp()
   const [tab, setTab] = useState<'pending' | 'done'>('pending')
+  const [area, setArea] = useState<string>('all')
   const [items, setItems] = useState<Approval[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    let q = supabase.from('approvals').select('*').order('created_at', { ascending: false }).limit(100)
+    let q = supabase.from('approvals').select('*').order(tab === 'pending' ? 'created_at' : 'decided_at', { ascending: false, nullsFirst: false }).limit(200)
     q = tab === 'pending' ? q.eq('status', 'pending') : q.neq('status', 'pending')
     const { data } = await q
     setItems((data ?? []) as Approval[])
@@ -35,83 +35,49 @@ export default function Approvals() {
     }
   }, [company, load])
 
-  async function decide(a: Approval, action: 'approve' | 'reject', text: string) {
-    try {
-      await api('wa-send', { action, approval_id: a.id, text })
-      toast(action === 'approve' ? (a.kind === 'action' ? 'Aprovado!' : 'Aprovado e enviado no WhatsApp!') : 'Recusado')
-      load()
-      reloadCounts()
-    } catch (e) {
-      toast(e instanceof Error ? e.message : String(e), 'err')
-    }
-  }
+  const norm = (k: string) => (k === 'management' ? 'crm' : k)
+  const shown = items.filter((a) => area === 'all' || norm(a.agent_kind) === area)
 
   return (
     <div>
-      <PageHeader title="Aprovações" subtitle="Os agentes resolvem sozinhos e só pedem sua decisão quando realmente é necessário." />
-      <Reveal i={1} className="mb-4 inline-flex rounded-2xl border border-line bg-panel p-1 text-sm">
-        {(['pending', 'done'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 ${tab === t ? 'bg-brand text-white' : 'text-muted'}`}>
-            {t === 'pending' ? 'Pendentes' : 'Histórico'}
-          </button>
-        ))}
+      <PageHeader title="Central de Aprovações" subtitle={`O ${AGENT_NAME} prepara envios, campanhas, lançamentos e exclusões — nada acontece sem a sua decisão. Cada decisão fica registrada.`} />
+      <Reveal i={1} className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="inline-flex rounded-full bg-panel p-1 text-sm">
+          {(['pending', 'done'] as const).map((t) => (
+            <button key={t} onClick={() => (setLoading(true), setTab(t))} className={`h-9 rounded-full px-5 font-semibold ${tab === t ? 'bg-ink text-white' : 'text-muted'}`}>
+              {t === 'pending' ? 'Pendentes' : 'Histórico'}
+            </button>
+          ))}
+        </div>
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+          {['all', ...AREA_FILTERS].map((k) => (
+            <button key={k} onClick={() => setArea(k)} className={`h-9 shrink-0 rounded-full px-3.5 text-xs font-semibold ${area === k ? 'bg-ink text-white' : 'bg-panel text-ink'}`}>
+              {k === 'all' ? 'Todas as áreas' : areaOf(k).label}
+            </button>
+          ))}
+        </div>
       </Reveal>
       {loading ? (
-        <Spinner />
-      ) : items.length === 0 ? (
+        <div className="flex justify-center py-16">
+          <Spinner size={22} />
+        </div>
+      ) : shown.length === 0 ? (
         <Reveal i={2} className="card">
-          <Empty icon={<CheckCircle2 size={26} />} title={tab === 'pending' ? 'Nada para aprovar' : 'Sem histórico'} text="Quando um agente precisar da sua decisão, aparece aqui e você recebe uma notificação." />
+          <Empty
+            icon={<CheckCircle2 size={24} />}
+            title={tab === 'pending' ? 'Nada aguardando aprovação' : 'Nenhuma decisão registrada'}
+            text={`Quando o ${AGENT_NAME} preparar uma operação que precisa da sua autorização, ela aparece aqui.`}
+          />
         </Reveal>
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {items.map((a, i) => (
-            <Item key={a.id} a={a} i={i} agent={agentByKind(a.agent_kind as never)} onDecide={decide} />
+        <div className="grid gap-4 xl:grid-cols-2">
+          {shown.map((a, i) => (
+            <Reveal key={a.id} i={Math.min(i, 8) + 2} step={60}>
+              <ApprovalCard a={a} onChange={load} />
+            </Reveal>
           ))}
         </div>
       )}
     </div>
-  )
-}
-
-function Item({ a, i, agent, onDecide }: { a: Approval; i: number; agent: ReturnType<ReturnType<typeof useApp>['agentByKind']>; onDecide: (a: Approval, action: 'approve' | 'reject', text: string) => Promise<void> }) {
-  const [text, setText] = useState(a.draft ?? '')
-  const [busy, setBusy] = useState<string | null>(null)
-  const go = async (action: 'approve' | 'reject') => {
-    setBusy(action)
-    await onDecide(a, action, text)
-    setBusy(null)
-  }
-  return (
-    <Reveal i={i + 2} step={70} className="card p-4">
-      <div className="flex items-start gap-3">
-        <AgentAvatar agent={agent} kind={a.agent_kind as never} size={40} />
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold">{a.title}</div>
-          <div className="text-xs text-muted">
-            {agent?.name} · {KIND_LABEL[a.kind]} · {timeAgo(a.created_at)}
-          </div>
-        </div>
-        {a.status !== 'pending' && (
-          <span className={`chip ${a.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{a.status === 'approved' ? 'Aprovado' : 'Recusado'}</span>
-        )}
-      </div>
-      {a.reason && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-600">Motivo: {a.reason}</p>}
-      {a.draft !== null &&
-        (a.status === 'pending' ? (
-          <textarea className="input mt-3 min-h-20 text-sm" value={text} onChange={(e) => setText(e.target.value)} />
-        ) : (
-          <p className="mt-3 whitespace-pre-wrap rounded-lg bg-panel-2 p-3 text-sm">{a.draft}</p>
-        ))}
-      {a.status === 'pending' && (
-        <div className="mt-3 flex justify-end gap-2">
-          <button className="btn-danger px-3 py-2 text-xs" disabled={!!busy} onClick={() => go('reject')}>
-            {busy === 'reject' ? <Spinner size={12} /> : <X size={14} />} Recusar
-          </button>
-          <button className="btn-primary px-3 py-2 text-xs" disabled={!!busy} onClick={() => go('approve')}>
-            {busy === 'approve' ? <Spinner size={12} /> : <Check size={14} />} {a.kind === 'action' ? 'Aprovar' : 'Aprovar e enviar'}
-          </button>
-        </div>
-      )}
-    </Reveal>
   )
 }

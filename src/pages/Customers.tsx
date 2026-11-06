@@ -83,7 +83,7 @@ export default function Customers() {
         </div>
         <div className="flex gap-1 overflow-x-auto">
           {['all', 'lead', 'active', 'vip', 'inactive'].map((s) => (
-            <button key={s} onClick={() => setStatus(s)} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold ${status === s ? 'border-brand bg-brand text-white' : 'border-line text-muted'}`}>
+            <button key={s} onClick={() => setStatus(s)} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold ${status === s ? 'border-ink bg-ink text-white' : 'border-line text-muted'}`}>
               {s === 'all' ? `Todos (${items.length})` : `${STATUS_LABEL[s]} (${items.filter((c) => c.status === s).length})`}
             </button>
           ))}

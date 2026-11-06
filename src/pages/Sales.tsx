@@ -70,7 +70,7 @@ export default function Sales() {
     <div>
       <PageHeader
         title="Vendas"
-        subtitle="Registre suas vendas — o dashboard e os agentes atualizam na hora."
+        subtitle="Registre suas vendas — o dashboard e o Agente SCALABLE atualizam na hora."
         actions={
           <button className="btn-primary" onClick={() => (setEditId(null), setForm(empty()))}>
             <Plus size={16} /> Nova venda
@@ -98,7 +98,7 @@ export default function Sales() {
         </div>
         <div className="flex gap-1 rounded-full bg-panel p-1 lg:ml-auto">
           {PERIODS.map((p) => (
-            <button key={p.v} onClick={() => setPeriod(p.v)} className={`h-8 flex-1 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${period === p.v ? 'bg-brand text-white' : 'text-muted'}`}>
+            <button key={p.v} onClick={() => setPeriod(p.v)} className={`h-8 flex-1 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${period === p.v ? 'bg-ink text-white' : 'text-muted'}`}>
               {p.l}
             </button>
           ))}

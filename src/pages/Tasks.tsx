@@ -4,10 +4,10 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Task } from '../lib/types'
 import { addDays, relativeDay, today } from '../lib/format'
-import { AgentAvatar, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { AgentMark, AreaChip, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 
 export default function Tasks() {
-  const { company, agentByKind, toast } = useApp()
+  const { company, toast } = useApp()
   const [items, setItems] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showDone, setShowDone] = useState(false)
@@ -54,7 +54,7 @@ export default function Tasks() {
     <div>
       <PageHeader
         title="Tarefas"
-        subtitle="Os agentes antecipam tarefas para hoje, amanhã e depois. Você também pode criar as suas."
+        subtitle="O Agente SCALABLE antecipa tarefas para hoje, amanhã e depois. Você também pode criar as suas."
         actions={
           <>
             <button className="btn-ghost" onClick={() => setShowDone(!showDone)}>
@@ -70,7 +70,7 @@ export default function Tasks() {
         <Spinner />
       ) : items.length === 0 ? (
         <Reveal i={1} className="card">
-          <Empty icon={<ClipboardList size={26} />} title={showDone ? 'Nenhuma tarefa concluída' : 'Nenhuma tarefa pendente'} text="Rode a análise dos agentes para eles sugerirem tarefas." />
+          <Empty icon={<ClipboardList size={26} />} title={showDone ? 'Nenhuma tarefa concluída' : 'Nenhuma tarefa pendente'} text="Rode a análise no Dashboard para o Agente SCALABLE sugerir tarefas." />
         </Reveal>
       ) : (
         <div className="space-y-5">
@@ -81,7 +81,6 @@ export default function Tasks() {
               </Reveal>
               <div className="card divide-y divide-line">
                 {g.items.map((x) => {
-                  const ag = x.agent_kind ? agentByKind(x.agent_kind) : undefined
                   return (
                     <Reveal key={x.id} i={idx++} step={40} className="flex items-center gap-3 px-4 py-3">
                       <button onClick={() => toggle(x)} className="text-muted hover:text-emerald-600">
@@ -91,9 +90,10 @@ export default function Tasks() {
                         <div className={`text-sm ${x.done ? 'text-muted line-through' : ''}`}>{x.title}</div>
                         {x.description && <div className="truncate text-xs text-muted">{x.description}</div>}
                       </div>
-                      {ag && (
-                        <span className="hidden items-center gap-1 text-[11px] text-muted sm:flex">
-                          <AgentAvatar agent={ag} size={18} /> {ag.name}
+                      {x.agent_kind && (
+                        <span className="hidden items-center gap-1.5 sm:flex" title="Criada pelo Agente SCALABLE">
+                          <AgentMark size={18} rounded="rounded-md" />
+                          <AreaChip kind={x.agent_kind} />
                         </span>
                       )}
                       <span className="text-[11px] text-muted">{relativeDay(x.due_date)}</span>

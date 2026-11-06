@@ -44,12 +44,12 @@ export function LineChart({ data, height = 250, delay = 400 }: { data: Point[]; 
         <svg width={W} height={H} className="block overflow-visible" onMouseLeave={() => setHover(null)}>
           <defs>
             <linearGradient id="lc-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#268bfd" stopOpacity="0.22" />
-              <stop offset="1" stopColor="#268bfd" stopOpacity="0" />
+              <stop offset="0" stopColor="#48a8fc" stopOpacity="0.22" />
+              <stop offset="1" stopColor="#48a8fc" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="lc-band" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#268bfd" stopOpacity="0.16" />
-              <stop offset="1" stopColor="#268bfd" stopOpacity="0.02" />
+              <stop offset="0" stopColor="#48a8fc" stopOpacity="0.16" />
+              <stop offset="1" stopColor="#48a8fc" stopOpacity="0.02" />
             </linearGradient>
           </defs>
           {ticks.map((g) => {
@@ -66,11 +66,11 @@ export function LineChart({ data, height = 250, delay = 400 }: { data: Point[]; 
           {pts[focus] && <rect x={pts[focus].x - bandW / 2} y={pad.t - 6} width={bandW} height={H - pad.t - pad.b + 6} rx={bandW / 2} fill="url(#lc-band)" className="transition-all duration-300" />}
           <g key={key}>
             <path d={area} fill="url(#lc-fill)" className="fade-late" style={{ '--d': `${delay + 1300}ms` } as CSSProperties} />
-            <path d={path} fill="none" stroke="#268bfd" strokeWidth={3} strokeLinecap="round" className="draw" style={{ '--len': len, '--d': `${delay}ms` } as CSSProperties} />
+            <path d={path} fill="none" stroke="#48a8fc" strokeWidth={3} strokeLinecap="round" className="draw" style={{ '--len': len, '--d': `${delay}ms` } as CSSProperties} />
           </g>
           {pts[focus] && (
             <g className="fade-late" style={{ '--d': `${hover !== null ? 0 : delay + 1500}ms` } as CSSProperties}>
-              <circle cx={pts[focus].x} cy={pts[focus].y} r={6.5} fill="#fff" stroke="#268bfd" strokeWidth={3} />
+              <circle cx={pts[focus].x} cy={pts[focus].y} r={6.5} fill="#fff" stroke="#48a8fc" strokeWidth={3} />
             </g>
           )}
           {data.map((d, i) =>
@@ -141,7 +141,7 @@ export function DualBars({ data, height = 190, delay = 300 }: { data: { label: s
   )
 }
 
-export const DONUT_COLORS = ['#268bfd', '#0f172a', '#8cc2ff', '#f59e0b', '#10b981', '#ec4899']
+export const DONUT_COLORS = ['#48a8fc', '#0f172a', '#8cc2ff', '#f59e0b', '#10b981', '#ec4899']
 
 /** Rosca animada: cada fatia aparece em sequência. */
 export function Donut({ data, size = 170, delay = 400, center }: { data: { label: string; value: number }[]; size?: number; delay?: number; center?: { value: string; label: string } }) {

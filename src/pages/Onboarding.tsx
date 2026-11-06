@@ -6,7 +6,7 @@ import { Field, Logo, Reveal, Spinner } from '../components/ui'
 const SEGMENTS = ['Loja de roupas / moda', 'Alimentação / restaurante', 'Beleza / estética', 'Serviços', 'E-commerce', 'Saúde / clínica', 'Educação / cursos', 'Imobiliária', 'Academia / fitness', 'Outro']
 
 export default function Onboarding() {
-  const { reloadCompany, reloadAgents, reloadCounts, toast } = useApp()
+  const { reloadCompany, reloadCounts, toast } = useApp()
   const [f, setF] = useState({ name: '', segment: '', description: '', website: '', instagram: '' })
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
@@ -26,7 +26,7 @@ export default function Onboarding() {
       setBusy(false)
       return
     }
-    await Promise.all([reloadCompany(), reloadAgents(), reloadCounts()])
+    await Promise.all([reloadCompany(), reloadCounts()])
     if (f.website) api('site', { url: f.website }).then(() => toast('Análise do seu site concluída! Veja nas notificações.')).catch(() => {})
   }
 
@@ -38,7 +38,7 @@ export default function Onboarding() {
         </Reveal>
         <Reveal i={1} className="mt-8">
           <h1 className="text-[28px] font-bold leading-tight tracking-tight">Vamos conhecer sua empresa</h1>
-          <p className="mt-2 text-sm text-muted">Seus 5 agentes usam essas informações para trabalhar por você. Se tiver site, a IA entra nele e avalia tudo.</p>
+          <p className="mt-2 text-sm text-muted">O Agente SCALABLE usa essas informações para trabalhar por você em vendas, marketing, financeiro, atendimento e gestão. Se tiver site, ele também avalia o seu site.</p>
         </Reveal>
         <div className="mt-8 space-y-4">
           <Reveal i={2}>
@@ -71,7 +71,7 @@ export default function Onboarding() {
           </Reveal>
           <Reveal i={6} className="pt-2">
             <button className="btn-primary h-12 w-full" disabled={busy || !f.name.trim()}>
-              {busy && <Spinner />} Criar empresa e ativar agentes
+              {busy && <Spinner />} Criar empresa e ativar o Agente SCALABLE
             </button>
             <button type="button" className="mt-3 w-full text-center text-xs text-muted hover:text-ink" onClick={() => supabase.auth.signOut()}>
               Sair

@@ -2,15 +2,16 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --color-bg: #f2f4f7;
+  --color-bg: #f3f5f8;
   --color-panel: #ffffff;
   --color-panel-2: #f5f6f8;
   --color-line: #e8eaee;
   --color-muted: #8a8f9c;
-  --color-ink: #0f172a;
-  --color-brand: #268bfd;
-  --color-brand-dark: #1673e6;
-  --color-brand-soft: #e8f2ff;
+  --color-ink: #0b0d12;
+  --color-graphite: #171a21;
+  --color-brand: #48a8fc;
+  --color-brand-dark: #2f95ef;
+  --color-brand-soft: #eaf5ff;
 }
 
 html,
@@ -33,10 +34,13 @@ body {
   @apply inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition active:scale-[.97] disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap;
 }
 @utility btn-primary {
-  @apply btn bg-brand text-white shadow-[0_8px_20px_-8px_rgba(38,139,253,0.8)] hover:bg-brand-dark;
+  @apply btn bg-ink text-white hover:bg-graphite;
+}
+@utility btn-brand {
+  @apply btn bg-brand text-ink shadow-[0_8px_20px_-10px_rgba(72,168,252,0.9)] hover:bg-brand-dark;
 }
 @utility btn-dark {
-  @apply btn bg-ink text-white hover:bg-slate-800;
+  @apply btn bg-ink text-white hover:bg-graphite;
 }
 @utility btn-ghost {
   @apply btn border border-line bg-panel text-ink hover:bg-panel-2;

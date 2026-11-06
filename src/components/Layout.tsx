@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
-  Bot,
   CheckCircle2,
   ClipboardList,
   LayoutGrid,
@@ -23,8 +22,7 @@ import { Logo } from './ui'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutGrid },
-  { to: '/assistente', label: 'Assistente IA', icon: Sparkles },
-  { to: '/agentes', label: 'Agentes', icon: Bot },
+  { to: '/agente', label: 'Agente SCALABLE', icon: Sparkles },
   { to: '/aprovacoes', label: 'Aprovações', icon: CheckCircle2, badge: 'approvals' as const },
   { to: '/whatsapp', label: 'WhatsApp', icon: MessageCircle, badge: 'conversations' as const },
   { to: '/vendas', label: 'Vendas', icon: ShoppingBag },
@@ -32,7 +30,7 @@ const NAV = [
   { to: '/financeiro', label: 'Financeiro', icon: Wallet },
   { to: '/tarefas', label: 'Tarefas', icon: ClipboardList },
 ]
-const MOBILE = ['/', '/agentes', '/assistente', '/whatsapp']
+const MOBILE = ['/', '/agente', '/aprovacoes', '/whatsapp']
 
 export default function Layout() {
   const { company, counts } = useApp()
@@ -66,7 +64,7 @@ export default function Layout() {
                 key={n.to}
                 to={n.to}
                 className={`reveal group relative flex h-11 w-11 items-center justify-center rounded-full transition ${
-                  active ? 'bg-brand text-white shadow-[0_8px_18px_-6px_rgba(38,139,253,0.8)]' : 'text-slate-500 hover:bg-panel-2 hover:text-ink'
+                  active ? 'bg-brand text-ink shadow-[0_8px_18px_-6px_rgba(72,168,252,0.8)]' : 'text-slate-500 hover:bg-panel-2 hover:text-ink'
                 }`}
                 style={{ '--d': `${i * 45}ms` } as React.CSSProperties}
               >
@@ -80,7 +78,7 @@ export default function Layout() {
           })}
         </nav>
         <div className="mt-4 flex flex-col items-center gap-2.5">
-          <NavLink to="/configuracoes" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/configuracoes') ? 'bg-brand text-white' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Configurações">
+          <NavLink to="/configuracoes" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/configuracoes') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Configurações">
             <Settings size={19} />
           </NavLink>
           <button onClick={() => supabase.auth.signOut()} className="flex h-11 w-11 items-center justify-center rounded-full bg-panel text-slate-500 hover:text-rose-600" title="Sair">
@@ -109,7 +107,7 @@ export default function Layout() {
               {counts.insights > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
             </NavLink>
             <NavLink to="/configuracoes" className="flex items-center gap-3 rounded-full bg-panel py-1.5 pl-1.5 pr-4">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">{company?.name?.[0]?.toUpperCase()}</span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-sm font-bold text-white">{company?.name?.[0]?.toUpperCase()}</span>
               <span className="max-w-[160px] leading-tight">
                 <span className="block truncate text-sm font-bold">{company?.name}</span>
                 <span className="block truncate text-[11px] text-muted">{company?.segment ?? 'Minha empresa'}</span>
@@ -147,7 +145,7 @@ export default function Layout() {
       </div>
 
       {/* Menu flutuante (celular) */}
-      <nav className="fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-40 flex items-center justify-between rounded-full bg-ink p-2 shadow-2xl md:hidden">
+      <nav className="fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-40 flex items-center justify-between rounded-full bg-graphite p-2 shadow-2xl md:hidden">
         {NAV.filter((n) => MOBILE.includes(n.to)).map((n) => {
           const active = isActive(n.to)
           const c = n.badge ? counts[n.badge] : 0
@@ -180,7 +178,7 @@ export default function Layout() {
                     key={n.to}
                     to={n.to}
                     onClick={() => setSheet(false)}
-                    className={`relative flex flex-col items-center gap-2 rounded-3xl px-2 py-4 text-center text-xs font-semibold ${isActive(n.to) ? 'bg-brand text-white' : 'bg-panel-2 text-ink'}`}
+                    className={`relative flex flex-col items-center gap-2 rounded-3xl px-2 py-4 text-center text-xs font-semibold ${isActive(n.to) ? 'bg-brand text-ink' : 'bg-panel-2 text-ink'}`}
                   >
                     <n.icon size={21} />
                     {n.label}

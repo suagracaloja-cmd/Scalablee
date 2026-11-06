@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Agent from './pages/Agent'
@@ -15,7 +16,7 @@ import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 
 function Gate() {
-  const { session, loading, company } = useApp()
+  const { session, loading, company, recovery } = useApp()
   if (loading)
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -23,6 +24,7 @@ function Gate() {
       </div>
     )
   if (!session) return <Login />
+  if (recovery) return <ResetPassword />
   if (!company) return <Onboarding />
   return (
     <Routes>

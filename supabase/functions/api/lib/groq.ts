@@ -34,6 +34,32 @@ export function groqModels(): string[] {
 
 // ---------- conversão de formato ----------
 
+/**
+ * A Groq valida os argumentos das chamadas de ferramenta contra o schema e recusa o pedido inteiro
+ * se o modelo mandar `null` num campo opcional. Aqui os campos opcionais passam a aceitar `null`
+ * (e os nulos são removidos antes de executar a ferramenta, em fromOpenAI).
+ */
+export function relaxSchema(schema: unknown): unknown {
+  if (!schema || typeof schema !== "object" || Array.isArray(schema)) return schema;
+  const s = { ...(schema as Json) };
+  if (s.properties && typeof s.properties === "object") {
+    const required = new Set(Array.isArray(s.required) ? (s.required as string[]) : []);
+    const props: Json = {};
+    for (const [k, v] of Object.entries(s.properties as Json)) {
+      let p = relaxSchema(v) as Json;
+      if (!required.has(k) && p && typeof p === "object") {
+        p = { ...p };
+        if (typeof p.type === "string") p.type = [p.type, "null"];
+        if (Array.isArray(p.enum) && !p.enum.includes(null)) p.enum = [...p.enum, null];
+      }
+      props[k] = p;
+    }
+    s.properties = props;
+  }
+  if (s.items) s.items = relaxSchema(s.items);
+  return s;
+}
+
 export function toOpenAI(req: ModelRequest): { messages: OAIMessage[]; tools?: Json[] } {
   const messages: OAIMessage[] = [{ role: "system", content: req.system }];
   for (const m of req.messages) {
@@ -60,7 +86,7 @@ export function toOpenAI(req: ModelRequest): { messages: OAIMessage[]; tools?: J
   // Somente ferramentas próprias (as ferramentas de servidor da Anthropic, como a busca na web, não existem aqui)
   const tools = (req.tools ?? [])
     .filter((t) => typeof t.name === "string" && t.input_schema)
-    .map((t) => ({ type: "function", function: { name: t.name, description: String(t.description ?? ""), parameters: t.input_schema } }));
+    .map((t) => ({ type: "function", function: { name: t.name, description: String(t.description ?? ""), parameters: relaxSchema(t.input_schema) } }));
   return { messages, ...(tools.length ? { tools } : {}) };
 }
 
@@ -73,7 +99,7 @@ export function fromOpenAI(data: Json): ModelResponse {
     let input: Json = {};
     try {
       const parsed = JSON.parse(c.function?.arguments || "{}");
-      if (parsed && typeof parsed === "object") input = parsed as Json;
+      if (parsed && typeof parsed === "object") input = Object.fromEntries(Object.entries(parsed as Json).filter(([, v]) => v !== null));
     } catch {
       // argumentos inválidos: a ferramenta recebe {} e devolve um erro de validação que o modelo consegue corrigir
     }
@@ -192,7 +218,10 @@ export async function groqCreate(req: ModelRequest, opts: { fetchFn?: FetchFn; k
           }
           break; // cota do modelo esgotada: próximo modelo
         }
-        if (e.code === "tool_use_failed" && attempt === 0) continue;
+        if (e.code === "tool_use_failed") {
+          if (attempt === 0) continue;
+          break; // o outro modelo gratuito costuma acertar a chamada
+        }
         if (e.status === 404 || (msg.includes("model") && (msg.includes("not found") || msg.includes("decommissioned") || msg.includes("does not exist")))) break;
         if (e.status >= 500 && attempt === 0) continue;
         throw e;

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
 import type { Company } from './types'
 
 type Counts = { insights: number; approvals: number; conversations: number }
@@ -13,6 +13,9 @@ type Ctx = {
   reloadCompany: () => Promise<void>
   reloadCounts: () => Promise<void>
   toast: (msg: string, type?: 'ok' | 'err') => void
+  /** Sessão aberta pelo link de recuperação: a pessoa precisa definir uma nova senha. */
+  recovery: boolean
+  endRecovery: () => void
 }
 
 const AppCtx = createContext<Ctx>(null as unknown as Ctx)
@@ -23,6 +26,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<Company | null>(null)
   const [counts, setCounts] = useState<Counts>({ insights: 0, approvals: 0, conversations: 0 })
+  const [recovery, setRecovery] = useState(OPENED_FROM_RECOVERY_LINK)
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: 'ok' | 'err' }[]>([])
 
   const toast = useCallback((msg: string, type: 'ok' | 'err' = 'ok') => {
@@ -49,9 +53,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       if (!data.session) setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((e, s) => {
+      if (e === 'PASSWORD_RECOVERY') setRecovery(true)
       setSession(s)
       if (!s) {
+        setRecovery(false)
         setCompany(null)
         setLoading(false)
       }
@@ -84,7 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [company, reloadCounts, toast])
 
   return (
-    <AppCtx.Provider value={{ session, loading, company, counts, reloadCompany, reloadCounts, toast }}>
+    <AppCtx.Provider value={{ session, loading, company, counts, reloadCompany, reloadCounts, toast, recovery, endRecovery: () => setRecovery(false) }}>
       {children}
       <div className="fixed inset-x-4 bottom-28 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:items-end">
         {toasts.map((t) => (

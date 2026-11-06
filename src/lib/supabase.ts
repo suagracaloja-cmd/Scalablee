@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL as string
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
+/** Chegou pelo link de "Esqueci minha senha"? (lido antes de o cliente do Supabase limpar o endereço) */
+export const OPENED_FROM_RECOVERY_LINK = typeof window !== 'undefined' && /type=recovery/.test(window.location.hash + window.location.search)
+
 export const supabase = createClient(url, key)
 
 /** Chama uma rota da Edge Function `api` com a sessão do usuário. */

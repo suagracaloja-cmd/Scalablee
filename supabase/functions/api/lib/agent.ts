@@ -2,7 +2,7 @@
 // Todas as chamadas ao modelo passam por aqui: conversa com o dono (com ferramentas),
 // resposta a clientes no WhatsApp, análise periódica e avaliação de site.
 // O cliente do modelo é injetado (CreateFn), o que permite testar o loop sem gastar créditos.
-import { runTool, toolDefinitions, todayBR, AREA_LABEL, type Area, type ToolCtx } from "./tools.ts";
+import { routeAreas, runTool, toolDefinitions, todayBR, AREA_LABEL, type Area, type ToolCtx } from "./tools.ts";
 import { fmtDate, isoDate } from "./util.ts";
 
 type Json = Record<string, unknown>;
@@ -56,7 +56,10 @@ export async function agentChat(opts: {
   maxSteps?: number;
 }) {
   const system = systemPrompt(opts.company, opts.ctx.today);
-  const tools = toolDefinitions();
+  // Roteamento por intenção: áreas do pedido atual; numa continuação curta ("e ontem?"), as do pedido anterior
+  const prevUser = [...opts.history].reverse().find((m) => m.role === "user")?.content ?? "";
+  const areas = routeAreas(opts.message) ?? routeAreas(prevUser);
+  const tools = toolDefinitions(areas);
   const messages: ModelRequest["messages"] = [...opts.history, { role: "user", content: opts.message }];
   const steps: Step[] = [];
   const approvals: string[] = [];
@@ -186,6 +189,9 @@ export function parseJSON<T>(text: string): T | null {
 /** Mensagem amigável para falhas do provedor de IA. */
 export function friendlyAIError(err: string) {
   const e = err.toLowerCase();
+  // Erros da Groq vêm primeiro na cadeia (ela é a IA principal quando configurada)
+  if (e.includes("groq 429") || (e.includes("groq") && e.includes("rate_limit"))) return "o limite gratuito da IA (Groq) acabou por agora — ela volta a responder sozinha quando a cota renovar";
+  if (e.includes("groq 401") || e.includes("groq 403")) return "a chave da Groq foi recusada";
   if (e.includes("credit") || e.includes("billing") || e.includes("balance")) return "a conta da Anthropic está sem créditos";
   if (e.includes("api-key") || e.includes("api key") || e.includes("authentication") || e.includes("401")) return "a chave da IA foi recusada";
   if (e.includes("rate") || e.includes("429") || e.includes("overloaded") || e.includes("529")) return "a IA está sobrecarregada, tente em instantes";

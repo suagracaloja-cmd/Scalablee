@@ -894,8 +894,34 @@ export const TOOLS: Tool[] = [
 
 export const TOOL_MAP = new Map(TOOLS.map((t) => [t.name, t]));
 
-/** Definições no formato da API da Anthropic. */
-export const toolDefinitions = () => TOOLS.map((t) => ({ name: t.name, description: `[${AREA_LABEL[t.area]}] ${t.description}`, input_schema: t.input_schema }));
+/**
+ * Roteamento por intenção: identifica as áreas citadas no pedido (palavras-chave, sem acento).
+ * Assim o modelo recebe só as ferramentas relevantes — pedidos menores, mais rápidos e mais baratos
+ * (essencial no plano gratuito da Groq). Sem área reconhecida → null (todas as ferramentas).
+ */
+const AREA_HINTS: Record<Area, RegExp> = {
+  sales: /vend|fatur|ticket|produto|mais vendid|lead|funil|oportunidad|proposta|pedido|compr[aoe]|inativ|client/,
+  marketing: /marketing|campanha|post|instagram|conteudo|calendario|promo|divulg|anuncio|legenda|reels|stories|tendencia|redes? socia|comemorativ|black friday|natal|publico/,
+  finance: /financ|gast|despes|receit|\bcontas?\b|pagar|pago|paguei|receb|caixa|saldo|lucro|lanc|boleto|venc|custo|dinheiro|compar|mes passado|periodo|frete|aluguel|fluxo/,
+  support: /whatsapp|mensag|atendiment|respond|resposta|conversa|e-?mail|client|cadastr|telefone|reclama|contato/,
+  management: /tarefa|plano|indicador|relatorio|aprova|exclu|apag|remov|pendencia|resumo|geral|semana|prioridad|\bmetas?\b|organiz|\bacao|acoes/,
+};
+/** Ferramentas sempre disponíveis (visão geral e organização). */
+const CORE = new Set(["indicadores", "tarefa_criar", "cliente_consultar"]);
+
+export function routeAreas(text: string): Area[] | null {
+  const t = norm(text);
+  const areas = (Object.keys(AREA_HINTS) as Area[]).filter((a) => AREA_HINTS[a].test(t));
+  return areas.length ? areas : null;
+}
+
+/** Definições no formato da API da Anthropic (todas, ou só as das áreas indicadas + as essenciais). */
+export const toolDefinitions = (areas?: Area[] | null) =>
+  TOOLS.filter((t) => !areas || areas.includes(t.area) || CORE.has(t.name)).map((t) => ({
+    name: t.name,
+    description: `[${AREA_LABEL[t.area]}] ${t.description}`,
+    input_schema: t.input_schema,
+  }));
 
 /** Executa uma ferramenta com tratamento de erro (o erro volta para o modelo, não derruba a conversa). */
 export async function runTool(ctx: ToolCtx, name: string, input: Json): Promise<{ ok: boolean; result: unknown; label: string; area: Area | null }> {

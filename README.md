@@ -17,7 +17,7 @@ Plataforma web (desktop e celular) onde o dono da empresa faz login e tem:
 
 - React + Vite + TypeScript + Tailwind CSS v4
 - Supabase: Auth, Postgres (com RLS por empresa), Realtime, Storage, Edge Function `api`
-- Claude (Anthropic API) no Agente SCALABLE
+- IA do Agente SCALABLE: Groq (plano gratuito) e, opcionalmente, Claude (Anthropic API)
 
 ## Rodar localmente
 
@@ -45,9 +45,21 @@ Site (/api/site) ───────┘        ▼
 - Histórico persistente em `agent_threads` + `assistant_messages` (com as ferramentas usadas em `meta`).
 - Sem IA disponível (sem chave ou sem créditos), a conversa responde em **modo básico** com os dados reais e avisa o motivo.
 
-## IA (Anthropic)
+## IA: Groq (gratuita) e Anthropic (opcional)
 
-Secret da Edge Function: Supabase → Project Settings → Edge Functions → Secrets → `ANTHROPIC_API_KEY`.
+O agente usa os provedores nesta ordem; se um falhar (limite diário, sem créditos, instabilidade), o próximo assume:
+
+1. **Groq — plano gratuito** (modelos `openai/gpt-oss-120b` e, quando a cota dele acaba, `openai/gpt-oss-20b`). Crie a chave em console.groq.com → API Keys e salve no Supabase → Edge Functions → Secrets como `GROQ_API_KEY`.
+2. **Anthropic (Claude)** — só é usada se existir `ANTHROPIC_API_KEY` com créditos.
+
+O plano gratuito da Groq tem limites por minuto e por dia. Para caber neles, o agente:
+- envia só as ferramentas das áreas do pedido (roteamento por intenção);
+- resume resultados longos e histórico antigo quando o pedido passa do orçamento;
+- espera alguns segundos quando a Groq pede, ou troca para o segundo modelo gratuito.
+
+Quando todas as cotas acabam, a conversa responde em **modo básico** (com os dados reais) e avisa o motivo.
+
+Ajustes opcionais (secrets): `GROQ_MODEL` (modelo preferido), `GROQ_MAX_INPUT_TOKENS` (padrão 6000), `GROQ_MAX_OUTPUT_TOKENS` (padrão 4000).
 
 ## Integrações preparadas e desligadas (só ative com autorização)
 

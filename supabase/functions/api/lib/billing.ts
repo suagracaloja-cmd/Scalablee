@@ -26,9 +26,31 @@ const DAY = 86_400_000;
 
 // ---------- configuração ----------
 
+/** Lê preços como "49.90", "49,90", "R$ 49,90" ou "1.234,56". */
+export function parsePrice(v?: string | null): number | null {
+  if (!v) return null;
+  let t = v.replace(/[^\d,.]/g, "");
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+}
+
+/** O que falta para ligar a cobrança (só nomes e formato — nunca valores). */
+export function billingDiagnostics() {
+  const names = typeof Deno !== "undefined" ? Object.keys(Deno.env.toObject()) : [];
+  const out: string[] = [];
+  if (!env("MERCADOPAGO_ACCESS_TOKEN")) out.push("MERCADOPAGO_ACCESS_TOKEN ausente");
+  const raw = env("PLANO_VALOR");
+  if (!raw) out.push("PLANO_VALOR ausente");
+  else if (!parsePrice(raw)) out.push("PLANO_VALOR com formato não reconhecido (use, por exemplo, 49.90)");
+  const similar = names.filter((n) => n !== "PLANO_VALOR" && n !== "MERCADOPAGO_ACCESS_TOKEN" && /plano|valor|mercado|mp_|price/i.test(n));
+  if (similar.length) out.push(`nomes parecidos encontrados: ${similar.join(", ")}`);
+  return out;
+}
+
 export function billingConfig() {
   const token = env("MERCADOPAGO_ACCESS_TOKEN") ?? null;
-  const value = Number(String(env("PLANO_VALOR") ?? "").replace(",", "."));
+  const value = parsePrice(env("PLANO_VALOR"));
   return {
     token,
     baseUrl: env("MERCADOPAGO_BASE_URL") ?? "https://api.mercadopago.com",
@@ -37,7 +59,7 @@ export function billingConfig() {
     webhookSecret: env("MERCADOPAGO_WEBHOOK_SECRET") ?? null,
     appUrl: (env("APP_URL") ?? "https://scalablee.vercel.app").replace(/\/$/, ""),
     planName: env("PLANO_NOME") ?? "Scalable",
-    value: Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : null,
+    value,
     trialDays: Math.max(0, Number(env("PLANO_TESTE_DIAS") ?? 7) || 0),
     graceDays: Math.max(0, Number(env("PLANO_TOLERANCIA_DIAS") ?? 5) || 0),
     /** Pausar o uso de quem não estiver em dia (desligado até COBRANCA_ATIVA=on). */

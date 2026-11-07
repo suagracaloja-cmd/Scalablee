@@ -68,34 +68,37 @@ Também já funcionam: **exportar meus dados** e **excluir minha conta** (Config
 - Cada cliente conecta o WhatsApp com o app dele na Meta. A tela de conexão agora pede também a **chave secreta do app (App Secret)**, que liga a verificação de autenticidade das mensagens recebidas. Sem ela, a tela mostra um aviso.
 - Para mensagens enviadas fora da janela de 24h após a última mensagem do cliente, a Meta exige **modelos de mensagem aprovados**; para volume maior, a **verificação da empresa** na Meta.
 
-## 7. Cobrança pelo Asaas
+## 7. Cobrança pelo Mercado Pago
 
-A integração já está pronta e **desligada**. Ela liga sozinha quando os secrets abaixo existirem. Comece pelo **sandbox** (ambiente de testes do Asaas) e só depois troque para produção.
+A integração já está pronta e **desligada**. Ela liga sozinha quando os secrets abaixo existirem. Comece com as **credenciais de teste** e só depois troque para as de produção.
 
-**No Asaas** (sandbox: sandbox.asaas.com · produção: www.asaas.com):
-1. **Integrações → Chave de API**: gere a chave. Ela aparece uma vez só.
-2. **Integrações → Webhooks**: crie um webhook com
-   - **URL:** `https://tmaywgdxfveczoxxrpur.supabase.co/functions/v1/api/asaas-webhook`
-   - **Token de autenticação:** invente uma senha longa (só letras e números) e anote;
-   - **Eventos:** cobranças (criada, atualizada, confirmada, recebida, vencida, estornada) e assinaturas (removida/inativada);
-   - versão da API: v3. Deixe o webhook **ativado**.
+**No Mercado Pago Developers** (mercadopago.com.br/developers → Suas integrações → sua aplicação):
+1. **Credenciais**: copie o **Access Token** (o de teste começa com `TEST-`; o de produção, com `APP_USR-`). A Public Key não é necessária.
+2. **Webhooks → Configurar notificações**:
+   - **URL (modo de teste e de produção):** `https://tmaywgdxfveczoxxrpur.supabase.co/functions/v1/api/mp-webhook`
+   - **Eventos:** *Planos e assinaturas* (assinaturas e pagamentos recorrentes);
+   - salve e copie a **assinatura secreta** (chave secreta) que o painel mostrar.
 
 **No Supabase** → Edge Functions → **Secrets**:
 
 | Nome | Valor |
 |---|---|
-| `ASAAS_API_KEY` | a chave de API do Asaas |
-| `ASAAS_WEBHOOK_TOKEN` | o mesmo token que você inventou no webhook |
+| `MERCADOPAGO_ACCESS_TOKEN` | o Access Token |
+| `MERCADOPAGO_WEBHOOK_SECRET` | a assinatura secreta do webhook |
 | `PLANO_VALOR` | preço mensal, ex.: `97.00` |
 | `PLANO_NOME` | (opcional) nome do plano, ex.: `Scalable Pro` |
 | `PLANO_TESTE_DIAS` | (opcional) dias de teste grátis; padrão `7` |
-| `ASAAS_AMBIENTE` | (opcional) `sandbox` ou `producao` — chaves novas já indicam o ambiente sozinhas |
 | `COBRANCA_ATIVA` | `on` para **pausar o acesso** de quem não estiver em dia; sem isso, ninguém é bloqueado |
-| `PLANO_TOLERANCIA_DIAS` | (opcional) dias de tolerância após o vencimento; padrão `5` |
+| `PLANO_TOLERANCIA_DIAS` | (opcional) dias de tolerância após uma cobrança recusada; padrão `5` |
+| `APP_URL` | (opcional) endereço do site para a volta do Mercado Pago; padrão `https://scalablee.vercel.app` |
 
-Com `ASAAS_API_KEY` e `PLANO_VALOR` definidos, aparece o menu **Assinatura** para os clientes: assinar (Pix, boleto ou cartão na página do Asaas), ver faturas e cancelar. Os avisos do Asaas atualizam a situação sozinhos (paga, vencida, cancelada). Excluir a conta cancela a assinatura no Asaas antes.
+Com `MERCADOPAGO_ACCESS_TOKEN` e `PLANO_VALOR` definidos, aparece o menu **Assinatura** para os clientes:
+- **Assinar:** a pessoa informa o e-mail da conta do Mercado Pago e conclui a assinatura na página do Mercado Pago. A primeira cobrança acontece no fim do teste grátis.
+- **Acompanhar:** ver as cobranças e cancelar.
 
-**Teste no sandbox:** assine com um CPF de teste, pague a fatura pelo painel do sandbox ("Confirmar pagamento") e veja a assinatura virar **Ativa** na tela.
+Os avisos do Mercado Pago atualizam a situação sozinhos: autorizada, cobrança aprovada, recusada, pausada ou cancelada. Excluir a conta cancela a assinatura no Mercado Pago antes.
+
+**Teste com credenciais de teste:** no Mercado Pago, a assinatura de teste precisa ser feita com um **usuário de teste** (Suas integrações → Contas de teste) — use o e-mail desse usuário comprador no formulário e um cartão de teste do Mercado Pago.
 
 ## 8. Recomendados (não bloqueiam)
 

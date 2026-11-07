@@ -130,7 +130,7 @@ export type AgentMessage = {
   created_at: string
 }
 
-/** Assinatura pelo Asaas (resposta de /api/assinatura). `enabled: false` = cobrança ainda não ativada. */
+/** Assinatura pelo Mercado Pago (resposta de /api/assinatura). `enabled: false` = cobrança ainda não ativada. */
 export type BillingView =
   | { enabled: false }
   | {
@@ -143,7 +143,10 @@ export type BillingView =
       daysLeft: number | null
       nextDueDate: string | null
       lastPaymentAt: string | null
+      /** Link do Mercado Pago para concluir a assinatura (enquanto não estiver autorizada) */
       invoiceUrl: string | null
       hasSubscription: boolean
+      /** Assinatura concluída no Mercado Pago (cobrança automática autorizada) */
+      authorized: boolean
       allowed: boolean
     }

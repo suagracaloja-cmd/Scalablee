@@ -1,7 +1,8 @@
-// Assinaturas pelo Asaas (API v3): cliente, assinatura mensal, faturas, cancelamento e avisos (webhook).
-// Tudo fica desligado até existirem ASAAS_API_KEY e PLANO_VALOR nos secrets do Supabase.
+// Assinaturas pelo Mercado Pago: assinatura mensal (/preapproval), cobranças recorrentes
+// (/authorized_payments), cancelamento e avisos (webhook com x-signature).
+// Tudo fica desligado até existirem MERCADOPAGO_ACCESS_TOKEN e PLANO_VALOR nos secrets do Supabase.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
-import { HttpError, isoDate } from "./util.ts";
+import { HttpError } from "./util.ts";
 
 type Json = Record<string, unknown>;
 export type BillingStatus = "trial" | "active" | "overdue" | "canceled";
@@ -9,8 +10,9 @@ export type Billing = {
   company_id: string;
   status: BillingStatus;
   trial_ends_at: string | null;
-  asaas_customer_id: string | null;
-  asaas_subscription_id: string | null;
+  subscription_id: string | null;
+  provider_status: string | null;
+  payer_email: string | null;
   plan_name: string | null;
   value: number | null;
   next_due_date: string | null;
@@ -25,65 +27,63 @@ const DAY = 86_400_000;
 // ---------- configuração ----------
 
 export function billingConfig() {
-  const key = env("ASAAS_API_KEY") ?? null;
+  const token = env("MERCADOPAGO_ACCESS_TOKEN") ?? null;
   const value = Number(String(env("PLANO_VALOR") ?? "").replace(",", "."));
-  const amb = (env("ASAAS_AMBIENTE") ?? "").toLowerCase();
-  // Chaves novas do Asaas indicam o ambiente no prefixo ($aact_prod_ / $aact_hmlg_)
-  const sandbox = amb ? amb.startsWith("sand") || amb.startsWith("homo") || amb === "teste" : !!key && key.includes("_hmlg_");
-  const baseUrl = env("ASAAS_BASE_URL") ?? (sandbox ? "https://api-sandbox.asaas.com/v3" : "https://api.asaas.com/v3");
   return {
-    key,
-    baseUrl,
-    sandbox,
-    webhookToken: env("ASAAS_WEBHOOK_TOKEN") ?? null,
+    token,
+    baseUrl: env("MERCADOPAGO_BASE_URL") ?? "https://api.mercadopago.com",
+    /** Credenciais de teste do Mercado Pago começam com TEST- */
+    sandbox: !!token && token.startsWith("TEST-"),
+    webhookSecret: env("MERCADOPAGO_WEBHOOK_SECRET") ?? null,
+    appUrl: (env("APP_URL") ?? "https://scalablee.vercel.app").replace(/\/$/, ""),
     planName: env("PLANO_NOME") ?? "Scalable",
     value: Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : null,
     trialDays: Math.max(0, Number(env("PLANO_TESTE_DIAS") ?? 7) || 0),
     graceDays: Math.max(0, Number(env("PLANO_TOLERANCIA_DIAS") ?? 5) || 0),
-    /** Bloquear o uso quando a assinatura não estiver em dia (desligado até COBRANCA_ATIVA=on). */
+    /** Pausar o uso de quem não estiver em dia (desligado até COBRANCA_ATIVA=on). */
     enforced: (env("COBRANCA_ATIVA") ?? "").toLowerCase() === "on",
     get enabled() {
-      return !!this.key && !!this.value;
+      return !!this.token && !!this.value;
     },
   };
 }
 export type BillingConfig = ReturnType<typeof billingConfig>;
 
-// ---------- cliente HTTP do Asaas ----------
+// ---------- cliente HTTP do Mercado Pago ----------
 
 type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
-export class AsaasError extends Error {
+export class PaymentProviderError extends Error {
   constructor(public status: number, message: string) {
     super(message);
   }
 }
 
-export function asaasClient(cfg: BillingConfig, fetchFn: FetchFn = (u, i) => fetch(u, i)) {
+export function mpClient(cfg: BillingConfig, fetchFn: FetchFn = (u, i) => fetch(u, i)) {
   async function call<T = Json>(method: string, path: string, body?: Json): Promise<T> {
-    if (!cfg.key) throw new AsaasError(503, "Cobrança não configurada (falta ASAAS_API_KEY).");
+    if (!cfg.token) throw new PaymentProviderError(503, "Cobrança não configurada (falta MERCADOPAGO_ACCESS_TOKEN).");
     const res = await fetchFn(cfg.baseUrl + path, {
       method,
-      headers: { access_token: cfg.key, "Content-Type": "application/json", "User-Agent": "Scalable" },
+      headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
     const data = (await res.json().catch(() => ({}))) as Json;
     if (!res.ok) {
-      const errs = (data.errors as { description?: string }[] | undefined) ?? [];
-      const msg = errs.map((e) => e.description).filter(Boolean).join(" ") || `Erro ${res.status} no Asaas`;
-      if (res.status === 401) throw new AsaasError(401, "O Asaas recusou a chave de API (confira ASAAS_API_KEY e o ambiente: sandbox ou produção).");
-      throw new AsaasError(res.status, msg);
+      if (res.status === 401) throw new PaymentProviderError(401, "O Mercado Pago recusou o Access Token (confira MERCADOPAGO_ACCESS_TOKEN).");
+      const causes = (data.cause as { description?: string }[] | undefined) ?? [];
+      const msg = String(data.message ?? "") || causes.map((c) => c.description).filter(Boolean).join(" ") || `Erro ${res.status} no Mercado Pago`;
+      throw new PaymentProviderError(res.status, msg);
     }
     return data as T;
   }
   return {
-    createCustomer: (c: Json) => call<{ id: string }>("POST", "/customers", c),
-    updateCustomer: (id: string, c: Json) => call<{ id: string }>("POST", `/customers/${id}`, c),
-    createSubscription: (s: Json) => call<{ id: string; nextDueDate?: string; status?: string }>("POST", "/subscriptions", s),
-    subscriptionPayments: (id: string) => call<{ data: Json[] }>("GET", `/subscriptions/${id}/payments`),
-    deleteSubscription: (id: string) => call<{ deleted?: boolean }>("DELETE", `/subscriptions/${id}`),
+    createPreapproval: (p: Json) => call<Json>("POST", "/preapproval", p),
+    getPreapproval: (id: string) => call<Json>("GET", `/preapproval/${encodeURIComponent(id)}`),
+    updatePreapproval: (id: string, p: Json) => call<Json>("PUT", `/preapproval/${encodeURIComponent(id)}`, p),
+    getAuthorizedPayment: (id: string) => call<Json>("GET", `/authorized_payments/${encodeURIComponent(id)}`),
+    searchAuthorizedPayments: (preapprovalId: string) => call<{ results?: Json[] }>("GET", `/authorized_payments/search?preapproval_id=${encodeURIComponent(preapprovalId)}`),
   };
 }
-export type AsaasClient = ReturnType<typeof asaasClient>;
+export type MpClient = ReturnType<typeof mpClient>;
 
 // ---------- regra de acesso ----------
 
@@ -115,12 +115,11 @@ export async function ensureBilling(admin: SupabaseClient, company: { id: string
   const trial_ends_at = new Date(Math.max(start.getTime(), Date.now()) + cfg.trialDays * DAY).toISOString();
   const { data: created, error } = await admin
     .from("billing")
-    .insert({ company_id: company.id, status: "trial", trial_ends_at, plan_name: cfg.planName, value: cfg.value })
+    .insert({ company_id: company.id, status: "trial", trial_ends_at, plan_name: cfg.planName, value: cfg.value, provider: "mercadopago" })
     .select("*")
     .single();
   if (error || !created) {
-    // corrida: outra requisição criou primeiro
-    const again = await admin.from("billing").select("*").eq("company_id", company.id).single();
+    const again = await admin.from("billing").select("*").eq("company_id", company.id).single(); // corrida
     if (again.data) return again.data as Billing;
     throw new HttpError(500, error?.message ?? "Não foi possível iniciar a assinatura");
   }
@@ -129,6 +128,7 @@ export async function ensureBilling(admin: SupabaseClient, company: { id: string
 
 export function billingView(b: Billing, cfg: BillingConfig, now = new Date()) {
   const daysLeft = b.status === "trial" && b.trial_ends_at ? Math.max(0, Math.ceil((new Date(b.trial_ends_at).getTime() - now.getTime()) / DAY)) : null;
+  const live = !!b.subscription_id && b.provider_status !== "cancelled" && b.status !== "canceled";
   return {
     enabled: cfg.enabled,
     enforced: cfg.enforced,
@@ -139,183 +139,197 @@ export function billingView(b: Billing, cfg: BillingConfig, now = new Date()) {
     daysLeft,
     nextDueDate: b.next_due_date,
     lastPaymentAt: b.last_payment_at,
-    invoiceUrl: b.invoice_url,
-    hasSubscription: !!b.asaas_subscription_id && b.status !== "canceled",
+    /** Link do Mercado Pago para concluir a assinatura (enquanto ela não for autorizada) */
+    invoiceUrl: live && b.provider_status === "pending" ? b.invoice_url : null,
+    hasSubscription: live,
+    /** A pessoa já concluiu a assinatura no Mercado Pago (cartão/conta autorizados) */
+    authorized: live && b.provider_status === "authorized",
     allowed: accessAllowed(b, cfg, now),
   };
 }
 
-const digits = (s: unknown) => String(s ?? "").replace(/\D/g, "");
-
-/** Valida CPF (11) ou CNPJ (14) pelos dígitos verificadores. */
-export function validCpfCnpj(v: unknown): boolean {
-  const d = digits(v);
-  if (d.length === 11) {
-    if (/^(\d)\1+$/.test(d)) return false;
-    const calc = (n: number) => {
-      let s = 0;
-      for (let i = 0; i < n; i++) s += Number(d[i]) * (n + 1 - i);
-      const r = (s * 10) % 11;
-      return r === 10 ? 0 : r;
-    };
-    return calc(9) === Number(d[9]) && calc(10) === Number(d[10]);
-  }
-  if (d.length === 14) {
-    if (/^(\d)\1+$/.test(d)) return false;
-    const calc = (n: number) => {
-      const w = n === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-      const s = w.reduce((acc, x, i) => acc + Number(d[i]) * x, 0);
-      const r = s % 11;
-      return r < 2 ? 0 : 11 - r;
-    };
-    return calc(12) === Number(d[12]) && calc(13) === Number(d[13]);
-  }
-  return false;
-}
-
-const FORMAS = new Set(["UNDEFINED", "PIX", "BOLETO", "CREDIT_CARD"]);
+const iso = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, ".000Z");
 
 /**
- * Cria (ou reaproveita) o cliente e a assinatura mensal no Asaas e devolve o link da fatura,
- * onde a pessoa paga com Pix, boleto ou cartão na página segura do próprio Asaas.
+ * Cria a assinatura mensal no Mercado Pago (status "pending") e devolve o link (init_point)
+ * onde a pessoa conclui a assinatura na página segura do Mercado Pago.
  */
 export async function subscribe(
   admin: SupabaseClient,
   company: { id: string; name: string; created_at?: string },
-  input: { nome?: unknown; cpfCnpj?: unknown; email?: unknown; celular?: unknown; forma?: unknown },
+  input: { email?: unknown },
   cfg: BillingConfig,
-  asaas: AsaasClient,
+  mp: MpClient,
   today = new Date(),
 ) {
   if (!cfg.enabled) throw new HttpError(503, "As assinaturas ainda não foram ativadas.");
-  const nome = String(input.nome ?? "").trim();
-  const cpfCnpj = digits(input.cpfCnpj);
-  const email = String(input.email ?? "").trim();
-  const celular = digits(input.celular);
-  const forma = String(input.forma ?? "UNDEFINED").toUpperCase();
-  if (nome.length < 3) throw new HttpError(400, "Informe o nome completo ou a razão social.");
-  if (!validCpfCnpj(cpfCnpj)) throw new HttpError(400, "CPF ou CNPJ inválido.");
-  if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, "Informe um e-mail válido.");
-  if (!FORMAS.has(forma)) throw new HttpError(400, "Forma de pagamento inválida.");
+  const email = String(input.email ?? "").trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, "Informe o e-mail da sua conta do Mercado Pago.");
 
   const b = await ensureBilling(admin, company, cfg);
-  // Já tem assinatura em andamento: devolve a fatura pendente em vez de criar outra
-  if (b.asaas_subscription_id && b.status !== "canceled") {
-    const pend = await firstPending(asaas, b.asaas_subscription_id);
-    if (pend?.invoiceUrl) await admin.from("billing").update({ invoice_url: pend.invoiceUrl, next_due_date: pend.dueDate, updated_at: new Date().toISOString() }).eq("company_id", company.id);
-    return { invoiceUrl: pend?.invoiceUrl ?? b.invoice_url, reused: true };
+  // Já existe assinatura em andamento: reaproveita (não cria outra cobrança)
+  if (b.subscription_id && b.status !== "canceled" && b.provider_status !== "cancelled") {
+    const pre = await mp.getPreapproval(b.subscription_id);
+    const status = String(pre.status ?? "");
+    if (status !== "cancelled") {
+      await admin.from("billing").update({ provider_status: status, invoice_url: (pre.init_point as string) ?? b.invoice_url, updated_at: new Date().toISOString() }).eq("company_id", company.id);
+      return { invoiceUrl: status === "pending" ? ((pre.init_point as string) ?? b.invoice_url) : null, reused: true, authorized: status === "authorized" };
+    }
   }
 
-  const customer = { name: nome, cpfCnpj, email, mobilePhone: celular || undefined, externalReference: company.id, notificationDisabled: false };
-  const customerId = b.asaas_customer_id ? (await asaas.updateCustomer(b.asaas_customer_id, customer)).id : (await asaas.createCustomer(customer)).id;
-  await admin.from("billing").update({ asaas_customer_id: customerId, updated_at: new Date().toISOString() }).eq("company_id", company.id);
-
-  // Primeira cobrança: no fim do período de teste (se ainda estiver nele) ou hoje
+  // Primeira cobrança: no fim do teste grátis (se ainda estiver nele) ou agora
   const trialEnd = b.status === "trial" && b.trial_ends_at ? new Date(b.trial_ends_at) : null;
-  const firstDue = trialEnd && trialEnd > today ? trialEnd : today;
-  const sub = await asaas.createSubscription({
-    customer: customerId,
-    billingType: forma,
-    value: cfg.value,
-    nextDueDate: isoDate(new Date(firstDue.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) + "T12:00:00Z")),
-    cycle: "MONTHLY",
-    description: `Assinatura ${cfg.planName}`,
-    externalReference: company.id,
+  const inTrial = !!trialEnd && trialEnd.getTime() > today.getTime() + 60_000;
+  const pre = await mp.createPreapproval({
+    reason: `Assinatura ${cfg.planName}`,
+    external_reference: company.id,
+    payer_email: email,
+    auto_recurring: {
+      frequency: 1,
+      frequency_type: "months",
+      transaction_amount: cfg.value,
+      currency_id: "BRL",
+      ...(inTrial ? { start_date: iso(trialEnd!) } : {}),
+    },
+    back_url: `${cfg.appUrl}/assinatura`,
+    status: "pending",
   });
-  const pend = await firstPending(asaas, sub.id);
+  const id = String(pre.id ?? "");
+  if (!id || !pre.init_point) throw new HttpError(502, "O Mercado Pago não devolveu o link da assinatura.");
+  const next = String(pre.next_payment_date ?? "").slice(0, 10) || (inTrial ? trialEnd!.toISOString().slice(0, 10) : today.toISOString().slice(0, 10));
   const { error } = await admin
     .from("billing")
     .update({
-      asaas_subscription_id: sub.id,
+      provider: "mercadopago",
+      subscription_id: id,
+      provider_status: String(pre.status ?? "pending"),
+      payer_email: email,
       plan_name: cfg.planName,
       value: cfg.value,
-      next_due_date: pend?.dueDate ?? sub.nextDueDate ?? null,
-      invoice_url: pend?.invoiceUrl ?? null,
-      // Ainda no teste: continua em teste até o pagamento. Teste vencido ou cancelado: "aguardando pagamento",
-      // com a tolerância de dias após o vencimento enquanto Pix/boleto compensa.
-      status: trialEnd && trialEnd > today ? "trial" : "overdue",
+      next_due_date: next,
+      invoice_url: String(pre.init_point),
+      // Ainda no teste: continua em teste. Teste vencido ou cancelado: "aguardando pagamento" (com tolerância).
+      status: inTrial ? "trial" : "overdue",
       updated_at: new Date().toISOString(),
     })
     .eq("company_id", company.id);
   if (error) throw new HttpError(500, error.message);
-  return { invoiceUrl: pend?.invoiceUrl ?? null, reused: false };
+  return { invoiceUrl: String(pre.init_point), reused: false, authorized: false };
 }
 
-async function firstPending(asaas: AsaasClient, subscriptionId: string) {
-  const { data } = await asaas.subscriptionPayments(subscriptionId);
-  const list = (data ?? []).map((p) => ({ id: String(p.id), status: String(p.status), dueDate: String(p.dueDate ?? ""), invoiceUrl: (p.invoiceUrl as string) ?? null }));
-  return list.filter((p) => p.status === "PENDING" || p.status === "OVERDUE").sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0] ?? null;
+const PAYMENT_LABEL = (p: Json) => {
+  const pay = (p.payment ?? {}) as Json;
+  const s = String(pay.status ?? p.status ?? "");
+  if (s === "approved" || s === "processed") return "PAID";
+  if (s === "rejected" || s === "recycling") return "FAILED";
+  if (s === "cancelled") return "CANCELLED";
+  return "SCHEDULED";
+};
+
+/** Cobranças da assinatura (para a tela "Assinatura"). Falha do Mercado Pago aqui não derruba a tela. */
+export async function invoices(b: Billing, mp: MpClient) {
+  if (!b.subscription_id) return [];
+  try {
+    const { results } = await mp.searchAuthorizedPayments(b.subscription_id);
+    return (results ?? [])
+      .map((p) => ({ id: String(p.id), dueDate: String(p.debit_date ?? p.date_created ?? "").slice(0, 10), value: Number(p.transaction_amount ?? 0), status: PAYMENT_LABEL(p), invoiceUrl: null }))
+      .sort((a, c) => c.dueDate.localeCompare(a.dueDate))
+      .slice(0, 24);
+  } catch (e) {
+    console.warn("[mp] faturas indisponíveis:", e instanceof Error ? e.message : e);
+    return [];
+  }
 }
 
-/** Faturas da assinatura (para a tela "Assinatura"). */
-export async function invoices(b: Billing, asaas: AsaasClient) {
-  if (!b.asaas_subscription_id) return [];
-  const { data } = await asaas.subscriptionPayments(b.asaas_subscription_id);
-  return (data ?? [])
-    .map((p) => ({ id: String(p.id), dueDate: String(p.dueDate ?? ""), value: Number(p.value ?? 0), status: String(p.status ?? ""), invoiceUrl: (p.invoiceUrl as string) ?? null }))
-    .sort((a, c) => c.dueDate.localeCompare(a.dueDate))
-    .slice(0, 24);
-}
-
-/** Cancela a assinatura no Asaas (para de cobrar). O acesso segue até o fim do período pago. */
-export async function cancelSubscription(admin: SupabaseClient, b: Billing, asaas: AsaasClient) {
-  if (!b.asaas_subscription_id || b.status === "canceled") return { ok: true, alreadyCanceled: true };
-  await asaas.deleteSubscription(b.asaas_subscription_id);
-  await admin.from("billing").update({ status: "canceled", updated_at: new Date().toISOString() }).eq("company_id", b.company_id);
+/** Cancela a assinatura no Mercado Pago (para de cobrar). O acesso segue até o fim do período pago. */
+export async function cancelSubscription(admin: SupabaseClient, b: Billing, mp: MpClient) {
+  if (!b.subscription_id || b.status === "canceled" || b.provider_status === "cancelled") return { ok: true, alreadyCanceled: true };
+  await mp.updatePreapproval(b.subscription_id, { status: "cancelled" });
+  await admin.from("billing").update({ status: "canceled", provider_status: "cancelled", updated_at: new Date().toISOString() }).eq("company_id", b.company_id);
   return { ok: true };
 }
 
-// ---------- avisos do Asaas (webhook) ----------
+// ---------- avisos do Mercado Pago (webhook) ----------
 
-const PAID = new Set(["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]);
-const LATE = new Set(["PAYMENT_OVERDUE", "PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE", "PAYMENT_REPROVED_BY_RISK_ANALYSIS"]);
-const ENDED = new Set(["SUBSCRIPTION_DELETED", "SUBSCRIPTION_INACTIVATED"]);
-const NEW_CHARGE = new Set(["PAYMENT_CREATED", "PAYMENT_UPDATED"]);
-
-/** Compara o token do aviso em tempo constante. */
-function sameToken(a: string, b: string) {
+async function hmacHex(secret: string, msg: string) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
+  return [...new Uint8Array(sig)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+function sameText(a: string, b: string) {
   if (a.length !== b.length) return false;
   let d = 0;
   for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return d === 0;
 }
 
-export async function handleAsaasEvent(admin: SupabaseClient, token: string | null, body: Json, cfg: BillingConfig) {
-  if (!cfg.webhookToken) throw new HttpError(503, "Webhook do Asaas não configurado (falta ASAAS_WEBHOOK_TOKEN).");
-  if (!token || !sameToken(token, cfg.webhookToken)) throw new HttpError(401, "Token do webhook inválido.");
-  const event = String(body.event ?? "");
-  const payment = (body.payment ?? null) as Json | null;
-  const subscription = (body.subscription ?? null) as Json | null;
-  const subId = String(payment?.subscription ?? subscription?.id ?? "") || null;
-  const extRef = String(payment?.externalReference ?? subscription?.externalReference ?? "") || null;
+/**
+ * Valida o cabeçalho x-signature ("ts=...,v1=...") do Mercado Pago.
+ * Manifesto: "id:<data.id>;request-id:<x-request-id>;ts:<ts>;" (partes ausentes são omitidas;
+ * data.id alfanumérico vai em minúsculas), assinado com HMAC-SHA256 e a chave secreta do webhook.
+ */
+export async function validMpSignature(secret: string, header: string | null, requestId: string | null, dataId: string | null) {
+  if (!header) return false;
+  const parts = Object.fromEntries(header.split(",").map((p) => p.trim().split("=").map((x) => x.trim())).filter((kv) => kv.length === 2)) as Record<string, string>;
+  if (!parts.ts || !parts.v1) return false;
+  const id = dataId ? (/^[a-z0-9]+$/i.test(dataId) ? dataId.toLowerCase() : dataId) : null;
+  const manifest = `${id ? `id:${id};` : ""}${requestId ? `request-id:${requestId};` : ""}ts:${parts.ts};`;
+  return sameText(await hmacHex(secret, manifest), parts.v1.toLowerCase());
+}
 
-  // Empresa: pela assinatura; se não achar, pela referência externa (id da empresa)
-  let b: Billing | null = null;
-  if (subId) b = ((await admin.from("billing").select("*").eq("asaas_subscription_id", subId).maybeSingle()).data as Billing | null) ?? null;
-  if (!b && extRef && /^[0-9a-f-]{36}$/i.test(extRef)) b = ((await admin.from("billing").select("*").eq("company_id", extRef).maybeSingle()).data as Billing | null) ?? null;
+export type MpNotification = { dataId: string | null; type: string | null; signature: string | null; requestId: string | null; body: Json };
 
-  // Idempotência: o mesmo aviso nunca é processado duas vezes
-  const eventId = String(body.id ?? `${event}:${payment?.id ?? subscription?.id ?? ""}:${payment?.status ?? ""}`);
-  const { error: dup } = await admin.from("billing_events").insert({ id: eventId, event, company_id: b?.company_id ?? null, payload: body });
+export async function handleMpNotification(admin: SupabaseClient, n: MpNotification, cfg: BillingConfig, mp: MpClient) {
+  if (!cfg.webhookSecret) throw new HttpError(503, "Webhook do Mercado Pago não configurado (falta MERCADOPAGO_WEBHOOK_SECRET).");
+  const dataId = n.dataId ?? (String(((n.body.data ?? {}) as Json).id ?? "") || null);
+  if (!(await validMpSignature(cfg.webhookSecret, n.signature, n.requestId, dataId))) throw new HttpError(401, "Assinatura do aviso inválida.");
+  const type = n.type ?? (String(n.body.type ?? n.body.topic ?? "") || null);
+  if (!dataId || !type) return { ok: true, ignored: "aviso sem id ou tipo" };
+
+  // Registro (auditoria e idempotência). O estado é sempre relido no Mercado Pago, então repetir é seguro.
+  const eventId = `mp:${type}:${dataId}:${String(n.body.action ?? "")}:${String(n.body.id ?? n.requestId ?? "")}`;
+  const { error: dup } = await admin.from("billing_events").insert({ id: eventId, event: `${type}.${String(n.body.action ?? "")}`, payload: n.body });
   if (dup) return { ok: true, duplicate: true };
-  if (!b) return { ok: true, ignored: "assinatura não encontrada" };
 
+  const findBilling = async (subId: string | null, ext: string | null) => {
+    let b: Billing | null = null;
+    if (subId) b = ((await admin.from("billing").select("*").eq("subscription_id", subId).maybeSingle()).data as Billing | null) ?? null;
+    if (!b && ext && /^[0-9a-f-]{36}$/i.test(ext)) b = ((await admin.from("billing").select("*").eq("company_id", ext).maybeSingle()).data as Billing | null) ?? null;
+    return b;
+  };
   const now = new Date().toISOString();
+  let b: Billing | null = null;
   const upd: Json = { updated_at: now };
-  if (PAID.has(event)) {
-    upd.status = "active";
-    upd.last_payment_at = now;
-  } else if (LATE.has(event)) {
-    if (b.status !== "canceled") upd.status = "overdue";
-    if (payment?.dueDate) upd.next_due_date = String(payment.dueDate);
-  } else if (ENDED.has(event)) {
-    upd.status = "canceled";
-  } else if (NEW_CHARGE.has(event) && payment && ["PENDING", "OVERDUE"].includes(String(payment.status))) {
-    upd.next_due_date = String(payment.dueDate ?? b.next_due_date ?? "") || null;
-    upd.invoice_url = (payment.invoiceUrl as string) ?? b.invoice_url;
+
+  if (type === "subscription_preapproval" || type === "preapproval") {
+    const pre = await mp.getPreapproval(dataId);
+    b = await findBilling(String(pre.id ?? dataId), String(pre.external_reference ?? "") || null);
+    if (!b) return { ok: true, ignored: "assinatura não encontrada" };
+    const st = String(pre.status ?? "");
+    upd.provider_status = st;
+    upd.subscription_id = String(pre.id ?? dataId);
+    if (pre.next_payment_date) upd.next_due_date = String(pre.next_payment_date).slice(0, 10);
+    if (st === "authorized") upd.status = "active";
+    else if (st === "paused") upd.status = "overdue";
+    else if (st === "cancelled") upd.status = "canceled";
+  } else if (type === "subscription_authorized_payment") {
+    const ap = await mp.getAuthorizedPayment(dataId);
+    b = await findBilling(String(ap.preapproval_id ?? "") || null, String(ap.external_reference ?? "") || null);
+    if (!b) return { ok: true, ignored: "assinatura não encontrada" };
+    const label = PAYMENT_LABEL(ap);
+    if (label === "PAID") {
+      upd.status = "active";
+      upd.last_payment_at = now;
+    } else if (label === "FAILED") {
+      if (b.status !== "canceled") upd.status = "overdue";
+      if (ap.debit_date) upd.next_due_date = String(ap.debit_date).slice(0, 10);
+    } else {
+      return { ok: true, ignored: `cobrança ${String(ap.status ?? "")}` };
+    }
   } else {
-    return { ok: true, ignored: event };
+    return { ok: true, ignored: type };
   }
+  await admin.from("billing_events").update({ company_id: b.company_id }).eq("id", eventId);
   const { error } = await admin.from("billing").update(upd).eq("company_id", b.company_id);
   if (error) throw new HttpError(500, error.message);
   return { ok: true, status: (upd.status as string) ?? b.status };

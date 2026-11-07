@@ -7,25 +7,17 @@ import { Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 
 type Fatura = { id: string; dueDate: string; value: number; status: string; invoiceUrl: string | null }
 const STATUS_FATURA: Record<string, { l: string; c: string }> = {
-  PENDING: { l: 'A pagar', c: 'bg-amber-50 text-amber-700' },
-  OVERDUE: { l: 'Vencida', c: 'bg-rose-50 text-rose-700' },
-  RECEIVED: { l: 'Paga', c: 'bg-emerald-50 text-emerald-700' },
-  CONFIRMED: { l: 'Paga', c: 'bg-emerald-50 text-emerald-700' },
-  RECEIVED_IN_CASH: { l: 'Paga', c: 'bg-emerald-50 text-emerald-700' },
-  REFUNDED: { l: 'Estornada', c: 'bg-slate-100 text-slate-600' },
+  PAID: { l: 'Paga', c: 'bg-emerald-50 text-emerald-700' },
+  SCHEDULED: { l: 'Agendada', c: 'bg-brand-soft text-ink' },
+  FAILED: { l: 'Recusada — nova tentativa', c: 'bg-rose-50 text-rose-700' },
+  CANCELLED: { l: 'Cancelada', c: 'bg-slate-100 text-slate-600' },
 }
-const FORMAS = [
-  { v: 'UNDEFINED', l: 'Escolher na hora' },
-  { v: 'PIX', l: 'Pix' },
-  { v: 'BOLETO', l: 'Boleto' },
-  { v: 'CREDIT_CARD', l: 'Cartão de crédito' },
-]
 
-/** Assinatura da Scalable (Asaas): status, assinar, faturas e cancelamento. */
+/** Assinatura da Scalable (Mercado Pago): status, assinar, cobranças e cancelamento. */
 export default function Billing() {
   const { billing, reloadBilling, session, toast } = useApp()
   const [faturas, setFaturas] = useState<Fatura[] | null>(null)
-  const [form, setForm] = useState<null | { nome: string; cpfCnpj: string; email: string; celular: string; forma: string }>(null)
+  const [form, setForm] = useState<null | { email: string }>(null)
   const [busy, setBusy] = useState(false)
   const [link, setLink] = useState<string | null>(null)
 
@@ -60,14 +52,14 @@ export default function Billing() {
     if (!form) return
     setBusy(true)
     try {
-      const r = await api<{ invoiceUrl: string | null }>('assinatura', { action: 'assinar', ...form })
+      const r = await api<{ invoiceUrl: string | null }>('assinatura', { action: 'assinar', email: form.email })
       await reloadBilling()
       setForm(null)
       if (r.invoiceUrl) {
         setLink(r.invoiceUrl)
         window.open(r.invoiceUrl, '_blank', 'noopener')
       }
-      toast('Assinatura criada. Conclua o pagamento na página do Asaas.')
+      toast('Conclua a assinatura na página do Mercado Pago.')
     } catch (err) {
       toast(err instanceof Error ? err.message : String(err), 'err')
     } finally {
@@ -110,7 +102,7 @@ export default function Billing() {
               <div className="text-xs font-semibold uppercase tracking-wide text-muted">Plano</div>
               <div className="mt-1 text-2xl font-bold">{b.plan.name}</div>
               <div className="mt-1 text-sm text-muted">
-                <b className="text-ink">{brl(b.plan.value)}</b> por mês · Pix, boleto ou cartão
+                <b className="text-ink">{brl(b.plan.value)}</b> por mês · cobrança automática pelo Mercado Pago
               </div>
             </div>
             <span className={`chip ${chip.c}`}>{chip.l}</span>
@@ -122,13 +114,13 @@ export default function Billing() {
           </div>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             {canSubscribe && (
-              <button className="btn-primary" onClick={() => setForm({ nome: '', cpfCnpj: '', email: session?.user.email ?? '', celular: '', forma: 'UNDEFINED' })}>
+              <button className="btn-primary" onClick={() => setForm({ email: session?.user.email ?? '' })}>
                 <CreditCard size={16} /> {b.status === 'canceled' ? 'Assinar de novo' : 'Assinar agora'}
               </button>
             )}
-            {!canSubscribe && payUrl && b.status !== 'active' && (
+            {!canSubscribe && payUrl && !b.authorized && (
               <a className="btn-primary" href={payUrl} target="_blank" rel="noreferrer">
-                <ExternalLink size={16} /> Pagar fatura
+                <ExternalLink size={16} /> Concluir assinatura no Mercado Pago
               </a>
             )}
             {b.hasSubscription && (
@@ -138,21 +130,21 @@ export default function Billing() {
             )}
           </div>
           <p className="mt-5 flex items-center gap-2 text-xs text-muted">
-            <ShieldCheck size={14} /> Pagamento processado pelo Asaas. A Scalable não vê nem guarda dados do seu cartão.
+            <ShieldCheck size={14} /> Pagamento processado pelo Mercado Pago. A Scalable não vê nem guarda dados do seu cartão.
             {b.sandbox && <span className="chip bg-amber-50 text-amber-800">Ambiente de testes</span>}
           </p>
         </Reveal>
 
         <Reveal i={2} className="card p-6">
           <h2 className="flex items-center gap-2 font-semibold">
-            <Receipt size={18} /> Faturas
+            <Receipt size={18} /> Cobranças
           </h2>
           {!b.hasSubscription ? (
-            <p className="mt-3 text-sm text-muted">As faturas aparecem aqui depois que você assinar.</p>
+            <p className="mt-3 text-sm text-muted">As cobranças aparecem aqui depois que você assinar.</p>
           ) : faturas === null ? (
             <div className="py-6 text-center"><Spinner /></div>
           ) : faturas.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">Nenhuma fatura ainda.</p>
+            <p className="mt-3 text-sm text-muted">{b.authorized ? 'A primeira cobrança aparece aqui na data do vencimento.' : 'Nenhuma cobrança ainda. Conclua a assinatura no Mercado Pago.'}</p>
           ) : (
             <ul className="mt-3 divide-y divide-line">
               {faturas.map((f) => {
@@ -179,34 +171,18 @@ export default function Billing() {
         {form && (
           <form onSubmit={subscribe} className="space-y-3">
             <p className="text-sm text-muted">
-              {brl(b.plan.value)} por mês.{' '}
-              {b.status === 'trial' && b.allowed ? 'A primeira cobrança só vence no fim do seu teste grátis.' : 'A primeira cobrança vence hoje.'} Você pode cancelar quando quiser.
+              {brl(b.plan.value)} por mês, cobrados automaticamente.{' '}
+              {b.status === 'trial' && b.allowed ? 'A primeira cobrança só acontece no fim do seu teste grátis.' : 'A primeira cobrança acontece hoje.'} Você pode cancelar quando quiser.
             </p>
-            <Field label="Nome completo ou razão social">
-              <input className="input" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+            <Field label="E-mail da sua conta do Mercado Pago">
+              <input className="input" type="email" required value={form.email} onChange={(e) => setForm({ email: e.target.value })} />
             </Field>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="CPF ou CNPJ">
-                <input className="input" required inputMode="numeric" value={form.cpfCnpj} onChange={(e) => setForm({ ...form, cpfCnpj: e.target.value })} placeholder="000.000.000-00" />
-              </Field>
-              <Field label="Celular">
-                <input className="input" inputMode="tel" value={form.celular} onChange={(e) => setForm({ ...form, celular: e.target.value })} placeholder="(11) 99999-9999" />
-              </Field>
-            </div>
-            <Field label="E-mail para as faturas">
-              <input className="input" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </Field>
-            <Field label="Forma de pagamento">
-              <select className="input" value={form.forma} onChange={(e) => setForm({ ...form, forma: e.target.value })}>
-                {FORMAS.map((f) => (
-                  <option key={f.v} value={f.v}>{f.l}</option>
-                ))}
-              </select>
-            </Field>
+            <p className="rounded-xl bg-panel-2 px-3 py-2 text-xs text-muted">
+              Use o mesmo e-mail com que você entra no Mercado Pago. Na próxima tela, o Mercado Pago pede o pagamento com segurança.
+            </p>
             <button className="btn-primary w-full" disabled={busy}>
-              {busy && <Spinner size={14} />} Continuar para o pagamento
+              {busy && <Spinner size={14} />} Continuar no Mercado Pago
             </button>
-            <p className="text-center text-[11px] text-muted">Você será levado à página segura do Asaas para pagar.</p>
           </form>
         )}
       </Modal>

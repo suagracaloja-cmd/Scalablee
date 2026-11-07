@@ -1,8 +1,8 @@
 // Scalable API — Edge Function única com rotas:
 //   POST /api/agente        → conversa com o Agente SCALABLE (ponto único de IA, com ferramentas)
 //   POST /api/aprovacoes    → aprovar/recusar operações preparadas pelo agente (Central de Aprovações)
-//   POST /api/assinatura    → assinatura pelo Asaas (status, assinar, faturas, cancelar)
-//   POST /api/asaas-webhook → avisos de pagamento do Asaas
+//   POST /api/assinatura    → assinatura pelo Mercado Pago (status, assinar, faturas, cancelar)
+//   POST /api/mp-webhook    → avisos do Mercado Pago
 //   POST /api/conta         → excluir a conta e todos os dados (LGPD)
 //   POST /api/uso           → consumo de IA da empresa hoje
 //   POST /api/analise       → análise geral do agente (todas as áreas)  [alias antigo: /api/agents]
@@ -12,7 +12,7 @@
 import agente from "./agente.ts";
 import aprovacoes from "./aprovacoes.ts";
 import assinatura from "./assinatura.ts";
-import asaasWebhook from "./asaas-webhook.ts";
+import mpWebhook from "./mp-webhook.ts";
 import conta from "./conta.ts";
 import uso from "./uso.ts";
 import analise from "./analise.ts";
@@ -25,7 +25,7 @@ const routes: Record<string, (req: Request) => Promise<Response> | Response> = {
   agente,
   aprovacoes,
   assinatura,
-  "asaas-webhook": asaasWebhook,
+  "mp-webhook": mpWebhook,
   conta,
   uso,
   analise,

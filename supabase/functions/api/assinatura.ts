@@ -7,7 +7,12 @@ export default handle(async (req) => {
   const { db, company } = await requireCompany(req);
   const body = await req.json().catch(() => ({}));
   const cfg = billingConfig();
-  if (!cfg.enabled) return json({ enabled: false });
+  if (!cfg.enabled) {
+    // Diagnóstico (só nomes, nunca valores): o que falta para ligar a cobrança
+    const falta = [!cfg.token && "MERCADOPAGO_ACCESS_TOKEN", !cfg.value && "PLANO_VALOR (número > 0, ex.: 49.90)"].filter(Boolean).join(", ");
+    console.log(`[billing] cobrança desligada; falta: ${falta}`);
+    return json({ enabled: false });
+  }
   const mp = mpClient(cfg);
   try {
     switch (body.action ?? "status") {

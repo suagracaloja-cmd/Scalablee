@@ -32,8 +32,8 @@ export function billingConfig() {
   return {
     token,
     baseUrl: env("MERCADOPAGO_BASE_URL") ?? "https://api.mercadopago.com",
-    /** Credenciais de teste do Mercado Pago começam com TEST- */
-    sandbox: !!token && token.startsWith("TEST-"),
+    /** Ambiente de testes: credenciais TEST-, ou MERCADOPAGO_AMBIENTE=teste (credenciais APP_USR de usuário de teste) */
+    sandbox: (env("MERCADOPAGO_AMBIENTE") ?? "").toLowerCase().startsWith("test") || (!!token && token.startsWith("TEST-")),
     webhookSecret: env("MERCADOPAGO_WEBHOOK_SECRET") ?? null,
     appUrl: (env("APP_URL") ?? "https://scalablee.vercel.app").replace(/\/$/, ""),
     planName: env("PLANO_NOME") ?? "Scalable",
@@ -80,6 +80,7 @@ export function mpClient(cfg: BillingConfig, fetchFn: FetchFn = (u, i) => fetch(
     getPreapproval: (id: string) => call<Json>("GET", `/preapproval/${encodeURIComponent(id)}`),
     updatePreapproval: (id: string, p: Json) => call<Json>("PUT", `/preapproval/${encodeURIComponent(id)}`, p),
     getAuthorizedPayment: (id: string) => call<Json>("GET", `/authorized_payments/${encodeURIComponent(id)}`),
+    getPayment: (id: string) => call<Json>("GET", `/v1/payments/${encodeURIComponent(id)}`),
     searchAuthorizedPayments: (preapprovalId: string) => call<{ results?: Json[] }>("GET", `/authorized_payments/search?preapproval_id=${encodeURIComponent(preapprovalId)}`),
   };
 }
@@ -279,18 +280,36 @@ export async function validMpSignature(secret: string, header: string | null, re
 
 export type MpNotification = { dataId: string | null; type: string | null; signature: string | null; requestId: string | null; body: Json };
 
+const PREAPPROVAL_TYPES = new Set(["subscription_preapproval", "preapproval", "subscription"]);
+const AUTHORIZED_PAYMENT_TYPES = new Set(["subscription_authorized_payment", "authorized_payment"]);
+const PAYMENT_TYPES = new Set(["payment", "payments"]);
+
 export async function handleMpNotification(admin: SupabaseClient, n: MpNotification, cfg: BillingConfig, mp: MpClient) {
   if (!cfg.webhookSecret) throw new HttpError(503, "Webhook do Mercado Pago não configurado (falta MERCADOPAGO_WEBHOOK_SECRET).");
   const dataId = n.dataId ?? (String(((n.body.data ?? {}) as Json).id ?? "") || null);
   if (!(await validMpSignature(cfg.webhookSecret, n.signature, n.requestId, dataId))) throw new HttpError(401, "Assinatura do aviso inválida.");
-  const type = n.type ?? (String(n.body.type ?? n.body.topic ?? "") || null);
+  const type = (n.type ?? (String(n.body.type ?? n.body.topic ?? "") || null))?.toLowerCase() ?? null;
   if (!dataId || !type) return { ok: true, ignored: "aviso sem id ou tipo" };
 
-  // Registro (auditoria e idempotência). O estado é sempre relido no Mercado Pago, então repetir é seguro.
+  // Idempotência: o aviso só é marcado como processado DEPOIS de dar certo, para que o reenvio do
+  // Mercado Pago (após uma falha) seja processado. Repetir é seguro: o estado é sempre relido no Mercado Pago.
   const eventId = `mp:${type}:${dataId}:${String(n.body.action ?? "")}:${String(n.body.id ?? n.requestId ?? "")}`;
-  const { error: dup } = await admin.from("billing_events").insert({ id: eventId, event: `${type}.${String(n.body.action ?? "")}`, payload: n.body });
-  if (dup) return { ok: true, duplicate: true };
+  const seen = await admin.from("billing_events").select("id").eq("id", eventId).maybeSingle();
+  if (seen.data) return { ok: true, duplicate: true };
 
+  try {
+    const r = await processMp(admin, type, dataId, mp);
+    await admin.from("billing_events").insert({ id: eventId, event: `${type}.${String(n.body.action ?? "")}`, company_id: r.companyId ?? null, payload: n.body });
+    const { companyId: _c, ...rest } = r;
+    return rest;
+  } catch (e) {
+    // Recurso inexistente (ex.: "Simular notificação" do painel usa ids de exemplo): responde 200 para não haver reenvio
+    if (e instanceof PaymentProviderError && e.status === 404) return { ok: true, ignored: "recurso não encontrado no Mercado Pago" };
+    throw e;
+  }
+}
+
+async function processMp(admin: SupabaseClient, type: string, dataId: string, mp: MpClient): Promise<{ ok: true; status?: string; ignored?: string; companyId?: string }> {
   const findBilling = async (subId: string | null, ext: string | null) => {
     let b: Billing | null = null;
     if (subId) b = ((await admin.from("billing").select("*").eq("subscription_id", subId).maybeSingle()).data as Billing | null) ?? null;
@@ -298,10 +317,11 @@ export async function handleMpNotification(admin: SupabaseClient, n: MpNotificat
     return b;
   };
   const now = new Date().toISOString();
-  let b: Billing | null = null;
   const upd: Json = { updated_at: now };
+  let b: Billing | null = null;
 
-  if (type === "subscription_preapproval" || type === "preapproval") {
+  if (PREAPPROVAL_TYPES.has(type)) {
+    // Assinatura criada/atualizada: relê no Mercado Pago (GET /preapproval/{id})
     const pre = await mp.getPreapproval(dataId);
     b = await findBilling(String(pre.id ?? dataId), String(pre.external_reference ?? "") || null);
     if (!b) return { ok: true, ignored: "assinatura não encontrada" };
@@ -312,7 +332,8 @@ export async function handleMpNotification(admin: SupabaseClient, n: MpNotificat
     if (st === "authorized") upd.status = "active";
     else if (st === "paused") upd.status = "overdue";
     else if (st === "cancelled") upd.status = "canceled";
-  } else if (type === "subscription_authorized_payment") {
+  } else if (AUTHORIZED_PAYMENT_TYPES.has(type)) {
+    // Cobrança recorrente da assinatura (GET /authorized_payments/{id})
     const ap = await mp.getAuthorizedPayment(dataId);
     b = await findBilling(String(ap.preapproval_id ?? "") || null, String(ap.external_reference ?? "") || null);
     if (!b) return { ok: true, ignored: "assinatura não encontrada" };
@@ -324,15 +345,32 @@ export async function handleMpNotification(admin: SupabaseClient, n: MpNotificat
       if (b.status !== "canceled") upd.status = "overdue";
       if (ap.debit_date) upd.next_due_date = String(ap.debit_date).slice(0, 10);
     } else {
-      return { ok: true, ignored: `cobrança ${String(ap.status ?? "")}` };
+      return { ok: true, ignored: `cobrança ${String(ap.status ?? "")}`, companyId: b.company_id };
+    }
+  } else if (PAYMENT_TYPES.has(type)) {
+    // Pagamento (GET /v1/payments/{id}). Só conta se for de uma assinatura da Scalable;
+    // pagamentos de outras vendas da mesma conta do Mercado Pago são ignorados.
+    const p = await mp.getPayment(dataId);
+    const meta = (p.metadata ?? {}) as Json;
+    const poi = (((p.point_of_interaction ?? {}) as Json).transaction_data ?? {}) as Json;
+    const subId = String(meta.preapproval_id ?? poi.subscription_id ?? "") || null;
+    b = await findBilling(subId, String(p.external_reference ?? "") || null);
+    if (!b || !b.subscription_id) return { ok: true, ignored: "pagamento não é de assinatura da Scalable" };
+    const st = String(p.status ?? "");
+    if (st === "approved") {
+      upd.status = "active";
+      upd.last_payment_at = now;
+    } else if (["rejected", "refunded", "charged_back", "cancelled"].includes(st)) {
+      if (b.status !== "canceled") upd.status = "overdue";
+    } else {
+      return { ok: true, ignored: `pagamento ${st}`, companyId: b.company_id };
     }
   } else {
     return { ok: true, ignored: type };
   }
-  await admin.from("billing_events").update({ company_id: b.company_id }).eq("id", eventId);
   const { error } = await admin.from("billing").update(upd).eq("company_id", b.company_id);
   if (error) throw new HttpError(500, error.message);
-  return { ok: true, status: (upd.status as string) ?? b.status };
+  return { ok: true, status: (upd.status as string) ?? b.status, companyId: b.company_id };
 }
 
 /** Usado pelas rotas de IA: bloqueia se a cobrança estiver ativada e a assinatura não estiver em dia. */

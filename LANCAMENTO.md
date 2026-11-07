@@ -74,10 +74,16 @@ A integração já está pronta e **desligada**. Ela liga sozinha quando os secr
 
 **No Mercado Pago Developers** (mercadopago.com.br/developers → Suas integrações → sua aplicação):
 1. **Credenciais**: copie o **Access Token** (o de teste começa com `TEST-`; o de produção, com `APP_USR-`). A Public Key não é necessária.
-2. **Webhooks → Configurar notificações**:
-   - **URL (modo de teste e de produção):** `https://tmaywgdxfveczoxxrpur.supabase.co/functions/v1/api/mp-webhook`
-   - **Eventos:** *Planos e assinaturas* (assinaturas e pagamentos recorrentes);
-   - salve e copie a **assinatura secreta** (chave secreta) que o painel mostrar.
+2. **Webhooks → Configurar notificações** (aba **Modo de teste** e, depois, aba **Modo produtivo**):
+   - **URL:** `https://tmaywgdxfveczoxxrpur.supabase.co/functions/v1/api/mp-webhook` (a mesma nas duas abas);
+   - **Eventos** — marque os três:
+     - *Planos e assinaturas* → **vinculação de assinatura** (`subscription_preapproval`);
+     - *Planos e assinaturas* → **pagamento recorrente** (`subscription_authorized_payment`);
+     - **Pagamentos** (`payment`) — a documentação pede este também;
+   - **Salvar** → o painel mostra a **assinatura secreta** (chave secreta) → copie;
+   - use **Simular notificação** para testar: a Scalable responde 200 (com id de exemplo, o aviso é ignorado sem erro).
+   - Não use **IPN** (sistema antigo, sem assinatura): só **Webhooks**.
+   - A criação da assinatura **não** envia `notification_url` (o campo não existe na API de assinaturas); os avisos vêm da configuração do painel.
 
 **No Supabase** → Edge Functions → **Secrets**:
 
@@ -85,6 +91,7 @@ A integração já está pronta e **desligada**. Ela liga sozinha quando os secr
 |---|---|
 | `MERCADOPAGO_ACCESS_TOKEN` | o Access Token |
 | `MERCADOPAGO_WEBHOOK_SECRET` | a assinatura secreta do webhook |
+| `MERCADOPAGO_AMBIENTE` | (opcional) `teste` para mostrar "Ambiente de testes" quando usar credenciais `APP_USR` de um **usuário de teste vendedor** |
 | `PLANO_VALOR` | preço mensal, ex.: `97.00` |
 | `PLANO_NOME` | (opcional) nome do plano, ex.: `Scalable Pro` |
 | `PLANO_TESTE_DIAS` | (opcional) dias de teste grátis; padrão `7` |

@@ -1,11 +1,14 @@
 // POST /api/assinatura — { action: "status" | "assinar" | "faturas" | "cancelar", ... }
 // Assinatura mensal da Scalable pelo Mercado Pago (concluída na página segura do Mercado Pago).
 import { handle, HttpError, json, requireCompany } from "./lib/common.ts";
+import { lerJson, textoOpcional, umDe } from "./lib/util.ts";
 import { billingConfig, billingDiagnostics, billingView, cancelSubscription, ensureBilling, invoices, mpClient, PaymentProviderError, subscribe } from "./lib/billing.ts";
 
 export default handle(async (req) => {
-  const { db, company } = await requireCompany(req);
-  const body = await req.json().catch(() => ({}));
+  const { db, company } = await requireCompany(req, { limite: [30, 60] });
+  const body = await lerJson(req);
+  const action = umDe(body.action ?? "status", ["status", "assinar", "faturas", "cancelar"] as const, "Ação");
+  textoOpcional(body.email, "E-mail", 254);
   const cfg = billingConfig();
   if (!cfg.enabled) {
     // Diagnóstico (só nomes, nunca valores): o que falta para ligar a cobrança
@@ -14,7 +17,7 @@ export default handle(async (req) => {
   }
   const mp = mpClient(cfg);
   try {
-    switch (body.action ?? "status") {
+    switch (action) {
       case "status":
         return json(billingView(await ensureBilling(db, company, cfg), cfg));
       case "assinar":

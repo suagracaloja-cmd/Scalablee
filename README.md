@@ -72,7 +72,7 @@ Antes de lançar comercialmente, siga o [guia de lançamento](LANCAMENTO.md).
 | Publicação em Instagram/outras redes | **Não integrada** — aprovar só registra a decisão; a publicação é manual | Exige integração com a Meta (não configurada) |
 | Métricas de redes sociais | **Não integradas** — o agente avisa que não tem esses dados | — |
 
-Opcional para WhatsApp: `WHATSAPP_APP_SECRET` (valida a assinatura dos webhooks da Meta) e `WHATSAPP_GRAPH_VERSION` (padrão `v23.0`).
+Opcional para WhatsApp: `WHATSAPP_APP_SECRET` (App Secret global, para quem não cadastrou o seu — sem nenhum, as mensagens recebidas são recusadas) e `WHATSAPP_GRAPH_VERSION` (padrão `v23.0`). Para liberar a API a um domínio próprio: `APP_URL` (ou `ALLOWED_ORIGINS`, separados por vírgula).
 
 ## WhatsApp Business (API oficial da Meta)
 
@@ -86,7 +86,7 @@ Observação: pela regra da Meta, mensagens iniciadas pela empresa (ex.: reativa
 
 ```
 src/                     front-end (páginas em src/pages; conversa em src/pages/Agent.tsx)
-supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp; 0007 = assinaturas; 0008 = Mercado Pago; 0009 = novidades por e-mail)
+supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp; 0007 = assinaturas; 0008 = Mercado Pago; 0009 = novidades por e-mail; 0010 = segurança)
 supabase/functions/api/  Edge Function com as rotas:
   agente.ts      POST /api/agente       conversa com o Agente SCALABLE
   aprovacoes.ts  POST /api/aprovacoes   aprovar/recusar operações

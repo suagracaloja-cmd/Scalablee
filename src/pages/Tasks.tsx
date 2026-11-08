@@ -112,10 +112,10 @@ export default function Tasks() {
         {form && (
           <form onSubmit={save} className="space-y-3">
             <Field label="Tarefa">
-              <input className="input" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              <input maxLength={300} className="input" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </Field>
             <Field label="Detalhes">
-              <textarea className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <textarea maxLength={5000} className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </Field>
             <Field label="Para quando">
               <input className="input" type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />

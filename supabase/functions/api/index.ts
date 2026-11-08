@@ -19,7 +19,7 @@ import analise from "./analise.ts";
 import site from "./site.ts";
 import waSend from "./wa-send.ts";
 import waWebhook from "./wa-webhook.ts";
-import { cors, json } from "./lib/common.ts";
+import { admin, clientIp, HttpError, json, rateLimit, securityHeaders } from "./lib/common.ts";
 
 const routes: Record<string, (req: Request) => Promise<Response> | Response> = {
   agente,
@@ -35,12 +35,33 @@ const routes: Record<string, (req: Request) => Promise<Response> | Response> = {
   "wa-webhook": waWebhook,
 };
 
-Deno.serve((req) => {
+// Limites gerais por IP (pedidos por minuto), antes de qualquer outra coisa
+const LIMITE_IP: Record<string, number> = { "wa-webhook": 600, "mp-webhook": 120 };
+const LIMITE_IP_PADRAO = 240;
+const TAMANHO_MAXIMO = 1_000_000; // 1 MB por pedido
+
+async function rotear(req: Request): Promise<Response> {
   const route = new URL(req.url).pathname.split("/").filter(Boolean).pop() ?? "";
   const fn = routes[route];
-  if (!fn) {
-    if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-    return json({ error: "Rota não encontrada" }, 404);
+  if (req.method === "OPTIONS") return new Response(null, { status: 204 });
+  if (!fn) return json({ error: "Rota não encontrada" }, 404);
+  if (Number(req.headers.get("content-length") ?? 0) > TAMANHO_MAXIMO) return json({ error: "Pedido grande demais." }, 413);
+  try {
+    await rateLimit(admin(), `ip:${route}:${clientIp(req)}`, LIMITE_IP[route] ?? LIMITE_IP_PADRAO, 60);
+  } catch (e) {
+    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    throw e;
   }
   return fn(req);
+}
+
+Deno.serve(async (req) => {
+  const res = await rotear(req).catch((e) => {
+    console.error(e);
+    return json({ error: "Erro interno. Tente de novo em instantes." }, 500);
+  });
+  // Cabeçalhos de segurança e CORS (só para o site da Scalable) em todas as respostas
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(securityHeaders(req))) headers.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 });

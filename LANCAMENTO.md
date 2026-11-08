@@ -65,7 +65,7 @@ Também já funcionam: **exportar meus dados** e **excluir minha conta** (Config
 
 ## 6. WhatsApp
 
-- Cada cliente conecta o WhatsApp com o app dele na Meta. A tela de conexão agora pede também a **chave secreta do app (App Secret)**, que liga a verificação de autenticidade das mensagens recebidas. Sem ela, a tela mostra um aviso.
+- Cada cliente conecta o WhatsApp com o app dele na Meta. A tela de conexão exige também a **chave secreta do app (App Secret)**: só mensagens assinadas pela Meta são aceitas. Token e App Secret ficam guardados criptografados.
 - Para mensagens enviadas fora da janela de 24h após a última mensagem do cliente, a Meta exige **modelos de mensagem aprovados**; para volume maior, a **verificação da empresa** na Meta.
 
 ## 7. Cobrança pelo Mercado Pago
@@ -114,7 +114,19 @@ Na tela **Assinatura**, o cliente pode clicar em **Assinar grátis** para recebe
 - Cada inscrição guarda a data, o texto e a versão do aceite (prova do consentimento) e, se a pessoa cancelar, a data do cancelamento.
 - **Envio dos e-mails:** a Scalable ainda não envia e-mails sozinha. Você pode copiar a lista e enviar pelo seu e-mail ou por um serviço de e-mail marketing. Todo e-mail deve ter um jeito de cancelar (a pessoa também pode cancelar na própria tela Assinatura).
 
-## 9. Recomendados (não bloqueiam)
+## 9. Segurança
+
+**Já está ativo no sistema:** RLS em todas as tabelas; visitante sem login não acessa nenhuma tabela; tokens do WhatsApp criptografados (chave no Vault do Supabase); limite de tentativas em todas as rotas da API; validação de entradas no servidor e no banco; erros sem detalhes internos; uploads só de imagem até 2 MB; proteção contra SSRF na análise de site; webhooks do WhatsApp e do Mercado Pago só com assinatura válida; cabeçalhos de segurança (CSP, HSTS, anti-clickjacking) no site e na API; CORS só para o site da Scalable; senha nova com no mínimo 8 caracteres, letras e números.
+
+**O que só você pode ligar (painel do Supabase → projeto Scalablee):**
+1. **Authentication → Sign In / Providers → Email:** *Minimum password length* = **8** e *Password requirements* = **letras e números** (assim o servidor também exige, não só o site).
+2. **Authentication → Rate Limits:** confira os limites de login, cadastro e envio de e-mails (deixe os padrões ou reduza).
+3. **Proteção contra senhas vazadas** (*Leaked password protection*): disponível no plano **Pro**.
+4. **Anti-robô (CAPTCHA), grátis:** crie um widget no **Cloudflare Turnstile** (dash.cloudflare.com → Turnstile) com o domínio `scalablee.vercel.app`. Envie para mim só a **Site Key** (é pública) — eu ligo no site. Depois, em **Authentication → Attack Protection → CAPTCHA**, escolha *Turnstile* e cole a **Secret Key** direto no painel (nunca no chat). Faça nessa ordem: se ligar no Supabase antes do site, o login para de funcionar. Ao ligar, a Política de Cookies e a de Privacidade precisam citar o Cloudflare.
+5. **Não apague** o segredo `scalable_chave_dados` em **Project Settings → Vault**: sem ele os tokens do WhatsApp salvos não podem ser lidos.
+6. Se alguma chave (Groq, Mercado Pago, Meta) for exposta, gere outra no serviço e troque em **Edge Functions → Secrets**.
+
+## 10. Recomendados (não bloqueiam)
 
 - **Domínio próprio** (ex.: registro.br) apontado para a Vercel.
 - Supabase → Authentication → **proteção contra senhas vazadas** (disponível em planos pagos).

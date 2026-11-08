@@ -87,7 +87,7 @@ export default function Sales() {
       <Reveal i={5} className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 lg:max-w-sm">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-          <input className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none focus:ring-4 focus:ring-brand/10" placeholder="Buscar produto ou cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input maxLength={100} className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none focus:ring-4 focus:ring-brand/10" placeholder="Buscar produto ou cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {(['all', 'paid', 'pending', 'cancelled'] as const).map((st) => (
@@ -179,7 +179,7 @@ export default function Sales() {
         {form && (
           <form onSubmit={save} className="space-y-4">
             <Field label="Produto / serviço">
-              <input className="input" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Camiseta básica" list="sale-products" />
+              <input maxLength={500} className="input" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Camiseta básica" list="sale-products" />
               <datalist id="sale-products">
                 {[...new Set(items.map((i) => i.description))].slice(0, 30).map((d) => (
                   <option key={d} value={d} />
@@ -188,7 +188,7 @@ export default function Sales() {
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Valor (R$)">
-                <input className="input" required inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0,00" />
+                <input maxLength={20} className="input" required inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0,00" />
               </Field>
               <Field label="Data">
                 <input className="input" type="date" required value={form.sold_at} onChange={(e) => setForm({ ...form, sold_at: e.target.value })} />

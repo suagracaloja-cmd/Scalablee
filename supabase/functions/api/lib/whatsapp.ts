@@ -2,11 +2,39 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const GRAPH = `https://graph.facebook.com/${Deno.env.get("WHATSAPP_GRAPH_VERSION") ?? "v23.0"}`;
 
-export type WaConfig = { company_id: string; phone_number_id: string; access_token: string; verify_token: string; connected: boolean; app_secret?: string | null };
+export type WaConfig = { company_id: string; phone_number_id: string; access_token: string; verify_token: string; connected: boolean; app_secret?: string | null; display_phone?: string | null };
 
+// As credenciais ficam CRIPTOGRAFADAS no banco (chave no Vault do Supabase). Só o servidor (service role)
+// consegue salvar e ler, pelas funções abaixo; o navegador nunca recebe o token nem o App Secret.
+
+/** Configuração do WhatsApp da empresa, com as credenciais já decifradas (uso só no servidor). */
 export async function getConfig(db: SupabaseClient, companyId: string): Promise<WaConfig | null> {
-  const { data } = await db.from("whatsapp_configs").select("*").eq("company_id", companyId).maybeSingle();
-  return data as WaConfig | null;
+  const { data, error } = await db.rpc("whatsapp_config_empresa", { p_company_id: companyId });
+  if (error) throw new Error(`WhatsApp: ${error.message}`);
+  return ((data as WaConfig[] | null) ?? [])[0] ?? null;
+}
+
+/** Configurações dos números citados num aviso da Meta (credenciais decifradas, uso só no servidor). */
+export async function getConfigsByPhone(db: SupabaseClient, phoneIds: string[]): Promise<WaConfig[]> {
+  if (!phoneIds.length) return [];
+  const { data, error } = await db.rpc("whatsapp_config_numeros", { p_phone_ids: phoneIds });
+  if (error) throw new Error(`WhatsApp: ${error.message}`);
+  return (data as WaConfig[] | null) ?? [];
+}
+
+/** Salva as credenciais criptografadas. Token ou App Secret vazios mantêm os já salvos. */
+export async function saveCredentials(
+  db: SupabaseClient,
+  c: { companyId: string; phoneNumberId: string; accessToken: string | null; appSecret: string | null; displayPhone: string | null },
+) {
+  const { error } = await db.rpc("whatsapp_salvar_credenciais", {
+    p_company_id: c.companyId,
+    p_phone_number_id: c.phoneNumberId,
+    p_access_token: c.accessToken,
+    p_app_secret: c.appSecret,
+    p_display_phone: c.displayPhone,
+  });
+  return { error };
 }
 
 /** Envia uma mensagem de texto pela WhatsApp Cloud API. */
@@ -97,15 +125,20 @@ export async function validSignature(body: string, header: string | null, secret
   return diff === 0;
 }
 
-/** Confere a assinatura usando o App Secret de cada número citado no payload. */
+/**
+ * Confere a assinatura da Meta usando o App Secret de cada número citado no aviso (ou WHATSAPP_APP_SECRET).
+ * Sem segredo cadastrado a mensagem é RECUSADA: ninguém consegue se passar pela Meta para injetar mensagens.
+ */
 export async function checkSignature(db: SupabaseClient, payload: WebhookPayload, raw: string, header: string | null) {
   const ids = [...new Set((payload.entry ?? []).flatMap((e) => (e.changes ?? []).map((c) => c.value?.metadata?.phone_number_id)).filter((x): x is string => !!x))];
   if (!ids.length) return { ok: true as const, phone: null };
-  const { data } = await db.from("whatsapp_configs").select("phone_number_id,app_secret").in("phone_number_id", ids);
+  const configs = await getConfigsByPhone(db, ids);
   const globalSecret = Deno.env.get("WHATSAPP_APP_SECRET") ?? "";
   for (const id of ids) {
-    const secret = (data ?? []).find((c) => c.phone_number_id === id)?.app_secret || globalSecret;
-    if (secret && !(await validSignature(raw, header, secret))) return { ok: false as const, phone: id };
+    const cfg = configs.find((c) => c.phone_number_id === id);
+    if (!cfg) continue; // número que não é de nenhuma empresa: o aviso é ignorado no processamento
+    const secret = cfg.app_secret || globalSecret;
+    if (!secret || !(await validSignature(raw, header, secret))) return { ok: false as const, phone: id };
   }
   return { ok: true as const, phone: null };
 }

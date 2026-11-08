@@ -1,6 +1,8 @@
 // A IA entra no site da empresa, avalia e explica o que melhorar.
 import { assertAccess } from "./lib/billing.ts";
 import { handle, HttpError, json, requireCompany } from "./lib/common.ts";
+import { lerJson, textoOpcional } from "./lib/util.ts";
+import { assertPublicUrl, fetchPublico } from "./lib/rede.ts";
 import { hasAI, modelCreate } from "./lib/ai.ts";
 import { agentSiteReview } from "./lib/agent.ts";
 
@@ -18,34 +20,27 @@ type Analysis = {
 
 export default (
   handle(async (req) => {
-    const { db, company } = await requireCompany(req);
+    const { db, company } = await requireCompany(req, { limite: [5, 600] });
     await assertAccess(db, company);
-    const body = await req.json().catch(() => ({}));
-    let url: string = (body.url ?? company.website ?? "").trim();
+    const body = await lerJson(req);
+    let url: string = textoOpcional(body.url, "Endereço do site", 300) || (company.website ?? "").trim();
     if (!url) throw new HttpError(400, "Informe o endereço do site.");
     if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-    let host = "";
     try {
-      host = new URL(url).hostname;
-    } catch {
-      throw new HttpError(400, "Endereço inválido.");
+      await assertPublicUrl(new URL(url));
+    } catch (e) {
+      throw e instanceof HttpError ? e : new HttpError(400, "Endereço inválido.");
     }
-    if (/^(localhost|.*\.local|.*\.internal)$/i.test(host) || /^\d+\.\d+\.\d+\.\d+$/.test(host) || host.includes(":"))
-      throw new HttpError(400, "Informe o domínio público do site (ex: minhaloja.com.br).");
 
     const t0 = Date.now();
     let html = "";
     let finalUrl = url;
     try {
-      const res = await fetch(url, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(15000),
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; ScalableeBot/1.0)", Accept: "text/html" },
-      });
-      finalUrl = res.url;
-      html = (await res.text()).slice(0, 600_000);
-      if (!res.ok) throw new Error(`O site respondeu com erro ${res.status}`);
+      const r = await fetchPublico(url);
+      finalUrl = r.url;
+      html = r.html;
     } catch (e) {
+      if (e instanceof HttpError) throw e;
       throw new HttpError(422, `Não consegui acessar o site: ${e instanceof Error ? e.message : e}`);
     }
     const loadMs = Date.now() - t0;

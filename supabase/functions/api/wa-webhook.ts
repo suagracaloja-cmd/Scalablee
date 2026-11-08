@@ -1,16 +1,16 @@
 // Webhook da WhatsApp Cloud API (Meta). Recebe mensagens dos clientes;
 // o Agente SCALABLE responde sozinho e, quando precisa, pede aprovação ao dono.
-import { admin, brl, cors, json } from "./lib/common.ts";
+import { admin, brl, json } from "./lib/common.ts";
 import { hasAI, modelCreate } from "./lib/ai.ts";
 import { agentWhatsAppReply, AGENT_NAME } from "./lib/agent.ts";
-import { checkSignature, sendAndLog, type WaConfig, type WebhookPayload } from "./lib/whatsapp.ts";
+import { checkSignature, getConfigsByPhone, sendAndLog, type WaConfig, type WebhookPayload } from "./lib/whatsapp.ts";
 import { accessAllowed, billingConfig, ensureBilling } from "./lib/billing.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 
 export default (async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204 });
   const db = admin();
   const url = new URL(req.url);
 
@@ -34,8 +34,7 @@ export default (async (req: Request) => {
   }
 
   // Assinatura da Meta: cada empresa usa o App Secret do próprio app (cadastrado ao conectar o WhatsApp);
-  // WHATSAPP_APP_SECRET (global) vale para quem não cadastrou. Sem nenhum segredo, a mensagem é aceita
-  // (compatibilidade), e a tela do WhatsApp avisa que a verificação está desligada.
+  // WHATSAPP_APP_SECRET (global) vale para quem não cadastrou. Sem nenhum segredo, a mensagem é recusada.
   const check = await checkSignature(db, payload, raw, req.headers.get("x-hub-signature-256"));
   if (!check.ok) {
     console.warn(`[wa-webhook] assinatura inválida para ${check.phone}`);
@@ -52,7 +51,7 @@ async function processPayload(db: SupabaseClient, payload: WebhookPayload) {
     for (const change of entry.changes ?? []) {
       const v = change.value;
       if (!v?.metadata?.phone_number_id) continue;
-      const { data: cfg } = await db.from("whatsapp_configs").select("*").eq("phone_number_id", v.metadata.phone_number_id).maybeSingle();
+      const [cfg] = await getConfigsByPhone(db, [v.metadata.phone_number_id]);
       if (!cfg) continue;
       if (!cfg.connected) await db.from("whatsapp_configs").update({ connected: true }).eq("company_id", cfg.company_id);
 

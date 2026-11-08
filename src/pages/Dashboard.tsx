@@ -314,7 +314,7 @@ export default function Dashboard() {
                 if (ask.trim()) navigate(`/agente?q=${encodeURIComponent(ask.trim())}`)
               }}
             >
-              <input className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/45" placeholder="Pergunte qualquer coisa sobre a sua empresa…" value={ask} onChange={(e) => setAsk(e.target.value)} />
+              <input maxLength={8000} className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/45" placeholder="Pergunte qualquer coisa sobre a sua empresa…" value={ask} onChange={(e) => setAsk(e.target.value)} />
               <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-ink" aria-label="Perguntar">
                 <ArrowUpRight size={18} />
               </button>

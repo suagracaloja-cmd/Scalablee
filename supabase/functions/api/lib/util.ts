@@ -77,3 +77,28 @@ export function resolvePeriod(periodo?: string, de?: string, ate?: string, today
   }
   return { atual, anterior };
 }
+
+// ---------- Validação de entradas (todas as rotas) ----------
+
+export const isUuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
+/** Lê o corpo JSON e garante que é um objeto (nunca lista, número ou nulo). */
+export async function lerJson(req: Request): Promise<Record<string, unknown>> {
+  const body = await req.json().catch(() => ({}));
+  return body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+}
+
+/** Texto opcional: se vier, precisa ser texto e caber no limite. Devolve sem espaços nas pontas. */
+export function textoOpcional(v: unknown, campo: string, max: number): string | undefined {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v !== "string") throw new HttpError(400, `${campo}: valor inválido.`);
+  const t = v.trim();
+  if (t.length > max) throw new HttpError(400, `${campo}: use no máximo ${max} caracteres.`);
+  return t;
+}
+
+/** Valor que precisa estar numa lista fechada. */
+export function umDe<T extends string>(v: unknown, opcoes: readonly T[], campo: string): T {
+  if (typeof v !== "string" || !(opcoes as readonly string[]).includes(v)) throw new HttpError(400, `${campo} inválido.`);
+  return v as T;
+}

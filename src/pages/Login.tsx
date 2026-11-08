@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase'
 import { LEGAL_VERSION } from '../lib/legal'
 import { Logo, Reveal, Spinner } from '../components/ui'
 import { LegalFooter } from '../components/LegalFooter'
+import { Captcha, CAPTCHA_ATIVO } from '../components/Captcha'
+import { SENHA_MIN, senhaFraca } from '../lib/senha'
 
 export default function Login() {
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
@@ -13,26 +15,32 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
   const [accepted, setAccepted] = useState(false)
+  const [captcha, setCaptcha] = useState<string | null>(null)
+  const [rodada, setRodada] = useState(0)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    setBusy(true)
     setMsg(null)
+    if (CAPTCHA_ATIVO && !captcha) return setMsg({ t: 'err', m: 'Confirme que você não é um robô.' })
+    const captchaToken = captcha ?? undefined
+    setBusy(true)
     try {
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
         if (error) throw error
       } else if (mode === 'signup') {
         if (!accepted) throw new Error('Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.')
+        const fraca = senhaFraca(password)
+        if (fraca) throw new Error(fraca)
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin, data: { terms_accepted_at: new Date().toISOString(), terms_version: LEGAL_VERSION } },
+          options: { captchaToken, emailRedirectTo: window.location.origin, data: { terms_accepted_at: new Date().toISOString(), terms_version: LEGAL_VERSION } },
         })
         if (error) throw error
         if (!data.session) setMsg({ t: 'ok', m: 'Conta criada! Confirme pelo link enviado ao seu e-mail e depois faça login.' })
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin, captchaToken })
         if (error) throw error
         setMsg({ t: 'ok', m: 'Enviamos um link de redefinição para o seu e-mail.' })
       }
@@ -40,6 +48,7 @@ export default function Login() {
       setMsg({ t: 'err', m: authError(err instanceof Error ? err.message : String(err)) })
     } finally {
       setBusy(false)
+      if (CAPTCHA_ATIVO) setRodada((r) => r + 1) // cada verificação vale para um envio
     }
   }
 
@@ -98,14 +107,15 @@ export default function Login() {
             <p className="mt-2 text-sm text-muted">{mode === 'signup' ? 'Comece a gerir sua empresa com IA em minutos.' : mode === 'login' ? 'Entre para ver como está sua empresa hoje.' : 'Enviaremos um link para o seu e-mail.'}</p>
           </Reveal>
           <Reveal i={2} className="mt-8 space-y-3">
-            <input className="input h-12" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <input maxLength={254} className="input h-12" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
             {mode !== 'reset' && (
               <input
                 className="input h-12"
                 type="password"
                 required
-                minLength={6}
-                placeholder="Senha (mín. 6 caracteres)"
+                maxLength={72}
+                minLength={mode === 'signup' ? SENHA_MIN : undefined}
+                placeholder={mode === 'signup' ? `Senha (mín. ${SENHA_MIN} caracteres, letras e números)` : 'Senha'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -121,7 +131,8 @@ export default function Login() {
                 </span>
               </label>
             )}
-            {msg && <p className={`rounded-2xl px-4 py-3 text-sm ${msg.t === 'err' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{msg.m}</p>}
+            <Captcha onToken={setCaptcha} rodada={rodada} />
+            {msg && <p role={msg.t === 'err' ? 'alert' : 'status'} className={`rounded-2xl px-4 py-3 text-sm ${msg.t === 'err' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{msg.m}</p>}
             <button className="btn-primary h-12 w-full" disabled={busy}>
               {busy && <Spinner />} {mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar conta grátis' : 'Enviar link'}
             </button>
@@ -161,7 +172,8 @@ function authError(m: string) {
   if (e.includes('not authorized') || e.includes('sending') || e.includes('smtp') || e.includes('email address'))
     return 'Não conseguimos enviar o e-mail agora. O envio de e-mails da Scalable está sendo ativado — tente de novo mais tarde.'
   if (e.includes('rate limit') || e.includes('too many') || e.includes('security purposes')) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.'
-  if (e.includes('password') && (e.includes('at least') || e.includes('should be'))) return 'A senha precisa ter pelo menos 6 caracteres.'
+  if (e.includes('captcha')) return 'A verificação anti-robô falhou ou expirou. Confirme de novo e tente outra vez.'
+  if (e.includes('password') && (e.includes('at least') || e.includes('should') || e.includes('weak'))) return `Senha fraca: use pelo menos ${SENHA_MIN} caracteres, com letras e números.`
   if (e.includes('valid email') || e.includes('invalid email')) return 'Informe um e-mail válido.'
   return m
 }

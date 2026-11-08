@@ -278,7 +278,7 @@ function PlanoPago() {
               {b.status === 'trial' && b.allowed ? 'A primeira cobrança só acontece no fim do seu teste grátis.' : 'A primeira cobrança acontece hoje.'} Você pode cancelar quando quiser.
             </p>
             <Field label="E-mail da sua conta do Mercado Pago">
-              <input className="input" type="email" required value={form.email} onChange={(e) => setForm({ email: e.target.value })} />
+              <input maxLength={254} className="input" type="email" required value={form.email} onChange={(e) => setForm({ email: e.target.value })} />
             </Field>
             <p className="rounded-xl bg-panel-2 px-3 py-2 text-xs text-muted">
               Use o mesmo e-mail com que você entra no Mercado Pago. Na próxima tela, o Mercado Pago pede o pagamento com segurança.

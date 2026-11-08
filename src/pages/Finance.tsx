@@ -174,11 +174,11 @@ export default function Finance() {
               ))}
             </div>
             <Field label="Descrição">
-              <input className="input" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={form.type === 'expense' ? 'Ex: Aluguel da loja' : 'Ex: Pagamento cliente João'} />
+              <input maxLength={500} className="input" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={form.type === 'expense' ? 'Ex: Aluguel da loja' : 'Ex: Pagamento cliente João'} />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Valor (R$)">
-                <input className="input" required inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                <input maxLength={20} className="input" required inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
               </Field>
               <Field label="Vencimento">
                 <input className="input" type="date" required value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />

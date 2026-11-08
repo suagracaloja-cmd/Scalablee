@@ -21,5 +21,6 @@ export default handle(async (req) => {
     mpClient(cfg),
   );
   if (!("ignored" in r) && !("duplicate" in r)) console.log(`[mercadopago] ${JSON.stringify(r)}`);
-  return json(r);
+  // Resposta enxuta para quem chamou: os detalhes (empresa, situação) ficam só no log do servidor
+  return json({ ok: true });
 });

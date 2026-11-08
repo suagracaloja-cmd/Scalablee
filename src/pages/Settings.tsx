@@ -140,20 +140,20 @@ export default function Settings() {
         <Reveal i={1} className="card p-5">
           <form onSubmit={save} className="space-y-3">
             <Field label="Nome da empresa">
-              <input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+              <input maxLength={120} className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
             </Field>
             <Field label="Segmento">
-              <input className="input" value={f.segment} onChange={(e) => setF({ ...f, segment: e.target.value })} />
+              <input maxLength={120} className="input" value={f.segment} onChange={(e) => setF({ ...f, segment: e.target.value })} />
             </Field>
             <Field label="Sobre o negócio (produtos, preços, horários, entrega…)">
-              <textarea className="input min-h-28" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+              <textarea maxLength={2000} className="input min-h-28" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
             </Field>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Site">
-                <input className="input" value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} placeholder="minhaloja.com.br" />
+                <input maxLength={300} className="input" value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} placeholder="minhaloja.com.br" />
               </Field>
               <Field label="Instagram">
-                <input className="input" value={f.instagram} onChange={(e) => setF({ ...f, instagram: e.target.value })} placeholder="@minhaloja" />
+                <input maxLength={120} className="input" value={f.instagram} onChange={(e) => setF({ ...f, instagram: e.target.value })} placeholder="@minhaloja" />
               </Field>
             </div>
             <button className="btn-primary w-full" disabled={busy}>
@@ -177,6 +177,7 @@ export default function Settings() {
             </div>
             <Field label="Instruções para o agente (tom de voz, regras, o que evitar…)">
               <textarea
+                maxLength={4000}
                 className="input min-h-28"
                 value={ag.agent_instructions}
                 onChange={(e) => setAg({ ...ag, agent_instructions: e.target.value })}
@@ -321,7 +322,7 @@ export default function Settings() {
           Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da empresa: vendas, clientes, financeiro, tarefas, conversas, aprovações e a conexão do WhatsApp. Não dá para desfazer. Se quiser, exporte seus dados antes.
         </p>
         <Field label='Para confirmar, digite EXCLUIR'>
-          <input className="input" value={delText} onChange={(e) => setDelText(e.target.value)} placeholder="EXCLUIR" />
+          <input maxLength={20} className="input" value={delText} onChange={(e) => setDelText(e.target.value)} placeholder="EXCLUIR" />
         </Field>
         <button className="btn-danger mt-3 w-full" disabled={deleting || delText.trim().toUpperCase() !== 'EXCLUIR'} onClick={deleteAccount}>
           {deleting && <Spinner size={14} />} Excluir definitivamente

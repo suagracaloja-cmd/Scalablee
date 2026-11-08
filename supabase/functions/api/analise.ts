@@ -5,7 +5,7 @@ import { hasAI, modelCreate } from "./lib/ai.ts";
 import { analisarEmpresa } from "./lib/analise.ts";
 
 export default handle(async (req) => {
-  const { db, userDb, company } = await requireCompany(req);
+  const { db, userDb, company } = await requireCompany(req, { limite: [5, 600] });
   await assertAccess(db, company);
   return json(await analisarEmpresa({ db: userDb, admin: db, company, create: hasAI() ? modelCreate : null }));
 });

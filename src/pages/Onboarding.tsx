@@ -43,7 +43,7 @@ export default function Onboarding() {
         <div className="mt-8 space-y-4">
           <Reveal i={2}>
             <Field label="Nome da empresa *">
-              <input className="input h-12" required value={f.name} onChange={set('name')} placeholder="Ex: Loja da Maria" />
+              <input maxLength={120} className="input h-12" required value={f.name} onChange={set('name')} placeholder="Ex: Loja da Maria" />
             </Field>
           </Reveal>
           <Reveal i={3}>
@@ -58,15 +58,15 @@ export default function Onboarding() {
           </Reveal>
           <Reveal i={4}>
             <Field label="O que você vende? (ajuda o atendimento no WhatsApp)">
-              <textarea className="input min-h-24" value={f.description} onChange={set('description')} placeholder="Produtos, preços, horário de funcionamento, entrega…" />
+              <textarea maxLength={2000} className="input min-h-24" value={f.description} onChange={set('description')} placeholder="Produtos, preços, horário de funcionamento, entrega…" />
             </Field>
           </Reveal>
           <Reveal i={5} className="grid gap-4 sm:grid-cols-2">
             <Field label="Site (opcional)">
-              <input className="input h-12" value={f.website} onChange={set('website')} placeholder="minhaloja.com.br" />
+              <input maxLength={300} className="input h-12" value={f.website} onChange={set('website')} placeholder="minhaloja.com.br" />
             </Field>
             <Field label="Instagram (opcional)">
-              <input className="input h-12" value={f.instagram} onChange={set('instagram')} placeholder="@minhaloja" />
+              <input maxLength={120} className="input h-12" value={f.instagram} onChange={set('instagram')} placeholder="@minhaloja" />
             </Field>
           </Reveal>
           <Reveal i={6} className="pt-2">

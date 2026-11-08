@@ -220,7 +220,7 @@ export default function WhatsApp() {
                   <div ref={end} />
                 </div>
                 <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
-                  <input className="input" placeholder="Escreva uma mensagem…" value={text} onChange={(e) => setText(e.target.value)} />
+                  <input maxLength={4096} className="input" placeholder="Escreva uma mensagem…" value={text} onChange={(e) => setText(e.target.value)} />
                   <button className="btn-primary px-3" disabled={sending || !text.trim()} aria-label="Enviar">
                     {sending ? <Spinner /> : <Send size={18} />}
                   </button>
@@ -256,7 +256,7 @@ function InlineApproval({ a, onDecide }: { a: Approval; onDecide: (a: Approval, 
   return (
     <div className="ml-auto max-w-[90%] rounded-2xl border border-amber-400/40 bg-amber-50 p-3">
       <div className="mb-2 text-xs font-semibold text-amber-600">⚠️ Aprovação: {a.reason}</div>
-      <textarea className="input min-h-16 text-sm" value={text} onChange={(e) => setText(e.target.value)} />
+      <textarea maxLength={4096} className="input min-h-16 text-sm" value={text} onChange={(e) => setText(e.target.value)} />
       <div className="mt-2 flex justify-end gap-2">
         <button className="btn-danger px-3 py-1.5 text-xs" disabled={busy} onClick={() => go('reject')}>
           <X size={14} /> Descartar
@@ -323,19 +323,19 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
       </ol>
       <form onSubmit={save} className="space-y-3">
         <Field label="Phone Number ID">
-          <input className="input" required value={phoneId} onChange={(e) => setPhoneId(e.target.value)} placeholder="Ex: 123456789012345" />
+          <input maxLength={32} className="input" required value={phoneId} onChange={(e) => setPhoneId(e.target.value)} placeholder="Ex: 123456789012345" />
         </Field>
         <Field label={saved ? 'Token de acesso (deixe vazio para manter o atual)' : 'Token de acesso'}>
-          <input className="input" type="password" required={!saved} value={token} onChange={(e) => setToken(e.target.value)} placeholder="EAAG…" />
+          <input maxLength={2048} className="input" type="password" required={!saved} value={token} onChange={(e) => setToken(e.target.value)} placeholder="EAAG…" />
         </Field>
-        <Field label={hasSecret ? 'Chave secreta do app — App Secret (deixe vazio para manter a atual)' : 'Chave secreta do app — App Secret (recomendado)'}>
-          <input className="input" type="password" value={appSecret} onChange={(e) => setAppSecret(e.target.value)} placeholder="Configurações do app → Básico → Chave secreta do app" autoComplete="off" />
+        <Field label={hasSecret ? 'Chave secreta do app — App Secret (deixe vazio para manter a atual)' : 'Chave secreta do app — App Secret (obrigatória)'}>
+          <input maxLength={64} className="input" type="password" required={!hasSecret} value={appSecret} onChange={(e) => setAppSecret(e.target.value)} placeholder="Configurações do app → Básico → Chave secreta do app" autoComplete="off" />
         </Field>
         {hasSecret !== null && (
           <p className={`rounded-xl px-3 py-2 text-xs ${hasSecret ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
             {hasSecret
               ? '✓ Verificação de autenticidade ligada: só mensagens assinadas pela Meta são aceitas.'
-              : '⚠️ Sem a chave secreta do app, a Scalable não consegue confirmar que as mensagens recebidas vieram mesmo da Meta. Cole a chave para ligar essa proteção.'}
+              : '⚠️ A chave secreta do app é obrigatória: sem ela a Scalable não consegue confirmar que as mensagens recebidas vieram mesmo da Meta, e elas são recusadas.'}
           </p>
         )}
         <button className="btn-primary w-full" disabled={busy}>

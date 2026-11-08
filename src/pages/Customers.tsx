@@ -79,7 +79,7 @@ export default function Customers() {
       <Reveal i={1} className="mb-4 flex flex-col gap-2 sm:flex-row">
         <div className="card flex flex-1 items-center gap-2 px-3 py-2">
           <Search size={16} className="text-muted" />
-          <input className="w-full bg-transparent text-sm outline-none" placeholder="Buscar por nome, telefone ou e-mail" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input maxLength={100} className="w-full bg-transparent text-sm outline-none" placeholder="Buscar por nome, telefone ou e-mail" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="flex gap-1 overflow-x-auto">
           {['all', 'lead', 'active', 'vip', 'inactive'].map((s) => (
@@ -149,14 +149,14 @@ export default function Customers() {
         {form && (
           <form onSubmit={save} className="space-y-3">
             <Field label="Nome">
-              <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <input maxLength={200} className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="WhatsApp (com DDD)">
-                <input className="input" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="11 99999-9999" />
+                <input maxLength={40} className="input" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="11 99999-9999" />
               </Field>
               <Field label="E-mail">
-                <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <input maxLength={254} className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </Field>
             </div>
             <Field label="Status">
@@ -168,7 +168,7 @@ export default function Customers() {
               </select>
             </Field>
             <Field label="Observações">
-              <textarea className="input min-h-20" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              <textarea maxLength={5000} className="input min-h-20" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </Field>
             <button className="btn-primary w-full" disabled={busy}>
               {busy && <Spinner />} Salvar

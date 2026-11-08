@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { Logo, Reveal, Spinner } from '../components/ui'
+import { SENHA_MIN, senhaFraca } from '../lib/senha'
 
 /** Tela aberta pelo link de "Esqueci minha senha": define a nova senha da conta. */
 export default function ResetPassword() {
@@ -14,7 +15,8 @@ export default function ResetPassword() {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setErr(null)
-    if (password.length < 6) return setErr('A senha precisa ter pelo menos 6 caracteres.')
+    const fraca = senhaFraca(password)
+    if (fraca) return setErr(fraca)
     if (password !== confirm) return setErr('As duas senhas não são iguais.')
     setBusy(true)
     const { error } = await supabase.auth.updateUser({ password })
@@ -35,8 +37,8 @@ export default function ResetPassword() {
           <p className="mt-2 text-sm text-muted">Escolha uma senha nova para entrar na Scalable.</p>
         </Reveal>
         <Reveal i={2} className="mt-8 space-y-3">
-          <input className="input h-12" type="password" required minLength={6} placeholder="Nova senha (mín. 6 caracteres)" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-          <input className="input h-12" type="password" required minLength={6} placeholder="Repita a nova senha" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+          <input className="input h-12" type="password" required minLength={SENHA_MIN} maxLength={72} placeholder={`Nova senha (mín. ${SENHA_MIN} caracteres, letras e números)`} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+          <input className="input h-12" type="password" required minLength={SENHA_MIN} maxLength={72} placeholder="Repita a nova senha" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
           {err && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{err}</p>}
           <button className="btn-primary h-12 w-full" disabled={busy}>
             {busy && <Spinner />} Salvar nova senha

@@ -2,7 +2,7 @@
 // registrando quem decidiu, quando e o resultado.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { getConfig, sendAndLog, sendText } from "./whatsapp.ts";
-import { isoDate } from "./util.ts";
+import { isoDate, isUuid } from "./util.ts";
 
 export type DecideEnv = {
   db: SupabaseClient; // cliente do usuário (RLS)
@@ -72,6 +72,9 @@ async function finish(env: DecideEnv, id: string, fields: Json) {
 export async function decideApproval(env: DecideEnv, body: { action?: unknown; id?: unknown; approval_id?: unknown; text?: unknown; motivo?: unknown }) {
   const id = String(body.id ?? body.approval_id ?? "");
   if (!id) throw new ApprovalError(400, "Informe a aprovação.");
+  if (!isUuid(id)) throw new ApprovalError(400, "Aprovação inválida.");
+  if (typeof body.text === "string" && body.text.length > 4096) throw new ApprovalError(400, "A mensagem pode ter no máximo 4096 caracteres.");
+  if (typeof body.motivo === "string" && body.motivo.length > 1000) throw new ApprovalError(400, "O motivo pode ter no máximo 1000 caracteres.");
   if (body.action === "reject") return rejectApproval(env, id, typeof body.motivo === "string" ? body.motivo : undefined);
   if (body.action !== "approve") throw new ApprovalError(400, "Ação inválida");
   await load(env, id);

@@ -59,6 +59,8 @@ export default function App() {
           {/* Páginas públicas (abrem mesmo sem login) */}
           <Route path="/termos" element={<Legal kind="termos" />} />
           <Route path="/privacidade" element={<Legal kind="privacidade" />} />
+          <Route path="/cookies" element={<Legal kind="cookies" />} />
+          <Route path="/reembolso" element={<Legal kind="reembolso" />} />
           <Route path="/*" element={<Gate />} />
         </Routes>
       </AppProvider>

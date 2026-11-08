@@ -57,9 +57,9 @@ Sem isso, os links de confirmação e de nova senha podem abrir um endereço err
 
 ## 5. Textos legais **[obrigatório]**
 
-Os **Termos de Uso** e a **Política de Privacidade** já estão no site (`/termos` e `/privacidade`), com aceite obrigatório no cadastro. Antes do lançamento:
-1. Preencha em `src/lib/legal.ts`: `CONTATO_PRIVACIDADE` (e-mail do encarregado de dados), `RAZAO_SOCIAL` e `CNPJ` — ou envie esses dados e o ajuste é feito para você.
-2. Peça para um advogado revisar os dois textos.
+Já estão no site, com links no rodapé de todas as telas: **Termos de Uso** (`/termos`), **Política de Privacidade** (`/privacidade`), **Política de Cookies** (`/cookies`) e **Política de Cancelamento e Reembolso** (`/reembolso`). O aceite dos Termos e da Privacidade é obrigatório no cadastro, e a tela de assinatura mostra o resumo do contrato antes de ir ao Mercado Pago. Antes do lançamento:
+1. Preencha em `src/lib/legal.ts`: `RESPONSAVEL` (nome completo ou razão social), `DOCUMENTO` (CPF ou CNPJ), `ENDERECO`, `EMAIL_CONTATO`, `TELEFONE` (opcional) e `CONTATO_PRIVACIDADE` (opcional; se vazio, usa o e-mail de contato) — ou envie esses dados e o ajuste é feito para você. Enquanto estiverem vazios, as páginas omitem esses dados.
+2. Peça para um advogado revisar os quatro textos.
 
 Também já funcionam: **exportar meus dados** e **excluir minha conta** (Configurações → Privacidade e dados).
 

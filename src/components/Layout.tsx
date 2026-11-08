@@ -20,6 +20,7 @@ import {
 import { useApp } from '../lib/store'
 import { supabase } from '../lib/supabase'
 import { Logo } from './ui'
+import { LegalFooter } from './LegalFooter'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutGrid },
@@ -166,6 +167,8 @@ export default function Layout() {
             </div>
           )}
           {blocked ? <Navigate to="/assinatura" replace /> : <Outlet />}
+          {/* A conversa ocupa a tela inteira; nela os documentos ficam em Configurações */}
+          {!loc.pathname.startsWith('/agente') && <LegalFooter className="mt-12" />}
           </div>
         </main>
       </div>

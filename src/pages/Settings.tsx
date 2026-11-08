@@ -7,6 +7,7 @@ import { useApp } from '../lib/store'
 import type { SiteAnalysis } from '../lib/types'
 import { fmtDate } from '../lib/format'
 import { AgentMark, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { LEGAL_LINKS } from '../components/LegalFooter'
 
 const LABELS: Record<string, string> = {
   https: 'Site seguro (HTTPS)',
@@ -296,10 +297,15 @@ export default function Settings() {
             <ShieldCheck size={18} /> Privacidade e dados
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Seus dados pertencem à sua empresa. Baixe uma cópia completa quando quiser ou exclua a conta. Leia os{' '}
-            <Link to="/termos" className="font-medium text-ink underline underline-offset-2">Termos de Uso</Link> e a{' '}
-            <Link to="/privacidade" className="font-medium text-ink underline underline-offset-2">Política de Privacidade</Link>.
+            Seus dados pertencem à sua empresa. Baixe uma cópia completa quando quiser ou exclua a conta.
           </p>
+          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+            {LEGAL_LINKS.map((l) => (
+              <li key={l.to}>
+                <Link to={l.to} className="font-medium text-ink underline underline-offset-2">{l.label}</Link>
+              </li>
+            ))}
+          </ul>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button className="btn-ghost" onClick={exportData} disabled={exporting}>
               {exporting ? <Spinner size={14} /> : <Download size={16} />} Exportar meus dados

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { LEGAL_VERSION } from '../lib/legal'
 import { Logo, Reveal, Spinner } from '../components/ui'
+import { LegalFooter } from '../components/LegalFooter'
 
 export default function Login() {
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
@@ -144,9 +145,7 @@ export default function Login() {
               </button>
             )}
           </Reveal>
-          <p className="mt-8 text-center text-[11px] text-muted">
-            <Link to="/termos" className="hover:text-ink">Termos de Uso</Link> · <Link to="/privacidade" className="hover:text-ink">Privacidade</Link>
-          </p>
+          <LegalFooter className="mt-8" />
         </form>
       </div>
     </div>

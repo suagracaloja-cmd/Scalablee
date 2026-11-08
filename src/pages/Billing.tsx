@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { CreditCard, ExternalLink, Lock, Receipt, ShieldCheck } from 'lucide-react'
 import { api } from '../lib/supabase'
 import { useApp } from '../lib/store'
@@ -133,6 +134,10 @@ export default function Billing() {
             <ShieldCheck size={14} /> Pagamento processado pelo Mercado Pago. A Scalable não vê nem guarda dados do seu cartão.
             {b.sandbox && <span className="chip bg-amber-50 text-amber-800">Ambiente de testes</span>}
           </p>
+          <p className="mt-2 text-xs text-muted">
+            Cancele quando quiser, sem multa. Você tem 7 dias após a primeira cobrança para desistir com reembolso integral —{' '}
+            <Link to="/reembolso" className="font-medium text-ink underline underline-offset-2">Política de Cancelamento e Reembolso</Link>.
+          </p>
         </Reveal>
 
         <Reveal i={2} className="card p-6">
@@ -179,6 +184,11 @@ export default function Billing() {
             </Field>
             <p className="rounded-xl bg-panel-2 px-3 py-2 text-xs text-muted">
               Use o mesmo e-mail com que você entra no Mercado Pago. Na próxima tela, o Mercado Pago pede o pagamento com segurança.
+            </p>
+            <p className="text-xs text-muted">
+              Resumo: assinatura mensal com renovação automática; cancele quando quiser, sem multa; 7 dias após a primeira cobrança para desistir com reembolso integral. Ao continuar, você concorda com os{' '}
+              <Link to="/termos" target="_blank" className="font-medium text-ink underline underline-offset-2">Termos de Uso</Link> e a{' '}
+              <Link to="/reembolso" target="_blank" className="font-medium text-ink underline underline-offset-2">Política de Cancelamento e Reembolso</Link>.
             </p>
             <button className="btn-primary w-full" disabled={busy}>
               {busy && <Spinner size={14} />} Continuar no Mercado Pago

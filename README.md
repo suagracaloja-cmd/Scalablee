@@ -86,7 +86,7 @@ Observação: pela regra da Meta, mensagens iniciadas pela empresa (ex.: reativa
 
 ```
 src/                     front-end (páginas em src/pages; conversa em src/pages/Agent.tsx)
-supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp; 0007 = assinaturas; 0008 = Mercado Pago)
+supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp; 0007 = assinaturas; 0008 = Mercado Pago; 0009 = novidades por e-mail)
 supabase/functions/api/  Edge Function com as rotas:
   agente.ts      POST /api/agente       conversa com o Agente SCALABLE
   aprovacoes.ts  POST /api/aprovacoes   aprovar/recusar operações

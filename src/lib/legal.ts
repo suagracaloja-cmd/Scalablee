@@ -17,6 +17,10 @@ export const TELEFONE = ''
 /** E-mail para assuntos de dados pessoais (canal do encarregado). Se vazio, usa o e-mail de atendimento. */
 export const CONTATO_PRIVACIDADE = ''
 
+/** Texto que a pessoa aceita ao assinar as novidades por e-mail (guardado junto com a inscrição, como prova do consentimento). */
+export const NOVIDADES_ACEITE =
+  'Quero receber por e-mail novidades e atualizações da Scalable. A inscrição é gratuita, não tem relação com o plano pago e posso cancelar quando quiser.'
+
 /** Linha de identificação para o rodapé e as páginas legais (só com o que estiver preenchido). */
 export const IDENTIFICACAO = [RESPONSAVEL ? `${EMPRESA} — ${RESPONSAVEL}` : EMPRESA, DOCUMENTO, ENDERECO].filter(Boolean).join(' · ')
 export const CONTATOS = [EMAIL_CONTATO, TELEFONE].filter(Boolean).join(' · ')
@@ -102,7 +106,8 @@ Esta Política explica como a **${identificacao}** trata dados pessoais, conform
 - **Dados que você insere:** clientes (nome, telefone, e-mail, observações), vendas, lançamentos financeiros e tarefas.
 - **Conversas e aprovações:** perguntas feitas ao Agente SCALABLE, respostas e o registro de cada aprovação (o quê, quando e por quem).
 - **WhatsApp (se conectado):** mensagens trocadas com seus clientes e as credenciais da Meta, guardadas só no servidor.
-- **Assinatura:** o e-mail da conta do Mercado Pago informado para a cobrança e a situação dos pagamentos. Dados de pagamento são informados direto ao Mercado Pago e não passam pela ${EMPRESA}.
+- **Novidades por e-mail (só se você assinar):** o e-mail da conta, a data, o texto e a versão do aceite e, se cancelar, a data do cancelamento.
+- **Plano pago:** o e-mail da conta do Mercado Pago informado para a cobrança e a situação dos pagamentos. Dados de pagamento são informados direto ao Mercado Pago e não passam pela ${EMPRESA}.
 - **Dados técnicos:** endereço IP, dados do navegador e registros de acesso e de erros, recebidos pelos servidores quando você usa o site, para segurança e funcionamento.
 
 ### 3. Para que usamos e com qual base legal
@@ -110,7 +115,8 @@ Esta Política explica como a **${identificacao}** trata dados pessoais, conform
 - Cumprir obrigações legais e atender pedidos de autoridades: cumprimento de obrigação legal (art. 7º, II).
 - Segurança, prevenção de fraudes e melhoria do serviço: legítimo interesse (art. 7º, IX).
 - Guardar registros de acesso pelo prazo legal: cumprimento de obrigação legal (art. 7º, II, e Marco Civil da Internet, art. 15).
-Não vendemos dados pessoais e não os usamos para publicidade.
+- Enviar novidades da ${EMPRESA} por e-mail a quem assinou (gratuito): consentimento (art. 7º, I), que você pode retirar quando quiser em **Assinatura → Cancelar inscrição**.
+Não vendemos dados pessoais nem os usamos para publicidade de terceiros. Só enviamos novidades por e-mail a quem assinar.
 
 ### 4. Inteligência artificial
 Para responder às suas perguntas, o Agente SCALABLE envia trechos dos dados da sua empresa (por exemplo, resumos de vendas ou o nome de um cliente) a provedores de inteligência artificial, que geram a resposta: **Groq** e, se configurado, **Anthropic**. Esses provedores processam os dados para gerar a resposta, conforme os próprios termos. As respostas da IA são sugestões: ações relevantes só acontecem depois que você aprova.
@@ -129,7 +135,7 @@ Somente com fornecedores necessários para o serviço:
 Esses fornecedores podem processar dados fora do Brasil (por exemplo, nos Estados Unidos). As transferências ocorrem para a execução do serviço, nos termos do art. 33 da LGPD.
 
 ### 7. Por quanto tempo guardamos
-Enquanto sua conta existir. Ao excluir a conta, os dados da empresa são apagados do banco de dados na hora; cópias de segurança mantidas pelo provedor de banco de dados, se existirem, são substituídas com o tempo. Registros de acesso podem ser mantidos por até 6 meses, como exige a lei. O Mercado Pago e os demais fornecedores guardam os próprios registros conforme as políticas deles.
+Enquanto sua conta existir. A inscrição nas novidades guarda o registro do aceite e do cancelamento, como prova, enquanto a conta existir. Ao excluir a conta, os dados da empresa e a inscrição são apagados do banco de dados na hora; cópias de segurança mantidas pelo provedor de banco de dados, se existirem, são substituídas com o tempo. Registros de acesso podem ser mantidos por até 6 meses, como exige a lei. O Mercado Pago e os demais fornecedores guardam os próprios registros conforme as políticas deles.
 
 ### 8. Seus direitos (art. 18)
 Você pode pedir: confirmação e acesso aos dados, correção, anonimização, bloqueio ou eliminação, portabilidade, informação sobre compartilhamentos, revogação do consentimento (quando o tratamento depender dele) e revisão de decisões automatizadas. Na própria plataforma, em **Configurações → Privacidade e dados**, você pode **exportar todos os dados** da sua empresa e **excluir a conta**. Para os demais pedidos: ${contatoPrivacidade}. Você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).

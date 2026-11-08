@@ -94,11 +94,9 @@ export default function Layout() {
           })}
         </nav>
         <div className="mt-4 flex flex-col items-center gap-2.5">
-          {bill && (
-            <NavLink to="/assinatura" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/assinatura') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Assinatura">
-              <CreditCard size={19} />
-            </NavLink>
-          )}
+          <NavLink to="/assinatura" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/assinatura') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Assinatura">
+            <CreditCard size={19} />
+          </NavLink>
           <NavLink to="/configuracoes" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/configuracoes') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Configurações">
             <Settings size={19} />
           </NavLink>
@@ -200,7 +198,7 @@ export default function Layout() {
               </button>
             </div>
             <div className="grid grid-cols-3 gap-2.5">
-              {[...NAV, { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' as const }, ...(bill ? [{ to: '/assinatura', label: 'Assinatura', icon: CreditCard }] : []), { to: '/configuracoes', label: 'Configurações', icon: Settings }].map((n) => {
+              {[...NAV, { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' as const }, { to: '/assinatura', label: 'Assinatura', icon: CreditCard }, { to: '/configuracoes', label: 'Configurações', icon: Settings }].map((n) => {
                 const c = 'badge' in n && n.badge ? counts[n.badge] : 0
                 return (
                   <NavLink

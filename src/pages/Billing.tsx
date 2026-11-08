@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { CreditCard, ExternalLink, Lock, Receipt, ShieldCheck } from 'lucide-react'
-import { api } from '../lib/supabase'
+import { CreditCard, ExternalLink, Lock, Mail, Receipt, ShieldCheck } from 'lucide-react'
+import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { brl, fmtDate } from '../lib/format'
+import { LEGAL_VERSION, NOVIDADES_ACEITE } from '../lib/legal'
 import { Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 
 type Fatura = { id: string; dueDate: string; value: number; status: string; invoiceUrl: string | null }
@@ -14,8 +15,112 @@ const STATUS_FATURA: Record<string, { l: string; c: string }> = {
   CANCELLED: { l: 'Cancelada', c: 'bg-slate-100 text-slate-600' },
 }
 
-/** Assinatura da Scalable (Mercado Pago): status, assinar, cobranças e cancelamento. */
+/** Tela Assinatura: novidades por e-mail (grátis) e, se ativado, o plano pago. */
 export default function Billing() {
+  return (
+    <div>
+      <PageHeader title="Assinatura" subtitle="Novidades da Scalable por e-mail (grátis) e o seu plano." />
+      <Novidades />
+      <PlanoPago />
+    </div>
+  )
+}
+
+type Inscricao = { status: 'inscrito' | 'cancelado'; consentimento_em: string }
+
+/** Inscrição GRATUITA para receber novidades por e-mail (sem relação com o plano pago). */
+function Novidades() {
+  const { session, company, toast } = useApp()
+  const uid = session?.user.id
+  const email = session?.user.email ?? ''
+  const [row, setRow] = useState<Inscricao | null | undefined>(undefined)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!uid) return
+    supabase
+      .from('inscricoes_novidades')
+      .select('status, consentimento_em')
+      .eq('user_id', uid)
+      .maybeSingle()
+      .then(({ data }) => setRow((data as Inscricao | null) ?? null))
+  }, [uid])
+
+  async function salvar(acao: 'assinar' | 'cancelar') {
+    if (!uid) return
+    setBusy(true)
+    const agora = new Date().toISOString()
+    const tabela = supabase.from('inscricoes_novidades')
+    const { data, error } = await (acao === 'assinar'
+      ? tabela.upsert(
+          {
+            user_id: uid,
+            company_id: company?.id ?? null,
+            email,
+            status: 'inscrito',
+            consentimento_em: agora,
+            consentimento_texto: NOVIDADES_ACEITE,
+            consentimento_versao: LEGAL_VERSION,
+            cancelado_em: null,
+            atualizado_em: agora,
+          },
+          { onConflict: 'user_id' },
+        )
+      : tabela.update({ status: 'cancelado', cancelado_em: agora, atualizado_em: agora }).eq('user_id', uid)
+    )
+      .select('status, consentimento_em')
+      .single()
+    setBusy(false)
+    if (error) return toast('Não foi possível salvar agora. Tente de novo.', 'err')
+    setRow(data as Inscricao)
+    toast(acao === 'assinar' ? 'Pronto! Você vai receber as novidades da Scalable por e-mail.' : 'Inscrição cancelada. Você não vai mais receber as novidades.')
+  }
+  const assinar = () => salvar('assinar')
+  const cancelar = () => salvar('cancelar')
+
+  const inscrito = row?.status === 'inscrito'
+  return (
+    <Reveal className="card mb-4 p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-ink">
+            <Mail size={20} />
+          </span>
+          <div>
+            <h2 className="text-lg font-bold">Novidades da Scalable</h2>
+            <p className="mt-0.5 text-sm text-muted">Receba por e-mail as novidades e atualizações da plataforma.</p>
+          </div>
+        </div>
+        <span className={`chip ${inscrito ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-soft text-ink'}`}>{inscrito ? 'Inscrito · grátis' : 'Grátis'}</span>
+      </div>
+      {row === undefined ? (
+        <div className="mt-5"><Spinner /></div>
+      ) : inscrito ? (
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted">
+            Você recebe as novidades em <b className="text-ink">{email}</b> desde {fmtDate(row.consentimento_em)}.
+          </p>
+          <button className="btn-ghost" onClick={cancelar} disabled={busy}>
+            {busy && <Spinner size={14} />} Cancelar inscrição
+          </button>
+        </div>
+      ) : (
+        <div className="mt-5">
+          <button className="btn-primary" onClick={assinar} disabled={busy}>
+            {busy ? <Spinner size={14} /> : <Mail size={16} />} Assinar grátis
+          </button>
+          <p className="mt-3 text-xs text-muted">
+            É gratuito e não tem relação com o plano pago. Ao assinar, você aceita receber e-mails da Scalable em <b className="text-ink">{email}</b>, conforme a{' '}
+            <Link to="/privacidade" className="font-medium text-ink underline underline-offset-2">Política de Privacidade</Link>. Cancele quando quiser.
+          </p>
+        </div>
+      )}
+    </Reveal>
+  )
+}
+
+/** Plano pago (Mercado Pago): status, assinar, cobranças e cancelamento. Só aparece quando a cobrança está ativada. */
+function PlanoPago() {
   const { billing, reloadBilling, session, toast } = useApp()
   const [faturas, setFaturas] = useState<Fatura[] | null>(null)
   const [form, setForm] = useState<null | { email: string }>(null)
@@ -30,13 +135,7 @@ export default function Billing() {
       .catch(() => setFaturas([]))
   }, [hasSub])
 
-  if (!billing) return <div className="flex justify-center py-20"><Spinner /></div>
-  if (!billing.enabled)
-    return (
-      <div>
-        <PageHeader title="Assinatura" subtitle="As assinaturas ainda não foram ativadas nesta plataforma." />
-      </div>
-    )
+  if (!billing || !billing.enabled) return null
 
   const b = billing
   const chip =
@@ -87,7 +186,6 @@ export default function Billing() {
 
   return (
     <div>
-      <PageHeader title="Assinatura" subtitle="Seu plano da Scalable, faturas e forma de pagamento." />
       {!b.allowed && (
         <Reveal className="mb-4 flex items-start gap-3 rounded-3xl bg-rose-50 p-4 text-sm text-rose-800">
           <Lock size={18} className="mt-0.5 shrink-0" />
@@ -116,7 +214,7 @@ export default function Billing() {
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             {canSubscribe && (
               <button className="btn-primary" onClick={() => setForm({ email: session?.user.email ?? '' })}>
-                <CreditCard size={16} /> {b.status === 'canceled' ? 'Assinar de novo' : 'Assinar agora'}
+                <CreditCard size={16} /> {b.status === 'canceled' ? 'Assinar o plano de novo' : 'Assinar o plano'}
               </button>
             )}
             {!canSubscribe && payUrl && !b.authorized && (

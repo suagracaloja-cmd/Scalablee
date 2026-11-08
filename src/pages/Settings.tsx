@@ -52,7 +52,7 @@ export default function Settings() {
   async function exportData() {
     setExporting(true)
     try {
-      const tables = ['customers', 'sales', 'transactions', 'tasks', 'insights', 'approvals', 'agent_threads', 'assistant_messages', 'conversations', 'messages'] as const
+      const tables = ['customers', 'sales', 'transactions', 'tasks', 'insights', 'approvals', 'agent_threads', 'assistant_messages', 'conversations', 'messages', 'inscricoes_novidades'] as const
       const out: Record<string, unknown> = { exportado_em: new Date().toISOString(), conta: session?.user.email, empresa: company }
       for (const t of tables) {
         const rows: unknown[] = []

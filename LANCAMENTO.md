@@ -107,7 +107,14 @@ Os avisos do Mercado Pago atualizam a situação sozinhos: autorizada, cobrança
 
 **Teste com credenciais de teste:** no Mercado Pago, a assinatura de teste precisa ser feita com um **usuário de teste** (Suas integrações → Contas de teste) — use o e-mail desse usuário comprador no formulário e um cartão de teste do Mercado Pago.
 
-## 8. Recomendados (não bloqueiam)
+## 8. Novidades por e-mail (grátis)
+
+Na tela **Assinatura**, o cliente pode clicar em **Assinar grátis** para receber novidades da Scalable por e-mail. Não tem relação com o plano pago nem com o Mercado Pago.
+- **Onde ver a lista:** Supabase → projeto **Scalablee** → **Table Editor** → tabela `inscricoes_novidades`. Envie só para quem está com `status = inscrito`.
+- Cada inscrição guarda a data, o texto e a versão do aceite (prova do consentimento) e, se a pessoa cancelar, a data do cancelamento.
+- **Envio dos e-mails:** a Scalable ainda não envia e-mails sozinha. Você pode copiar a lista e enviar pelo seu e-mail ou por um serviço de e-mail marketing. Todo e-mail deve ter um jeito de cancelar (a pessoa também pode cancelar na própria tela Assinatura).
+
+## 9. Recomendados (não bloqueiam)
 
 - **Domínio próprio** (ex.: registro.br) apontado para a Vercel.
 - Supabase → Authentication → **proteção contra senhas vazadas** (disponível em planos pagos).

@@ -99,6 +99,6 @@ export function textoOpcional(v: unknown, campo: string, max: number): string | 
 
 /** Valor que precisa estar numa lista fechada. */
 export function umDe<T extends string>(v: unknown, opcoes: readonly T[], campo: string): T {
-  if (typeof v !== "string" || !(opcoes as readonly string[]).includes(v)) throw new HttpError(400, `${campo} inválido.`);
+  if (typeof v !== "string" || !(opcoes as readonly string[]).includes(v)) throw new HttpError(400, `${campo}: valor inválido.`);
   return v as T;
 }

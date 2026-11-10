@@ -19,8 +19,8 @@ const SUGESTOES: Sugestao[] = [
   { icone: ClipboardList, texto: 'Monte um plano de ação para esta semana' },
 ]
 const ASSUNTOS: Record<Papel, string> = {
-  dono: 'agenda, pacientes, financeiro, vendas, conversas ou configurações',
-  recepcao: 'agenda, pacientes, vendas e conversas do WhatsApp',
+  dono: 'agenda, pacientes, atendimentos, financeiro, conversas ou configurações',
+  recepcao: 'agenda, pacientes, atendimentos e conversas do WhatsApp',
   profissional: 'agenda, pacientes e tarefas',
 }
 

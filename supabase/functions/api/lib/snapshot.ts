@@ -142,11 +142,11 @@ export function snapshotText(s: Snapshot) {
   lines.push(`Data de hoje: ${s.today}`);
   const diff = s.revenue.prevMonthToDate ? ((s.revenue.month - s.revenue.prevMonthToDate) / s.revenue.prevMonthToDate) * 100 : null;
   lines.push(
-    `Vendas no mês: ${brl(s.revenue.month)} em ${s.revenue.monthCount} vendas (ticket médio ${brl(s.revenue.avgTicket)}).` +
+    `Faturamento no mês: ${brl(s.revenue.month)} em ${s.revenue.monthCount} atendimentos (ticket médio ${brl(s.revenue.avgTicket)}).` +
       (diff !== null ? ` Mesmo período do mês anterior: ${brl(s.revenue.prevMonthToDate)} (${diff >= 0 ? "+" : ""}${diff.toFixed(0)}%).` : ""),
   );
-  lines.push(`Vendas pendentes de pagamento: ${s.revenue.pendingCount} (${brl(s.revenue.pending)}).`);
-  if (s.topProducts.length) lines.push(`Mais vendidos (30 dias): ${s.topProducts.map((p) => `${p.name} (${p.qty}x, ${brl(p.total)})`).join("; ")}`);
+  lines.push(`Atendimentos a receber: ${s.revenue.pendingCount} (${brl(s.revenue.pending)}).`);
+  if (s.topProducts.length) lines.push(`Procedimentos mais feitos (30 dias): ${s.topProducts.map((p) => `${p.name} (${p.qty}x, ${brl(p.total)})`).join("; ")}`);
   if (s.topCustomers.length) lines.push(`Melhores clientes: ${s.topCustomers.map((p) => `${p.name} (${brl(p.total)})`).join("; ")}`);
   lines.push(`Clientes cadastrados: ${s.counts.customers} (leads: ${s.counts.leads}).`);
   if (s.inactive.length) lines.push(`Clientes sem comprar há 30+ dias: ${s.inactive.slice(0, 8).map((x) => x.name).join(", ")}`);

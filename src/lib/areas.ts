@@ -5,7 +5,7 @@ export const AGENT_NAME = 'Coraline AI'
 
 /** Áreas de atuação da Coraline AI (a coluna agent_kind do banco guarda a área). */
 export const AREA: Record<string, { label: string; icon: LucideIcon; cls: string }> = {
-  sales: { label: 'Vendas', icon: TrendingUp, cls: 'bg-emerald-50 text-emerald-700' },
+  sales: { label: 'Faturamento', icon: TrendingUp, cls: 'bg-emerald-50 text-emerald-700' },
   marketing: { label: 'Marketing', icon: Megaphone, cls: 'bg-pink-50 text-pink-700' },
   finance: { label: 'Financeiro', icon: Wallet, cls: 'bg-amber-50 text-amber-700' },
   support: { label: 'Atendimento', icon: MessageCircle, cls: 'bg-violet-50 text-violet-700' },

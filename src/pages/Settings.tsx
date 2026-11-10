@@ -172,7 +172,7 @@ export default function Settings() {
               <div>
                 <h2 className="font-semibold">{AGENT_NAME}</h2>
                 <p className="text-xs text-muted">
-                  Uma única assistente para atendimento, agenda, pacientes, marketing, vendas, financeiro e gestão.
+                  Uma única assistente para agenda, pacientes, atendimentos, WhatsApp, marketing, financeiro e gestão.
                   {company?.agent_last_run_at ? ` Última análise: ${fmtDate(company.agent_last_run_at)}.` : ''}
                 </p>
               </div>
@@ -324,7 +324,7 @@ export default function Settings() {
         <p className="text-sm text-muted">
           {dono ? (
             <>
-              Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da clínica: pacientes, agenda, vendas, financeiro, tarefas, conversas, aprovações, a equipe e a conexão do WhatsApp. Não dá para desfazer. Se quiser, exporte seus dados antes.
+              Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da clínica: pacientes, agenda, atendimentos, financeiro, tarefas, conversas, aprovações, a equipe e a conexão do WhatsApp. Não dá para desfazer. Se quiser, exporte seus dados antes.
             </>
           ) : (
             <>

@@ -15,14 +15,14 @@ export const KIND_INFO: Record<ApprovalKind, Info> = {
   email_send: { label: 'E-mail (envio manual)', icon: Mail, manual: true },
   finance_create: { label: 'Lançamento financeiro', icon: Wallet },
   finance_update: { label: 'Alteração financeira', icon: Wallet },
-  sale_create: { label: 'Registro de venda', icon: ShoppingBag },
+  sale_create: { label: 'Registro de atendimento', icon: ShoppingBag },
   customer_upsert: { label: 'Cadastro de paciente', icon: UserPlus },
   record_delete: { label: 'Exclusão de dados', icon: Trash2 },
   action: { label: 'Ação', icon: CheckCircle2 },
 }
 
 const dt = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-const TABLE_LABEL: Record<string, string> = { sales: 'Venda', customers: 'Paciente', transactions: 'Lançamento financeiro', tasks: 'Tarefa' }
+const TABLE_LABEL: Record<string, string> = { sales: 'Atendimento', customers: 'Paciente', transactions: 'Lançamento financeiro', tasks: 'Tarefa' }
 const STATUS_LABEL: Record<string, string> = { lead: 'Lead', active: 'Ativo', vip: 'VIP', inactive: 'Inativo', paid: 'Pago', pending: 'Pendente' }
 
 function Row({ k, v }: { k: string; v: ReactNode }) {

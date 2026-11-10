@@ -106,7 +106,7 @@ Esta Política explica como a **${identificacao}** trata dados pessoais, conform
 - **Conta:** e-mail, senha (guardada de forma criptografada pelo provedor de autenticação) e a data e a versão dos termos que você aceitou.
 - **Clínica:** nome, tipo, descrição, site, Instagram, horário de atendimento, profissionais, serviços e instruções dadas à Coraline AI.
 - **Equipe:** nome, e-mail e papel (recepção ou profissional) de quem o dono convida, e os convites enviados.
-- **Dados que a clínica insere:** pacientes (nome, telefone, e-mail, data de nascimento, como conheceu a clínica, etapa no funil, próximo contato, observações), consultas (data, horário, serviço, profissional, situação, observações), vendas, lançamentos financeiros e tarefas. Informações de consultas podem revelar dados de saúde, que são **dados sensíveis**.
+- **Dados que a clínica insere:** pacientes (nome, CPF, telefone, e-mail, data de nascimento, como conheceu a clínica, etapa no funil, próximo contato, observações), consultas (data, horário, serviço, profissional, situação, observações), atendimentos (o que foi feito, tipo, valor, data, forma e situação do pagamento), lançamentos financeiros e tarefas. Informações de consultas e atendimentos podem revelar dados de saúde, que são **dados sensíveis**. O CPF não é enviado aos provedores de inteligência artificial.
 - **Conversas e aprovações:** perguntas feitas à Coraline AI, respostas e o registro de cada aprovação (o quê, quando e por quem).
 - **WhatsApp (se conectado):** mensagens trocadas com os pacientes e as credenciais da Meta, guardadas criptografadas e só no servidor.
 - **Novidades por e-mail (só se você assinar):** o e-mail da conta, a data, o texto e a versão do aceite e, se cancelar, a data do cancelamento.
@@ -122,7 +122,7 @@ Esta Política explica como a **${identificacao}** trata dados pessoais, conform
 Não vendemos dados pessoais nem os usamos para publicidade de terceiros. Só enviamos novidades por e-mail a quem assinar.
 
 ### 4. Inteligência artificial
-Para responder às perguntas da equipe e aos pacientes no WhatsApp, a Coraline AI envia trechos dos dados da clínica (por exemplo, a agenda do dia, resumos de vendas ou o nome de um paciente) a provedores de inteligência artificial, que geram a resposta: **Groq** e, se configurado, **Anthropic**. Esses provedores processam os dados para gerar a resposta, conforme os próprios termos. As respostas da IA são sugestões: ações relevantes só acontecem depois que você aprova.
+Para responder às perguntas da equipe e aos pacientes no WhatsApp, a Coraline AI envia trechos dos dados da clínica (por exemplo, a agenda do dia, resumos de atendimentos e faturamento ou o nome de um paciente) a provedores de inteligência artificial, que geram a resposta: **Groq** e, se configurado, **Anthropic**. Esses provedores processam os dados para gerar a resposta, conforme os próprios termos. As respostas da IA são sugestões: ações relevantes só acontecem depois que você aprova.
 
 ### 5. Com quem compartilhamos
 Somente com fornecedores necessários para o serviço:

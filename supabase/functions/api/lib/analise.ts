@@ -67,7 +67,7 @@ function rules(s: Snapshot, company: Company): Output {
   if (f.balance < 0) out.insights.push({ area: "finance", priority: "high", title: "Saldo do mês negativo", body: `Saídas superam entradas em ${brl(-f.balance)} neste mês.` });
 
   if (s.pendingSales.length)
-    out.insights.push({ area: "sales", title: `${s.pendingSales.length} venda(s) aguardando pagamento`, body: `Total de ${brl(s.revenue.pending)} a receber.\n` + s.pendingSales.slice(0, 6).map((x) => `• ${x.description}: ${brl(x.amount)}`).join("\n") });
+    out.insights.push({ area: "sales", title: `${s.pendingSales.length} atendimento(s) a receber`, body: `Total de ${brl(s.revenue.pending)} a receber.\n` + s.pendingSales.slice(0, 6).map((x) => `• ${x.description}: ${brl(x.amount)}`).join("\n") });
   if (s.inactive.length) {
     out.insights.push({
       area: "sales",

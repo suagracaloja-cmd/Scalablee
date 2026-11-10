@@ -23,7 +23,7 @@ export type Tool = {
 };
 
 export const AREA_LABEL: Record<Area, string> = {
-  sales: "Vendas",
+  sales: "Faturamento",
   marketing: "Marketing",
   finance: "Financeiro",
   support: "Atendimento",
@@ -52,9 +52,9 @@ function check<T>(r: { data: T | null; error: { message: string } | null }): T {
   return (r.data ?? ([] as unknown as T)) as T;
 }
 
-type SaleRow = { id: string; customer_id: string | null; description: string; amount: number; status: string; sold_at: string };
+type SaleRow = { id: string; customer_id: string | null; description: string; amount: number; status: string; sold_at: string; tipo?: string | null; forma_pagamento?: string | null };
 async function sales(ctx: ToolCtx, de: string, ate: string, includeCancelled = false): Promise<SaleRow[]> {
-  let q = ctx.db.from("sales").select("id,customer_id,description,amount,status,sold_at").eq("company_id", ctx.companyId).gte("sold_at", de).lte("sold_at", ate).limit(10000);
+  let q = ctx.db.from("sales").select("id,customer_id,description,amount,status,sold_at,tipo,forma_pagamento").eq("company_id", ctx.companyId).gte("sold_at", de).lte("sold_at", ate).limit(10000);
   if (!includeCancelled) q = q.neq("status", "cancelled");
   return check<SaleRow[]>(await q).map((s) => ({ ...s, amount: Number(s.amount) }));
 }
@@ -175,8 +175,8 @@ export const TOOLS: Tool[] = [
   {
     name: "vendas_resumo",
     area: "sales",
-    label: "Consultou vendas",
-    description: "Resumo real de vendas de um período: total, quantidade, ticket médio, por status, produtos e clientes que mais compraram, vendas por dia e comparação com o período anterior equivalente.",
+    label: "Consultou atendimentos",
+    description: "Faturamento real da clínica num período, a partir dos ATENDIMENTOS registrados (tela Atendimentos, antes chamada Vendas): total, quantidade, ticket médio, por situação (pago, a receber, cancelado), por tipo (consulta, exame, cirurgia…), procedimentos e pacientes que mais geraram receita, faturamento por dia e comparação com o período anterior equivalente.",
     input_schema: { type: "object", properties: { periodo: PERIODO, de: DATA, ate: DATA } },
     async run(ctx, i) {
       const { atual, anterior } = resolvePeriod(str(i.periodo) || undefined, validDate(i.de) ?? undefined, validDate(i.ate) ?? undefined, today(ctx));
@@ -196,6 +196,8 @@ export const TOOLS: Tool[] = [
           canceladas: salesStats(all.filter((s) => s.status === "cancelled")),
         },
         produtos_top: groupTop(list, (s) => s.description, (s) => s.amount),
+        por_tipo: groupTop(list, (s) => s.tipo ?? "não informado", (s) => s.amount),
+        por_forma_pagamento: groupTop(list.filter((s) => s.status === "paid"), (s) => s.forma_pagamento ?? "não informada", (s) => s.amount),
         clientes_top: groupTop(list.filter((s) => s.customer_id), (s) => names.get(s.customer_id!) ?? "—", (s) => s.amount),
         vendas_por_dia: [...porDia].sort().map(([data, total]) => ({ data, total: round(total) })).slice(-62),
         comparacao: { periodo_anterior: anterior, ...ant, variacao_total_pct: pct(cur.total, ant.total), variacao_quantidade_pct: pct(cur.quantidade, ant.quantidade) },
@@ -205,8 +207,8 @@ export const TOOLS: Tool[] = [
   {
     name: "vendas_listar",
     area: "sales",
-    label: "Listou vendas",
-    description: "Lista vendas reais com filtros (período, status, cliente, produto).",
+    label: "Listou atendimentos",
+    description: "Lista atendimentos reais (paciente, o que foi feito, tipo, valor, forma de pagamento e situação) com filtros: período, situação, paciente, procedimento.",
     input_schema: {
       type: "object",
       properties: {
@@ -214,8 +216,8 @@ export const TOOLS: Tool[] = [
         de: DATA,
         ate: DATA,
         status: { type: "string", enum: ["paid", "pending", "cancelled"] },
-        cliente: { type: "string", description: "Parte do nome do cliente" },
-        produto: { type: "string", description: "Parte do nome do produto" },
+        cliente: { type: "string", description: "Parte do nome do paciente" },
+        produto: { type: "string", description: "Parte do nome do procedimento (ex.: limpeza, hemograma)" },
         limite: { type: "integer", minimum: 1, maximum: 100 },
       },
     },
@@ -235,7 +237,7 @@ export const TOOLS: Tool[] = [
         periodo: atual,
         encontradas: rows.length,
         total: round(sum(rows)),
-        vendas: rows.slice(0, lim).map((s) => ({ id: s.id, data: s.sold_at, produto: s.description, valor: s.amount, status: s.status, cliente: names.get(s.customer_id ?? "") ?? null })),
+        atendimentos: rows.slice(0, lim).map((s) => ({ id: s.id, data: s.sold_at, procedimento: s.description, tipo: s.tipo ?? null, valor: s.amount, situacao: s.status, forma_pagamento: s.forma_pagamento ?? null, paciente: names.get(s.customer_id ?? "") ?? null })),
       };
     },
   },
@@ -336,8 +338,8 @@ export const TOOLS: Tool[] = [
   {
     name: "venda_registrar_preparar",
     area: "sales",
-    label: "Preparou registro de venda",
-    description: "Prepara o registro de uma venda. NÃO registra: cria um pedido de aprovação para o dono.",
+    label: "Preparou registro de atendimento",
+    description: "Prepara o registro de um atendimento pago ou a receber (o que foi feito, valor, paciente). NÃO registra: cria um pedido de aprovação.",
     input_schema: {
       type: "object",
       required: ["descricao", "valor"],
@@ -346,7 +348,9 @@ export const TOOLS: Tool[] = [
         valor: { type: "number", minimum: 0 },
         data: DATA,
         status: { type: "string", enum: ["paid", "pending"] },
-        cliente_id: { type: "string", description: "id do cliente (opcional, use cliente_consultar para achar)" },
+        tipo: { type: "string", enum: ["consulta", "retorno", "exame", "procedimento", "cirurgia", "outro"] },
+        forma_pagamento: { type: "string", enum: ["pix", "credito", "debito", "dinheiro", "boleto", "transferencia", "outro"] },
+        cliente_id: { type: "string", description: "id do paciente (opcional, use cliente_consultar para achar)" },
       },
     },
     async run(ctx, i) {
@@ -355,8 +359,18 @@ export const TOOLS: Tool[] = [
       if (!descricao || !(valor >= 0)) throw new Error("Informe descrição e valor válidos.");
       let cliente: string | null = null;
       if (str(i.cliente_id)) cliente = String((await ownRow(ctx, "customers", str(i.cliente_id), "id,name")).name);
-      const payload = { description: descricao, amount: valor, sold_at: validDate(i.data) ?? isoDate(today(ctx)), status: i.status === "pending" ? "pending" : "paid", customer_id: str(i.cliente_id) || null };
-      return propose(ctx, { kind: "sale_create", area: "sales", title: `Registrar venda: ${descricao} (${brl(valor)})`, reason: `Venda ${payload.status === "paid" ? "paga" : "pendente"} em ${fmtDate(payload.sold_at)}${cliente ? ` para ${cliente}` : ""}`, payload });
+      const TIPOS = ["consulta", "retorno", "exame", "procedimento", "cirurgia", "outro"];
+      const FORMAS = ["pix", "credito", "debito", "dinheiro", "boleto", "transferencia", "outro"];
+      const payload = {
+        description: descricao,
+        amount: valor,
+        sold_at: validDate(i.data) ?? isoDate(today(ctx)),
+        status: i.status === "pending" ? "pending" : "paid",
+        customer_id: str(i.cliente_id) || null,
+        tipo: TIPOS.includes(str(i.tipo)) ? str(i.tipo) : null,
+        forma_pagamento: FORMAS.includes(str(i.forma_pagamento)) ? str(i.forma_pagamento) : null,
+      };
+      return propose(ctx, { kind: "sale_create", area: "sales", title: `Registrar atendimento: ${descricao} (${brl(valor)})`, reason: `Atendimento ${payload.status === "paid" ? "pago" : "a receber"} em ${fmtDate(payload.sold_at)}${cliente ? ` de ${cliente}` : ""}`, payload });
     },
   },
 

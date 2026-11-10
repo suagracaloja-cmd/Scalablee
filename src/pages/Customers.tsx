@@ -6,8 +6,9 @@ import { useApp } from '../lib/store'
 import { ETAPAS, etapaInfo, ORIGENS, type Customer, type Etapa } from '../lib/types'
 import { brl, fmtDate, timeAgo } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { cpfValido, formatarCpf, soDigitos } from '../lib/cpf'
 
-const empty = () => ({ name: '', phone: '', email: '', status: 'lead' as Customer['status'], notes: '', etapa: 'novo' as Etapa, proximo_contato: '', origem: '', data_nascimento: '' })
+const empty = () => ({ name: '', phone: '', email: '', status: 'lead' as Customer['status'], notes: '', etapa: 'novo' as Etapa, proximo_contato: '', origem: '', data_nascimento: '', cpf: '' })
 type Form = ReturnType<typeof empty>
 const hoje = () => new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10)
 
@@ -50,7 +51,10 @@ export default function Customers() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const busca = (c: Customer) => `${c.name} ${c.phone ?? ''} ${c.email ?? ''}`.toLowerCase().includes(q.toLowerCase())
+  const busca = (c: Customer) => {
+    const d = soDigitos(q)
+    return `${c.name} ${c.phone ?? ''} ${c.email ?? ''}`.toLowerCase().includes(q.toLowerCase()) || (d.length >= 3 && (c.cpf ?? '').includes(d))
+  }
   const followUp = (c: Customer) => !!c.proximo_contato && c.proximo_contato <= hoje() && !['fechado', 'perdido'].includes(c.etapa ?? '')
   const shown = useMemo(
     () => items.filter((c) => busca(c) && (etapa === 'todas' || (etapa === 'followup' ? followUp(c) : (c.etapa ?? 'novo') === etapa))),
@@ -62,6 +66,7 @@ export default function Customers() {
   async function save(e: FormEvent) {
     e.preventDefault()
     if (!form || !company) return
+    if (!cpfValido(form.cpf)) return toast('CPF inválido. Confira os números.', 'err')
     setBusy(true)
     const phone = form.phone.replace(/\D/g, '')
     const row = {
@@ -74,10 +79,15 @@ export default function Customers() {
       proximo_contato: form.proximo_contato || null,
       origem: form.origem || null,
       data_nascimento: form.data_nascimento || null,
+      cpf: soDigitos(form.cpf) || null,
     }
     const { error } = editId ? await supabase.from('customers').update(row).eq('id', editId) : await supabase.from('customers').insert({ ...row, company_id: company.id })
     setBusy(false)
-    if (error) return toast(error.message.includes('customers_company_phone') ? 'Já existe um paciente com esse telefone' : error.message, 'err')
+    if (error)
+      return toast(
+        error.message.includes('customers_company_phone') ? 'Já existe um paciente com esse telefone' : error.message.includes('customers_company_cpf') ? 'Já existe um paciente com esse CPF' : error.message.includes('customers_cpf_valido') ? 'CPF inválido. Confira os números.' : error.message,
+        'err',
+      )
     toast(editId ? 'Paciente atualizado' : 'Paciente cadastrado')
     setForm(null)
     load()
@@ -108,6 +118,7 @@ export default function Customers() {
       proximo_contato: c.proximo_contato ?? '',
       origem: c.origem ?? '',
       data_nascimento: c.data_nascimento ?? '',
+      cpf: formatarCpf(c.cpf ?? ''),
     })
   )
 
@@ -125,7 +136,7 @@ export default function Customers() {
       <Reveal i={1} className="mb-3 flex flex-col gap-2 sm:flex-row">
         <div className="card flex flex-1 items-center gap-2 px-3 py-2">
           <Search size={16} className="text-muted" />
-          <input maxLength={100} className="w-full bg-transparent text-sm outline-none" placeholder="Buscar por nome, telefone ou e-mail" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input maxLength={100} className="w-full bg-transparent text-sm outline-none" placeholder="Buscar por nome, CPF, telefone ou e-mail" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="flex rounded-full bg-panel p-1" role="tablist" aria-label="Visualização">
           <button role="tab" aria-selected={modo === 'lista'} onClick={() => setModo('lista')} className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${modo === 'lista' ? 'bg-ink text-white' : 'text-muted'}`}>
@@ -299,6 +310,18 @@ export default function Customers() {
               </Field>
               <Field label="Data de nascimento">
                 <input className="input" type="date" value={form.data_nascimento} onChange={(e) => setForm({ ...form, data_nascimento: e.target.value })} />
+              </Field>
+              <Field label="CPF">
+                <input
+                  className={`input ${cpfValido(form.cpf) ? '' : 'border-rose-400 focus:border-rose-400'}`}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={form.cpf}
+                  onChange={(e) => setForm({ ...form, cpf: formatarCpf(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  aria-invalid={!cpfValido(form.cpf)}
+                />
+                {!cpfValido(form.cpf) && <span className="mt-1 block text-xs font-medium text-rose-600">CPF inválido</span>}
               </Field>
             </div>
             <Field label="Situação">

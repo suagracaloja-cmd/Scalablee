@@ -197,10 +197,12 @@ export async function approveApproval(env: DecideEnv, id: string, edits: { text?
         sold_at: String(p.sold_at),
         status: p.status === "pending" ? "pending" : "paid",
         customer_id: (p.customer_id as string) || null,
+        tipo: ["consulta", "retorno", "exame", "procedimento", "cirurgia", "outro"].includes(String(p.tipo)) ? String(p.tipo) : null,
+        forma_pagamento: ["pix", "credito", "debito", "dinheiro", "boleto", "transferencia", "outro"].includes(String(p.forma_pagamento)) ? String(p.forma_pagamento) : null,
       });
       fail(error);
       if (p.customer_id) await env.db.from("customers").update({ status: "active", last_contact_at: new Date().toISOString() }).eq("company_id", env.companyId).eq("id", String(p.customer_id)).eq("status", "lead");
-      result = "Venda registrada";
+      result = "Atendimento registrado";
       break;
     }
     case "customer_upsert": {

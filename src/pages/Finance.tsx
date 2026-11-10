@@ -7,7 +7,7 @@ import { brl, fmtDate, today } from '../lib/format'
 import { Bars } from '../components/LineChart'
 import { Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, StatusCard } from '../components/ui'
 
-const CATS = { expense: ['Fornecedores', 'Aluguel', 'Salários', 'Impostos', 'Marketing', 'Energia/Água/Internet', 'Outros'], income: ['Vendas', 'Serviços', 'Outros'] }
+const CATS = { expense: ['Fornecedores', 'Aluguel', 'Salários', 'Impostos', 'Marketing', 'Energia/Água/Internet', 'Outros'], income: ['Atendimentos', 'Outros'] }
 const empty = (type: Transaction['type'] = 'expense') => ({ type, description: '', category: '', amount: '', due_date: today(), paid: false })
 
 export default function Finance() {
@@ -85,7 +85,7 @@ export default function Finance() {
     <div>
       <PageHeader
         title="Financeiro"
-        subtitle="Contas a pagar e a receber. A Coraline AI avisa vencimentos e riscos."
+        subtitle="Despesas da clínica e outras contas a pagar ou receber. Os atendimentos pagos entram pela tela Atendimentos."
         actions={
           <>
             <button className="btn-ghost" onClick={() => (setEditId(null), setForm(empty('income')))}>

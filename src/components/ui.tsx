@@ -216,7 +216,7 @@ export function StatusCard({ i = 0, label, value, sub, tone }: { i?: number; lab
     <Reveal i={i} className="card overflow-hidden">
       <div className={`px-4 py-2.5 text-xs font-bold sm:px-5 ${tones[tone]}`}>{label}</div>
       <div className="px-4 py-4 sm:px-5">
-        <div className="truncate text-[22px] font-bold tracking-tight sm:text-[26px]">{value}</div>
+        <Ajusta className="py-0.5 text-[22px] font-bold tracking-tight sm:text-[26px]">{value}</Ajusta>
         {sub && <div className="mt-1 truncate text-xs text-muted">{sub}</div>}
       </div>
     </Reveal>

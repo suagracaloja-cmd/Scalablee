@@ -13,7 +13,7 @@ import {
   MessageCircle,
   Search,
   Settings,
-  ShoppingBag,
+  Stethoscope,
   Sparkles,
   Users,
   Wallet,
@@ -35,7 +35,7 @@ const NAV: NavItem[] = [
   { to: '/aprovacoes', label: 'Aprovações', icon: CheckCircle2, badge: 'approvals', papeis: ['dono', 'recepcao'] },
   { to: '/whatsapp', label: 'WhatsApp', icon: MessageCircle, badge: 'conversations', papeis: ['dono', 'recepcao'] },
   { to: '/clientes', label: 'Pacientes', icon: Users },
-  { to: '/vendas', label: 'Vendas', icon: ShoppingBag, papeis: ['dono', 'recepcao'] },
+  { to: '/atendimentos', label: 'Atendimentos', icon: Stethoscope, papeis: ['dono', 'recepcao'] },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, papeis: ['dono'] },
   { to: '/tarefas', label: 'Tarefas', icon: ClipboardList },
 ]

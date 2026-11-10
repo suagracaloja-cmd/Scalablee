@@ -204,9 +204,9 @@ export default function Dashboard() {
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
                 <ShoppingBag size={17} />
               </span>
-              Vendas no mês
+              Faturamento no mês
             </div>
-            <Link to="/vendas" className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand">
+            <Link to="/atendimentos" className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand">
               <ArrowUpRight size={17} />
             </Link>
           </div>
@@ -215,7 +215,7 @@ export default function Dashboard() {
             <Delta value={m.revenueDelta} onDark /> vs mês passado
           </div>
         </Reveal>
-        <Kpi i={2} icon={<Wallet size={17} />} label="Ticket médio" to="/vendas" ready={ready} value={<Money value={m.ticket} delay={350} />} delta={<Delta value={m.ticketDelta} />} sub={<><Count value={m.count} delay={350} /> vendas</>} />
+        <Kpi i={2} icon={<Wallet size={17} />} label="Ticket médio" to="/atendimentos" ready={ready} value={<Money value={m.ticket} delay={350} />} delta={<Delta value={m.ticketDelta} />} sub={<><Count value={m.count} delay={350} /> atendimentos</>} />
         <Kpi i={3} icon={<Users size={17} />} label="Pacientes" to="/clientes" ready={ready} value={<Count value={customers.length} delay={450} />} delta={<Delta value={m.customersDelta} />} sub={`+${m.newCustomers} novos`} />
         {dono && <Kpi
           wide
@@ -230,13 +230,13 @@ export default function Dashboard() {
         />}
       </div>
 
-      {/* Curva de vendas + atenção */}
+      {/* Curva de faturamento + atenção */}
       <div className="mt-4 grid gap-4 xl:grid-cols-3 [&>*]:min-w-0">
         <Reveal i={5} className="card p-5 sm:p-6 xl:col-span-2">
           <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold">Desempenho de vendas</h2>
-              <p className="text-xs text-muted">Vendas por dia nos últimos {range} dias</p>
+              <h2 className="text-lg font-bold">Faturamento</h2>
+              <p className="text-xs text-muted">Atendimentos por dia nos últimos {range} dias</p>
             </div>
             <div className="flex rounded-full bg-panel-2 p-1 text-xs font-semibold">
               {([7, 30, 90] as Range[]).map((r) => (
@@ -264,8 +264,8 @@ export default function Dashboard() {
           </div>
           {ready && sales.length === 0 && (
             <p className="mt-2 text-center text-sm text-muted">
-              Nenhuma venda ainda.{' '}
-              <Link to="/vendas" className="font-semibold text-brand">
+              Nenhum atendimento ainda.{' '}
+              <Link to="/atendimentos" className="font-semibold text-brand">
                 Cadastre a primeira
               </Link>
             </p>
@@ -316,7 +316,7 @@ export default function Dashboard() {
               <div>
                 <div className="text-lg font-bold">{AGENT_NAME}</div>
                 <div className="flex items-center gap-1.5 text-xs text-white/60">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Vendas, marketing, financeiro, atendimento e gestão
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Agenda, pacientes, financeiro, WhatsApp e gestão
                 </div>
               </div>
             </div>
@@ -354,7 +354,7 @@ export default function Dashboard() {
       {/* Produtos, entradas x saídas, tarefas */}
       <div className="mt-4 grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
         <Reveal i={13} className="card flex flex-col p-5 sm:p-6">
-          <h2 className="text-lg font-bold">Vendas por produto</h2>
+          <h2 className="text-lg font-bold">Por procedimento</h2>
           <p className="mb-4 text-xs text-muted">Últimos 30 dias</p>
           {m.top.length ? (
             <div className="flex flex-1 items-center gap-5">
@@ -370,7 +370,7 @@ export default function Dashboard() {
               </ul>
             </div>
           ) : (
-            <p className="py-10 text-center text-sm text-muted">Sem vendas no período.</p>
+            <p className="py-10 text-center text-sm text-muted">Sem atendimentos no período.</p>
           )}
         </Reveal>
 
@@ -425,17 +425,17 @@ export default function Dashboard() {
         </Reveal>
       </div>
 
-      {/* Vendas recentes + últimas do agente */}
+      {/* Atendimentos recentes + últimas do agente */}
       <div className="mt-4 grid gap-4 xl:grid-cols-3 [&>*]:min-w-0">
         <Reveal i={16} className="card p-5 sm:p-6 xl:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Vendas recentes</h2>
-            <Link to="/vendas" className="btn-ghost h-9 px-4 text-xs">
+            <h2 className="text-lg font-bold">Atendimentos recentes</h2>
+            <Link to="/atendimentos" className="btn-ghost h-9 px-4 text-xs">
               Ver todas
             </Link>
           </div>
           {m.recent.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted">Nenhuma venda registrada.</p>
+            <p className="py-8 text-center text-sm text-muted">Nenhum atendimento registrado.</p>
           ) : (
             <>
             <ul className="divide-y divide-line sm:hidden">
@@ -447,7 +447,7 @@ export default function Dashboard() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{s.description}</span>
                     <span className="block truncate text-xs text-muted">
-                      {fmtDate(s.sold_at)} · {s.customer_id ? names.get(s.customer_id) : 'Sem cliente'}
+                      {fmtDate(s.sold_at)} · {s.customer_id ? names.get(s.customer_id) : 'Sem paciente'}
                     </span>
                   </span>
                   <span className="text-right">

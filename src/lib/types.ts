@@ -37,7 +37,9 @@ export type Customer = {
   proximo_contato?: string | null
   origem?: string | null
   data_nascimento?: string | null
+  cpf?: string | null
 }
+/** Atendimento (na tabela sales): o que foi feito, para quem, quanto custou e como foi pago. */
 export type Sale = {
   id: string
   customer_id: string | null
@@ -46,6 +48,27 @@ export type Sale = {
   status: 'paid' | 'pending' | 'cancelled'
   sold_at: string
   created_at: string
+  tipo?: TipoAtendimento | null
+  forma_pagamento?: FormaPagamento | null
+}
+export type TipoAtendimento = 'consulta' | 'retorno' | 'exame' | 'procedimento' | 'cirurgia' | 'outro'
+export const TIPOS_ATENDIMENTO: { id: TipoAtendimento; label: string }[] = [
+  { id: 'consulta', label: 'Consulta' },
+  { id: 'retorno', label: 'Retorno' },
+  { id: 'exame', label: 'Exame' },
+  { id: 'procedimento', label: 'Procedimento' },
+  { id: 'cirurgia', label: 'Cirurgia' },
+  { id: 'outro', label: 'Outro' },
+]
+export type FormaPagamento = 'pix' | 'credito' | 'debito' | 'dinheiro' | 'boleto' | 'transferencia' | 'outro'
+export const FORMAS_PAGAMENTO: Record<FormaPagamento, string> = {
+  pix: 'Pix',
+  credito: 'Cartão de crédito',
+  debito: 'Cartão de débito',
+  dinheiro: 'Dinheiro',
+  boleto: 'Boleto',
+  transferencia: 'Transferência',
+  outro: 'Outro',
 }
 export type Transaction = {
   id: string

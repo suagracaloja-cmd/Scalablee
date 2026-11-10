@@ -98,7 +98,7 @@ function Equipe() {
       <Reveal i={1} className="card p-5 sm:p-6">
         <h2 className="font-semibold">Quem tem acesso</h2>
         <p className="mt-1 text-sm text-muted">
-          <b className="text-ink">Recepção:</b> agenda, pacientes, WhatsApp, vendas, aprovações e tarefas. <b className="text-ink">Profissional:</b> agenda, pacientes e tarefas. Só o dono vê o financeiro, a assinatura e estas configurações.
+          <b className="text-ink">Recepção:</b> agenda, pacientes, WhatsApp, atendimentos, aprovações e tarefas. <b className="text-ink">Profissional:</b> agenda, pacientes e tarefas. Só o dono vê o financeiro, a assinatura e estas configurações.
         </p>
         {loading ? (
           <div className="py-6">

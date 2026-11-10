@@ -13,7 +13,7 @@ import Dashboard from './pages/Dashboard'
 import Agent from './pages/Agent'
 import Agenda from './pages/Agenda'
 import Clinica from './pages/Clinica'
-import Sales from './pages/Sales'
+import Atendimentos from './pages/Atendimentos'
 import Customers from './pages/Customers'
 import Finance from './pages/Finance'
 import Tasks from './pages/Tasks'
@@ -52,7 +52,8 @@ function Gate() {
         <Route path="agenda" element={<Agenda />} />
         <Route path="aprovacoes" element={<So papeis={['dono', 'recepcao']}><Approvals /></So>} />
         <Route path="whatsapp" element={<So papeis={['dono', 'recepcao']}><WhatsApp /></So>} />
-        <Route path="vendas" element={<So papeis={['dono', 'recepcao']}><Sales /></So>} />
+        <Route path="atendimentos" element={<So papeis={['dono', 'recepcao']}><Atendimentos /></So>} />
+        <Route path="vendas" element={<Navigate to="/atendimentos" replace />} />
         <Route path="clientes" element={<Customers />} />
         <Route path="pacientes" element={<Customers />} />
         <Route path="financeiro" element={<So papeis={['dono']}><Finance /></So>} />

@@ -216,7 +216,7 @@ export default function Agenda() {
       )}
 
       {/* Navegação */}
-      <Reveal i={1} className="card mb-4 flex flex-col gap-3 p-3 lg:flex-row lg:items-center lg:justify-between">
+      <Reveal i={1} className="card mb-4 flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
         <div className="flex items-center gap-2">
           <button className="icon-btn" aria-label={modo === 'dia' ? 'Dia anterior' : 'Semana anterior'} onClick={() => setData(somaDias(data, modo === 'dia' ? -1 : -7))}>
             <ChevronLeft size={18} />
@@ -227,15 +227,16 @@ export default function Agenda() {
           <button className="icon-btn" aria-label={modo === 'dia' ? 'Próximo dia' : 'Próxima semana'} onClick={() => setData(somaDias(data, modo === 'dia' ? 1 : 7))}>
             <ChevronRight size={18} />
           </button>
-          <div className="ml-1 min-w-0">
-            <div className="truncate font-bold">{modo === 'dia' ? maiuscula(dataLonga(data)) : `Semana de ${dataLonga(deData).split(', ')[1]}`}</div>
-            {modo === 'dia' && (
-              <div className="text-xs text-muted">
-                {resumo.total} consulta(s) · {resumo.aConfirmar} a confirmar · {resumo.confirmadas} confirmada(s)
-              </div>
-            )}
-          </div>
-          <input type="date" className="input ml-auto h-10 w-auto lg:hidden" value={data} onChange={(e) => e.target.value && setData(e.target.value)} aria-label="Escolher data" />
+          <input type="date" className="input ml-auto h-10 w-auto min-w-0 lg:hidden" value={data} onChange={(e) => e.target.value && setData(e.target.value)} aria-label="Escolher data" />
+        </div>
+        {/* Celular: o dia e o resumo ganham uma linha só deles */}
+        <div className="min-w-0 lg:ml-1 lg:flex-1">
+          <div className="truncate font-bold">{modo === 'dia' ? maiuscula(dataLonga(data)) : `Semana de ${dataLonga(deData).split(', ')[1]}`}</div>
+          {modo === 'dia' && (
+            <div className="text-xs text-muted">
+              {resumo.total} consulta(s) · {resumo.aConfirmar} a confirmar · {resumo.confirmadas} confirmada(s)
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input type="date" className="input hidden h-10 w-auto lg:block" value={data} onChange={(e) => e.target.value && setData(e.target.value)} aria-label="Escolher data" />

@@ -159,7 +159,7 @@ export default function Agent() {
   )
 
   return (
-    <div className="reveal card flex h-[calc(100dvh-11.5rem)] min-h-[480px] overflow-hidden md:h-[calc(100dvh-7.5rem)]">
+    <div className="reveal card flex h-[calc(100dvh-6.5rem)] min-h-[480px] overflow-hidden md:h-[calc(100dvh-7.5rem)]">
       {/* Histórico (desktop) */}
       <aside className="hidden w-72 shrink-0 lg:block">{sidebar}</aside>
       {/* Histórico (celular/tablet) */}

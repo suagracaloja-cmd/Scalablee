@@ -115,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppCtx.Provider value={{ session, loading, company, papel, counts, reloadCompany, reloadCounts, toast, recovery, endRecovery: () => setRecovery(false), billing, reloadBilling }}>
       {children}
-      <div className="fixed inset-x-4 bottom-28 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:items-end">
+      <div className="fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-[70] flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:items-end" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div
             key={t.id}

@@ -1,4 +1,4 @@
-// POST /api/aprovacoes — aprovar ou recusar operações preparadas pela Coraline.
+// POST /api/aprovacoes — aprovar ou recusar operações preparadas pela Coraline AI.
 // Corpo: { action: "approve" | "reject", id: string, text?: string, motivo?: string }
 import { handle, HttpError, json, requireCompany } from "./lib/common.ts";
 import { ApprovalError, decideApproval } from "./lib/approvals.ts";

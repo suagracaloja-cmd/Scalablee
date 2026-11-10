@@ -19,7 +19,7 @@ const STATUS_FATURA: Record<string, { l: string; c: string }> = {
 export default function Billing() {
   return (
     <div>
-      <PageHeader title="Assinatura" subtitle="Novidades da Coraline AI por e-mail (grátis) e o seu plano." />
+      <PageHeader title="Assinatura" subtitle="Novidades da Scalable por e-mail (grátis) e o seu plano." />
       <Novidades />
       <PlanoPago />
     </div>
@@ -73,7 +73,7 @@ function Novidades() {
     setBusy(false)
     if (error) return toast('Não foi possível salvar agora. Tente de novo.', 'err')
     setRow(data as Inscricao)
-    toast(acao === 'assinar' ? 'Pronto! Você vai receber as novidades da Coraline AI por e-mail.' : 'Inscrição cancelada. Você não vai mais receber as novidades.')
+    toast(acao === 'assinar' ? 'Pronto! Você vai receber as novidades da Scalable por e-mail.' : 'Inscrição cancelada. Você não vai mais receber as novidades.')
   }
   const assinar = () => salvar('assinar')
   const cancelar = () => salvar('cancelar')
@@ -87,7 +87,7 @@ function Novidades() {
             <Mail size={20} />
           </span>
           <div>
-            <h2 className="text-lg font-bold">Novidades da Coraline AI</h2>
+            <h2 className="text-lg font-bold">Novidades da Scalable</h2>
             <p className="mt-0.5 text-sm text-muted">Receba por e-mail as novidades e atualizações da plataforma.</p>
           </div>
         </div>
@@ -110,7 +110,7 @@ function Novidades() {
             {busy ? <Spinner size={14} /> : <Mail size={16} />} Assinar grátis
           </button>
           <p className="mt-3 text-xs text-muted">
-            É gratuito e não tem relação com o plano pago. Ao assinar, você aceita receber e-mails da Coraline AI em <b className="text-ink">{email}</b>, conforme a{' '}
+            É gratuito e não tem relação com o plano pago. Ao assinar, você aceita receber e-mails da Scalable em <b className="text-ink">{email}</b>, conforme a{' '}
             <Link to="/privacidade" className="font-medium text-ink underline underline-offset-2">Política de Privacidade</Link>. Cancele quando quiser.
           </p>
         </div>
@@ -229,7 +229,7 @@ function PlanoPago() {
             )}
           </div>
           <p className="mt-5 flex items-center gap-2 text-xs text-muted">
-            <ShieldCheck size={14} /> Pagamento processado pelo Mercado Pago. A Coraline AI não vê nem guarda dados do seu cartão.
+            <ShieldCheck size={14} /> Pagamento processado pelo Mercado Pago. A Scalable não vê nem guarda dados do seu cartão.
             {b.sandbox && <span className="chip bg-amber-50 text-amber-800">Ambiente de testes</span>}
           </p>
           <p className="mt-2 text-xs text-muted">
@@ -270,7 +270,7 @@ function PlanoPago() {
         </Reveal>
       </div>
 
-      <Modal open={!!form} onClose={() => setForm(null)} title="Assinar a Coraline AI">
+      <Modal open={!!form} onClose={() => setForm(null)} title="Assinar a Scalable">
         {form && (
           <form onSubmit={subscribe} className="space-y-3">
             <p className="text-sm text-muted">

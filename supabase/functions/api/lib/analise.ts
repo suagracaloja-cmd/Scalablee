@@ -1,4 +1,4 @@
-// Análise geral da Coraline (todas as áreas, no máximo uma chamada de IA).
+// Análise geral da Coraline AI (todas as áreas, no máximo uma chamada de IA).
 // Gera notificações (insights), tarefas e, se o WhatsApp estiver conectado, mensagens de reativação para aprovação.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import type { Company } from "./common.ts";
@@ -85,7 +85,7 @@ function rules(s: Snapshot, company: Company): Output {
   if (s.pendingApprovals.length)
     out.insights.push({ area: "management", priority: "high", title: `${s.pendingApprovals.length} aprovação(ões) esperando você`, body: s.pendingApprovals.map((a: { title: string }) => `• ${a.title}`).join("\n") });
   if (!company.instagram && !company.website)
-    out.insights.push({ area: "marketing", title: "Cadastre seu Instagram e site", body: "Em Configurações, informe o @ do Instagram e o site para a Coraline analisar e trazer ideias personalizadas." });
+    out.insights.push({ area: "marketing", title: "Cadastre seu Instagram e site", body: "Em Configurações, informe o @ do Instagram e o site para a Coraline AI analisar e trazer ideias personalizadas." });
   return out;
 }
 

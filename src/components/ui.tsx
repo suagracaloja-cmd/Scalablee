@@ -20,13 +20,9 @@ export function LogoIcon({ size = 40, flat = false, className = '' }: { size?: n
 
 export function Logo({ size = 40, word = true, light = false }: { size?: number; word?: boolean; light?: boolean }) {
   return (
-    <div className="flex items-center gap-2.5" role="img" aria-label="Coraline AI">
+    <div className="flex items-center gap-2.5" role="img" aria-label="Scalable">
       <LogoIcon size={size} />
-      {word && (
-        <span className={`font-extrabold leading-none tracking-tight ${light ? 'text-white' : 'text-ink'}`} style={{ fontSize: size * 0.52 }}>
-          Coraline AI
-        </span>
-      )}
+      {word && <img src={light ? '/logo-word-white.png' : '/logo-word.png'} alt="" aria-hidden="true" style={{ height: size * 0.5 }} />}
     </div>
   )
 }
@@ -43,12 +39,17 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   )
 }
 
-/** Identidade da Coraline, a assistente de IA (símbolo da marca). */
-export function AgentMark({ size = 36, rounded = 'rounded-2xl', className = '' }: { size?: number; rounded?: string; className?: string }) {
+/** Esfera da Coraline AI (a assistente de IA da Scalable). */
+export function Orb({ size = 36, className = '' }: { size?: number; className?: string }) {
+  return <span className={`orb inline-block shrink-0 rounded-full ${className}`} style={{ width: size, height: size }} aria-hidden="true" />
+}
+
+/** Avatar da Coraline AI nas conversas, aprovações e notificações. */
+export function AgentMark({ size = 36, className = '' }: { size?: number; rounded?: string; className?: string }) {
   return (
-    <div className={`flex shrink-0 items-center justify-center bg-brand ${rounded} ${className}`} style={{ width: size, height: size }} role="img" aria-label="Coraline">
-      <LogoIcon size={size * 0.56} flat />
-    </div>
+    <span role="img" aria-label="Coraline AI" className={`inline-flex shrink-0 ${className}`}>
+      <Orb size={size} />
+    </span>
   )
 }
 

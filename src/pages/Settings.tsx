@@ -117,7 +117,7 @@ export default function Settings() {
     setSavingAg(false)
     if (error) return toast(error.message, 'err')
     await reloadCompany()
-    toast('Configurações da Coraline salvas')
+    toast('Configurações da Coraline AI salvas')
   }
 
   async function analyze() {
@@ -136,7 +136,7 @@ export default function Settings() {
 
   return (
     <div>
-      <PageHeader title="Configurações" subtitle={dono ? "Dados da clínica e configurações da Coraline." : "Sua conta e seus dados."} />
+      <PageHeader title="Configurações" subtitle={dono ? "Dados da clínica e configurações da Coraline AI." : "Sua conta e seus dados."} />
       <div className="grid gap-4 lg:grid-cols-2">
         {dono && (<>
         <Reveal i={1} className="card p-5">
@@ -177,7 +177,7 @@ export default function Settings() {
                 </p>
               </div>
             </div>
-            <Field label="Instruções para a Coraline (tom de voz, regras, o que evitar…)">
+            <Field label="Instruções para a Coraline AI (tom de voz, regras, o que evitar…)">
               <textarea
                 maxLength={4000}
                 className="input min-h-28"
@@ -190,7 +190,7 @@ export default function Settings() {
               checked={ag.agent_whatsapp}
               onChange={(v) => setAg({ ...ag, agent_whatsapp: v })}
               title="Atender clientes no WhatsApp"
-              text="A Coraline lê as mensagens recebidas e prepara as respostas."
+              text="A Coraline AI lê as mensagens recebidas e prepara as respostas."
             />
             <Toggle
               checked={ag.agent_auto_reply}
@@ -200,7 +200,7 @@ export default function Settings() {
               text="Desligado: toda resposta vai para a Central de Aprovações antes de ser enviada. Pedidos de desconto, reclamações e assuntos sensíveis sempre pedem sua aprovação."
             />
             <button className="btn-primary w-full" disabled={savingAg}>
-              {savingAg && <Spinner />} Salvar configurações da Coraline
+              {savingAg && <Spinner />} Salvar configurações da Coraline AI
             </button>
             {uso && (
               <div className="rounded-2xl bg-panel-2 p-3 text-xs text-muted">

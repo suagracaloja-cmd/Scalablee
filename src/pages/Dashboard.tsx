@@ -176,7 +176,7 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <Link to="/agente" className="btn-ghost flex-1 sm:flex-none">
-            <Sparkles size={16} className="text-brand-dark" /> Falar com a Coraline
+            <Sparkles size={16} className="text-brand-dark" /> Falar com a Coraline AI
           </Link>
           {dono && (
             <button className="btn-primary flex-1 sm:flex-none" onClick={runAgents} disabled={running}>
@@ -190,7 +190,7 @@ export default function Dashboard() {
 
       {papel === 'profissional' ? (
         <Reveal i={2} className="card p-5 text-sm text-muted sm:p-6">
-          Use o menu para ver os <Link className="font-semibold text-ink underline underline-offset-2" to="/clientes">pacientes</Link>, as <Link className="font-semibold text-ink underline underline-offset-2" to="/tarefas">tarefas</Link> ou conversar com a <Link className="font-semibold text-ink underline underline-offset-2" to="/agente">Coraline</Link>.
+          Use o menu para ver os <Link className="font-semibold text-ink underline underline-offset-2" to="/clientes">pacientes</Link>, as <Link className="font-semibold text-ink underline underline-offset-2" to="/tarefas">tarefas</Link> ou conversar com a <Link className="font-semibold text-ink underline underline-offset-2" to="/agente">Coraline AI</Link>.
         </Reveal>
       ) : (
       <>
@@ -305,7 +305,7 @@ export default function Dashboard() {
         </Reveal>
       </div>
 
-      {/* Coraline */}
+      {/* Coraline AI */}
       <Reveal i={7} className="card mt-4 overflow-hidden">
         <div className="grid lg:grid-cols-[1.1fr_1fr]">
           <div className="relative overflow-hidden bg-graphite p-6 text-white sm:p-7">
@@ -491,7 +491,7 @@ export default function Dashboard() {
 
         <Reveal i={17} className="card p-5 sm:p-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Alertas da Coraline</h2>
+            <h2 className="text-lg font-bold">Alertas da Coraline AI</h2>
             <Link to="/notificacoes" className="text-xs font-bold text-brand">
               Ver todas
             </Link>

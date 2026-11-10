@@ -1,4 +1,4 @@
-// Modo básico da Coraline: quando a IA não está disponível (sem chave, sem créditos ou falha),
+// Modo básico da Coraline AI: quando a IA não está disponível (sem chave, sem créditos ou falha),
 // responde por intenção usando os dados reais da empresa. Nada é inventado.
 import { addDays, brl, isoDate, norm, sum } from "./util.ts";
 import type { Snapshot } from "./snapshot.ts";

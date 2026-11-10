@@ -323,7 +323,7 @@ function Servicos() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">Serviços e procedimentos</h2>
-          <p className="text-sm text-muted">A duração define o tamanho do horário na agenda. A Coraline usa os preços cadastrados aqui.</p>
+          <p className="text-sm text-muted">A duração define o tamanho do horário na agenda. A Coraline AI usa os preços cadastrados aqui.</p>
         </div>
         <button className="btn-primary" onClick={() => setForm({ id: null, nome: '', duracao_min: '30', preco: '', ativo: true })}>
           <Plus size={16} /> Novo serviço
@@ -410,7 +410,7 @@ function Horarios() {
   return (
     <Reveal i={1} className="card max-w-2xl p-5 sm:p-6">
       <h2 className="font-semibold">Horário de atendimento</h2>
-      <p className="text-sm text-muted">A agenda e a Coraline só oferecem horários dentro destes dias e horas.</p>
+      <p className="text-sm text-muted">A agenda e a Coraline AI só oferecem horários dentro destes dias e horas.</p>
       <form onSubmit={salvar} className="mt-4 space-y-4">
         <fieldset>
           <legend className="label">Dias de atendimento</legend>

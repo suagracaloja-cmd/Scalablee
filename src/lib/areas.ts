@@ -1,9 +1,9 @@
 import { Briefcase, Megaphone, MessageCircle, Sparkles, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
 
-export const PLATAFORMA = 'Coraline AI'
-export const AGENT_NAME = 'Coraline'
+export const PLATAFORMA = 'Scalable'
+export const AGENT_NAME = 'Coraline AI'
 
-/** Áreas de atuação da Coraline (a coluna agent_kind do banco guarda a área). */
+/** Áreas de atuação da Coraline AI (a coluna agent_kind do banco guarda a área). */
 export const AREA: Record<string, { label: string; icon: LucideIcon; cls: string }> = {
   sales: { label: 'Vendas', icon: TrendingUp, cls: 'bg-emerald-50 text-emerald-700' },
   marketing: { label: 'Marketing', icon: Megaphone, cls: 'bg-pink-50 text-pink-700' },

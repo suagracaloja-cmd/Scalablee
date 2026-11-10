@@ -117,7 +117,7 @@ export default function WhatsApp() {
         subtitle={
           status
             ? `${status.display_phone ?? status.phone_number_id} · ${status.connected ? 'Recebendo mensagens' : 'Aguardando configuração do webhook'}`
-            : 'Conecte o número da clínica para a Coraline atender os pacientes'
+            : 'Conecte o número da clínica para a Coraline AI atender os pacientes'
         }
         actions={
           papel === 'dono' ? (
@@ -144,7 +144,7 @@ export default function WhatsApp() {
           />
         </Reveal>
       ) : (
-        <Reveal i={1} className="card grid h-[calc(100dvh-15rem)] min-h-[420px] overflow-hidden md:h-[calc(100dvh-12rem)] md:grid-cols-[320px_1fr]">
+        <Reveal i={1} className="card grid h-[calc(100dvh-11rem)] min-h-[420px] overflow-hidden md:h-[calc(100dvh-12rem)] md:grid-cols-[320px_1fr]">
           {/* Lista */}
           <div className={`min-h-0 overflow-y-auto border-r border-line ${active ? 'hidden md:block' : ''}`}>
             {!status.connected && (
@@ -343,7 +343,7 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
           <p className={`rounded-xl px-3 py-2 text-xs ${hasSecret ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
             {hasSecret
               ? '✓ Verificação de autenticidade ligada: só mensagens assinadas pela Meta são aceitas.'
-              : '⚠️ A chave secreta do app é obrigatória: sem ela a Coraline AI não consegue confirmar que as mensagens recebidas vieram mesmo da Meta, e elas são recusadas.'}
+              : '⚠️ A chave secreta do app é obrigatória: sem ela a Scalable não consegue confirmar que as mensagens recebidas vieram mesmo da Meta, e elas são recusadas.'}
           </p>
         )}
         <button className="btn-primary w-full" disabled={busy}>

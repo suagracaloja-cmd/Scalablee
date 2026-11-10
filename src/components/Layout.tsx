@@ -21,14 +21,16 @@ import {
 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { supabase } from '../lib/supabase'
-import { Logo } from './ui'
+import { Logo, Orb } from './ui'
+import { CoralinePainel } from './CoralinePainel'
+import { AGENT_NAME } from '../lib/areas'
 import type { Papel } from '../lib/types'
 import { LegalFooter } from './LegalFooter'
 
 type NavItem = { to: string; label: string; icon: typeof LayoutGrid; badge?: 'approvals' | 'conversations' | 'insights'; papeis?: Papel[] }
 const NAV: NavItem[] = [
   { to: '/', label: 'Início', icon: LayoutGrid },
-  { to: '/agente', label: 'Coraline', icon: Sparkles },
+  { to: '/agente', label: 'Coraline AI', icon: Sparkles },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
   { to: '/aprovacoes', label: 'Aprovações', icon: CheckCircle2, badge: 'approvals', papeis: ['dono', 'recepcao'] },
   { to: '/whatsapp', label: 'WhatsApp', icon: MessageCircle, badge: 'conversations', papeis: ['dono', 'recepcao'] },
@@ -48,8 +50,8 @@ const pode = (n: NavItem, papel: Papel) => !n.papeis || n.papeis.includes(papel)
 export default function Layout() {
   const { company, counts, billing, papel } = useApp()
   const navItems = NAV.filter((n) => pode(n, papel))
-  const mobile = ['/', '/agenda', '/agente', papel === 'profissional' ? '/clientes' : '/whatsapp']
   const [sheet, setSheet] = useState(false)
+  const [painel, setPainel] = useState(false)
   const [q, setQ] = useState('')
   const loc = useLocation()
   const nav = useNavigate()
@@ -77,14 +79,18 @@ export default function Layout() {
     if (q.trim()) nav(`/clientes?q=${encodeURIComponent(q.trim())}`)
   }
 
+  const todos = [...navItems, ...EXTRAS.filter((n) => pode(n, papel))]
+  const pendencias = counts.approvals + counts.insights + (papel === 'profissional' ? 0 : counts.conversations)
+  const navCls = (to: string) => `flex h-11 w-11 items-center justify-center rounded-full transition ${isActive(to) ? 'nav-ativo' : 'glass text-slate-500 hover:text-ink'}`
+
   return (
     <div className="min-h-screen md:flex">
-      {/* Trilho lateral (desktop) */}
+      {/* Trilho lateral (computador) */}
       <aside className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center py-6 md:flex">
-        <NavLink to="/" className="reveal mb-8">
+        <NavLink to="/" className="reveal mb-8" aria-label="Scalable — início">
           <Logo size={46} word={false} />
         </NavLink>
-        <nav className="flex flex-1 flex-col items-center gap-2.5 rounded-full bg-panel px-2.5 py-3 shadow-[0_1px_12px_rgba(16,24,40,0.05)]">
+        <nav className="glass flex flex-1 flex-col items-center gap-2.5 rounded-full px-2.5 py-3 shadow-[0_10px_30px_-18px_rgba(40,90,180,0.35)]" aria-label="Menu principal">
           {navItems.map((n, i) => {
             const c = n.badge ? counts[n.badge] : 0
             const active = isActive(n.to)
@@ -92,9 +98,8 @@ export default function Layout() {
               <NavLink
                 key={n.to}
                 to={n.to}
-                className={`reveal group relative flex h-11 w-11 items-center justify-center rounded-full transition ${
-                  active ? 'bg-brand text-ink shadow-[0_8px_18px_-6px_rgba(72,168,252,0.8)]' : 'text-slate-500 hover:bg-panel-2 hover:text-ink'
-                }`}
+                aria-label={n.label}
+                className={`reveal group relative flex h-11 w-11 items-center justify-center rounded-full transition ${active ? 'nav-ativo' : 'text-slate-500 hover:bg-white hover:text-ink'}`}
                 style={{ '--d': `${i * 45}ms` } as React.CSSProperties}
               >
                 <n.icon size={20} strokeWidth={active ? 2.2 : 1.9} />
@@ -109,45 +114,48 @@ export default function Layout() {
         <div className="mt-4 flex flex-col items-center gap-2.5">
           {papel === 'dono' && (
             <>
-              <NavLink to="/clinica" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/clinica') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Clínica e equipe" aria-label="Clínica e equipe">
+              <NavLink to="/clinica" className={navCls('/clinica')} title="Clínica e equipe" aria-label="Clínica e equipe">
                 <Building2 size={19} />
               </NavLink>
-              <NavLink to="/assinatura" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/assinatura') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Assinatura" aria-label="Assinatura">
+              <NavLink to="/assinatura" className={navCls('/assinatura')} title="Assinatura" aria-label="Assinatura">
                 <CreditCard size={19} />
               </NavLink>
             </>
           )}
-          <NavLink to="/configuracoes" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/configuracoes') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Configurações">
+          <NavLink to="/configuracoes" className={navCls('/configuracoes')} title="Configurações" aria-label="Configurações">
             <Settings size={19} />
           </NavLink>
-          <button onClick={() => supabase.auth.signOut()} className="flex h-11 w-11 items-center justify-center rounded-full bg-panel text-slate-500 hover:text-rose-600" title="Sair">
+          <button onClick={() => supabase.auth.signOut()} className="glass flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:text-rose-600" title="Sair" aria-label="Sair">
             <LogOut size={18} />
           </button>
         </div>
       </aside>
 
       <div className="min-w-0 flex-1">
-        {/* Barra superior (desktop) */}
-        <header className="sticky top-0 z-30 hidden items-center gap-3 bg-bg/80 px-8 py-5 backdrop-blur-md md:flex">
+        {/* Barra superior (computador) */}
+        <header className="sticky top-0 z-30 hidden items-center gap-3 px-8 py-5 backdrop-blur-md md:flex">
           <form onSubmit={search} className="reveal relative w-full max-w-sm">
             <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-            <input className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar paciente…" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input className="glass h-11 w-full rounded-full pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar paciente…" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
-          <span className="reveal hidden rounded-full bg-panel px-4 py-2.5 text-sm font-semibold lg:inline" style={{ '--d': '60ms' } as React.CSSProperties}>
+          <span className="glass reveal hidden rounded-full px-4 py-2.5 text-sm font-semibold lg:inline" style={{ '--d': '60ms' } as React.CSSProperties}>
             {today}
           </span>
           <div className="ml-auto flex items-center gap-2.5">
+            <button onClick={() => setPainel(true)} className="glass flex h-11 items-center gap-2 rounded-full pl-1.5 pr-4 text-sm font-semibold transition hover:shadow-[0_10px_24px_-14px_rgba(47,111,230,0.6)]" aria-label={`Perguntar à ${AGENT_NAME}`}>
+              <Orb size={32} /> {AGENT_NAME}
+            </button>
             {papel !== 'profissional' && (
-              <NavLink to="/aprovacoes" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-panel text-ink hover:bg-white/70" title="Aprovações" aria-label="Aprovações">
+              <NavLink to="/aprovacoes" className="glass relative flex h-11 w-11 items-center justify-center rounded-full text-ink" title="Aprovações" aria-label="Aprovações">
                 <CheckCircle2 size={19} />
                 {counts.approvals > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
               </NavLink>
             )}
-            <NavLink to="/notificacoes" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-panel text-ink hover:bg-white/70" title="Notificações">
+            <NavLink to="/notificacoes" className="glass relative flex h-11 w-11 items-center justify-center rounded-full text-ink" title="Notificações" aria-label="Notificações">
               <Bell size={19} />
               {counts.insights > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
             </NavLink>
-            <NavLink to="/configuracoes" className="flex items-center gap-3 rounded-full bg-panel py-1.5 pl-1.5 pr-4">
+            <NavLink to="/configuracoes" className="glass flex items-center gap-3 rounded-full py-1.5 pl-1.5 pr-4">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-sm font-bold text-white">{company?.name?.[0]?.toUpperCase()}</span>
               <span className="max-w-[160px] leading-tight">
                 <span className="block truncate text-sm font-bold">{company?.name}</span>
@@ -157,93 +165,82 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Topo (celular) */}
-        <header className="sticky top-0 z-30 flex items-center justify-between bg-bg/85 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
-          <NavLink to="/" className="flex items-center gap-2.5">
+        {/* Topo (celular): logo à esquerda e só o menu (três linhas) à direita */}
+        <header className="sticky top-0 z-30 flex items-center justify-between px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
+          <NavLink to="/" className="flex min-w-0 items-center gap-2.5" aria-label="Scalable — início">
             <Logo size={38} word={false} />
-            <div className="leading-tight">
+            <div className="min-w-0 leading-tight">
               <div className="text-[11px] text-muted">Olá 👋</div>
-              <div className="max-w-[170px] truncate text-[15px] font-bold">{company?.name}</div>
+              <div className="truncate text-[15px] font-bold">{company?.name}</div>
             </div>
           </NavLink>
-          <div className="flex items-center gap-2">
-            {papel !== 'profissional' && (
-              <NavLink to="/aprovacoes" className="icon-btn relative" aria-label="Aprovações">
-                <CheckCircle2 size={18} />
-                {counts.approvals > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
-              </NavLink>
-            )}
-            <NavLink to="/notificacoes" className="icon-btn relative">
-              <Bell size={18} />
-              {counts.insights > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
-            </NavLink>
-          </div>
+          <button onClick={() => setSheet(true)} className="glass relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink" aria-label="Abrir menu" aria-expanded={sheet}>
+            <Menu size={20} />
+            {pendencias > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white" />}
+          </button>
         </header>
 
-        <main key={loc.pathname} className="px-4 pb-32 pt-2 sm:px-6 md:px-8 md:pb-10 md:pt-1">
+        <main key={loc.pathname} className="px-4 pb-10 pt-2 sm:px-6 md:px-8 md:pt-1">
           <div className="mx-auto max-w-[1400px]">
             {banner && (
-            <div className="mb-4 flex flex-col gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
-              <span>{banner}</span>
-              <Link to="/assinatura" className="font-semibold underline underline-offset-2">Ver assinatura</Link>
-            </div>
-          )}
-          {blocked ? <Navigate to="/assinatura" replace /> : <Outlet />}
-          {/* A conversa ocupa a tela inteira; nela os documentos ficam em Configurações */}
-          {!loc.pathname.startsWith('/agente') && <LegalFooter className="mt-12" />}
+              <div className="mb-4 flex flex-col gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+                <span>{banner}</span>
+                <Link to="/assinatura" className="font-semibold underline underline-offset-2">Ver assinatura</Link>
+              </div>
+            )}
+            {blocked ? <Navigate to="/assinatura" replace /> : <Outlet />}
+            {/* A conversa ocupa a tela inteira; nela os documentos ficam em Configurações */}
+            {!loc.pathname.startsWith('/agente') && <LegalFooter className="mt-12" />}
           </div>
         </main>
       </div>
 
-      {/* Menu flutuante (celular) */}
-      <nav className="fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-40 flex items-center justify-between rounded-full bg-graphite p-2 shadow-2xl md:hidden">
-        {navItems.filter((n) => mobile.includes(n.to)).map((n) => {
-          const active = isActive(n.to)
-          const c = n.badge ? counts[n.badge] : 0
-          return (
-            <NavLink key={n.to} to={n.to} className={`relative flex h-12 flex-1 items-center justify-center rounded-full transition ${active ? 'bg-white text-ink' : 'text-white/60'}`} aria-label={n.label}>
-              <n.icon size={21} />
-              {c > 0 && <span className="absolute right-[24%] top-2 h-2 w-2 rounded-full bg-rose-500" />}
-            </NavLink>
-          )
-        })}
-        <button onClick={() => setSheet(true)} className="flex h-12 flex-1 items-center justify-center rounded-full text-white/60" aria-label="Mais">
-          <Menu size={21} />
-        </button>
-      </nav>
-
+      {/* Menu do celular: abre pelo botão de três linhas, no canto superior direito */}
       {sheet && (
         <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm md:hidden" onClick={() => setSheet(false)}>
-          <div className="reveal-up absolute inset-x-0 bottom-0 rounded-t-[32px] bg-panel p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
-              <Logo size={34} />
-              <button onClick={() => setSheet(false)} className="icon-btn">
-                <X size={18} />
+          <nav
+            className="reveal-up absolute right-3 top-[max(12px,env(safe-area-inset-top))] flex max-h-[calc(100dvh-24px)] w-[min(320px,calc(100vw-24px))] flex-col overflow-y-auto rounded-[28px] bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Menu"
+          >
+            <div className="mb-2 flex items-center justify-between px-2 pt-1">
+              <Logo size={30} />
+              <button onClick={() => setSheet(false)} className="icon-btn h-9 w-9" aria-label="Fechar menu">
+                <X size={17} />
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2.5">
-              {[...navItems, ...EXTRAS.filter((n) => pode(n, papel))].map((n) => {
-                const c = 'badge' in n && n.badge ? counts[n.badge] : 0
+            <button
+              onClick={() => (setSheet(false), setPainel(true))}
+              className="mb-1 flex items-center gap-3 rounded-2xl bg-brand-soft px-3 py-2.5 text-left text-sm font-semibold"
+            >
+              <Orb size={28} /> Perguntar à {AGENT_NAME}
+            </button>
+            <ul className="flex flex-col">
+              {todos.map((n) => {
+                const c = n.badge ? counts[n.badge] : 0
                 return (
-                  <NavLink
-                    key={n.to}
-                    to={n.to}
-                    onClick={() => setSheet(false)}
-                    className={`relative flex flex-col items-center gap-2 rounded-3xl px-2 py-4 text-center text-xs font-semibold ${isActive(n.to) ? 'bg-brand text-ink' : 'bg-panel-2 text-ink'}`}
-                  >
-                    <n.icon size={21} />
-                    {n.label}
-                    {c > 0 && <span className="absolute right-3 top-3 rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">{c}</span>}
-                  </NavLink>
+                  <li key={n.to}>
+                    <NavLink
+                      to={n.to}
+                      onClick={() => setSheet(false)}
+                      className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold ${isActive(n.to) ? 'nav-ativo' : 'text-ink hover:bg-panel-2'}`}
+                    >
+                      <n.icon size={19} />
+                      <span className="flex-1">{n.label}</span>
+                      {c > 0 && <span className="rounded-full bg-rose-500 px-2 text-[11px] font-bold text-white">{c}</span>}
+                    </NavLink>
+                  </li>
                 )
               })}
-            </div>
-            <button onClick={() => supabase.auth.signOut()} className="btn-ghost mt-4 w-full text-rose-600">
-              <LogOut size={16} /> Sair da conta
+            </ul>
+            <button onClick={() => supabase.auth.signOut()} className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50">
+              <LogOut size={18} /> Sair da conta
             </button>
-          </div>
+          </nav>
         </div>
       )}
+
+      <CoralinePainel open={painel} onClose={() => setPainel(false)} />
     </div>
   )
 }

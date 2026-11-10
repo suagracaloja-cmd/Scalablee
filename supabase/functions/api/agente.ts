@@ -1,4 +1,4 @@
-// POST /api/agente — ponto único de conversa com a Coraline.
+// POST /api/agente — ponto único de conversa com a Coraline AI.
 // Corpo: { message: string, thread_id?: string }
 // Cria a conversa (thread) se necessário, guarda o histórico e responde usando as ferramentas.
 import { assertAccess } from "./lib/billing.ts";

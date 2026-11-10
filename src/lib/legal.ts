@@ -1,10 +1,10 @@
-// Textos legais da Coraline AI (modelos baseados na LGPD e no CDC — revisar com um advogado antes do lançamento).
+// Textos legais da Scalable (modelos baseados na LGPD e no CDC — revisar com um advogado antes do lançamento).
 //
 // DADOS DO RESPONSÁVEL — preencha só com dados reais informados pelo dono (nada aqui deve ser inventado).
 // Enquanto um campo estiver vazio, as páginas omitem esse dado.
 export const LEGAL_VERSION = '2026-11-10'
-export const EMPRESA = 'Coraline AI'
-/** Nome completo (pessoa física) ou razão social (empresa) de quem responde pela Coraline AI. */
+export const EMPRESA = 'Scalable'
+/** Nome completo (pessoa física) ou razão social (empresa) de quem responde pela Scalable. */
 export const RESPONSAVEL = ''
 /** Documento do responsável, já formatado. Ex.: 'CPF 000.000.000-00' ou 'CNPJ 00.000.000/0001-00'. */
 export const DOCUMENTO = ''
@@ -19,7 +19,7 @@ export const CONTATO_PRIVACIDADE = ''
 
 /** Texto que a pessoa aceita ao assinar as novidades por e-mail (guardado junto com a inscrição, como prova do consentimento). */
 export const NOVIDADES_ACEITE =
-  'Quero receber por e-mail novidades e atualizações da Coraline AI. A inscrição é gratuita, não tem relação com o plano pago e posso cancelar quando quiser.'
+  'Quero receber por e-mail novidades e atualizações da Scalable. A inscrição é gratuita, não tem relação com o plano pago e posso cancelar quando quiser.'
 
 /** Linha de identificação para o rodapé e as páginas legais (só com o que estiver preenchido). */
 export const IDENTIFICACAO = [RESPONSAVEL ? `${EMPRESA} — ${RESPONSAVEL}` : EMPRESA, DOCUMENTO, ENDERECO].filter(Boolean).join(' · ')
@@ -43,18 +43,18 @@ _Última atualização: ${dataVersao}_
 Estes Termos regulam o uso da plataforma **${identificacao}**. Ao criar uma conta, você declara que leu e concorda com eles, com a [Política de Privacidade](/privacidade), com a [Política de Cookies](/cookies) e com a [Política de Cancelamento e Reembolso](/reembolso).
 
 ### 1. O que é a ${EMPRESA}
-Uma plataforma online de gestão para clínicas e consultórios: atendimento pelo WhatsApp, agenda, pacientes e funil de atendimento, vendas, financeiro, tarefas e a **Coraline**, uma assistente de inteligência artificial que analisa os dados da clínica e prepara ações para a equipe aprovar.
+Uma plataforma online de gestão para clínicas e consultórios: atendimento pelo WhatsApp, agenda, pacientes e funil de atendimento, vendas, financeiro, tarefas e a **Coraline AI**, uma assistente de inteligência artificial que analisa os dados da clínica e prepara ações para a equipe aprovar.
 
 ### 2. Cadastro e conta
 - É preciso ter 18 anos ou mais e informar dados verdadeiros.
 - Você é responsável por manter sua senha em sigilo e por tudo que for feito na sua conta.
 - Cada conta corresponde a uma clínica. O dono da conta pode convidar pessoas da equipe (recepção e profissionais de saúde), com acessos diferentes, e responde pelos acessos que concede e pelo uso que a equipe faz da plataforma.
 
-### 3. Como a Coraline funciona
+### 3. Como a Coraline AI funciona
 - As respostas são **sugestões** geradas por inteligência artificial e **podem conter erros**. Confira números, datas, preços e ofertas antes de agir.
 - Operações relevantes — enviar mensagens ou e-mails, publicar campanhas, lançar ou alterar valores no financeiro, registrar vendas, cadastrar ou excluir dados — **só acontecem depois que você aprova** na Central de Aprovações.
 - Você é responsável pelo que aprovar, inclusive pelo conteúdo das mensagens enviadas aos pacientes.
-- A Coraline **não é profissional de saúde**: não faz diagnóstico, não indica tratamento nem medicamento e não substitui a avaliação de um profissional. No WhatsApp, dúvidas de saúde são encaminhadas para a equipe.
+- A Coraline AI **não é profissional de saúde**: não faz diagnóstico, não indica tratamento nem medicamento e não substitui a avaliação de um profissional. No WhatsApp, dúvidas de saúde são encaminhadas para a equipe.
 - O uso da IA tem limite diário por clínica, para garantir o funcionamento para todos.
 
 ### 4. WhatsApp e serviços de terceiros
@@ -104,10 +104,10 @@ Esta Política explica como a **${identificacao}** trata dados pessoais, conform
 
 ### 2. Dados que tratamos
 - **Conta:** e-mail, senha (guardada de forma criptografada pelo provedor de autenticação) e a data e a versão dos termos que você aceitou.
-- **Clínica:** nome, tipo, descrição, site, Instagram, horário de atendimento, profissionais, serviços e instruções dadas à Coraline.
+- **Clínica:** nome, tipo, descrição, site, Instagram, horário de atendimento, profissionais, serviços e instruções dadas à Coraline AI.
 - **Equipe:** nome, e-mail e papel (recepção ou profissional) de quem o dono convida, e os convites enviados.
 - **Dados que a clínica insere:** pacientes (nome, telefone, e-mail, data de nascimento, como conheceu a clínica, etapa no funil, próximo contato, observações), consultas (data, horário, serviço, profissional, situação, observações), vendas, lançamentos financeiros e tarefas. Informações de consultas podem revelar dados de saúde, que são **dados sensíveis**.
-- **Conversas e aprovações:** perguntas feitas à Coraline, respostas e o registro de cada aprovação (o quê, quando e por quem).
+- **Conversas e aprovações:** perguntas feitas à Coraline AI, respostas e o registro de cada aprovação (o quê, quando e por quem).
 - **WhatsApp (se conectado):** mensagens trocadas com os pacientes e as credenciais da Meta, guardadas criptografadas e só no servidor.
 - **Novidades por e-mail (só se você assinar):** o e-mail da conta, a data, o texto e a versão do aceite e, se cancelar, a data do cancelamento.
 - **Plano pago:** o e-mail da conta do Mercado Pago informado para a cobrança e a situação dos pagamentos. Dados de pagamento são informados direto ao Mercado Pago e não passam pela ${EMPRESA}.
@@ -122,7 +122,7 @@ Esta Política explica como a **${identificacao}** trata dados pessoais, conform
 Não vendemos dados pessoais nem os usamos para publicidade de terceiros. Só enviamos novidades por e-mail a quem assinar.
 
 ### 4. Inteligência artificial
-Para responder às perguntas da equipe e aos pacientes no WhatsApp, a Coraline envia trechos dos dados da clínica (por exemplo, a agenda do dia, resumos de vendas ou o nome de um paciente) a provedores de inteligência artificial, que geram a resposta: **Groq** e, se configurado, **Anthropic**. Esses provedores processam os dados para gerar a resposta, conforme os próprios termos. As respostas da IA são sugestões: ações relevantes só acontecem depois que você aprova.
+Para responder às perguntas da equipe e aos pacientes no WhatsApp, a Coraline AI envia trechos dos dados da clínica (por exemplo, a agenda do dia, resumos de vendas ou o nome de um paciente) a provedores de inteligência artificial, que geram a resposta: **Groq** e, se configurado, **Anthropic**. Esses provedores processam os dados para gerar a resposta, conforme os próprios termos. As respostas da IA são sugestões: ações relevantes só acontecem depois que você aprova.
 
 ### 5. Com quem compartilhamos
 Somente com fornecedores necessários para o serviço:

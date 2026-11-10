@@ -63,11 +63,11 @@ export default function Login() {
           </Reveal>
           <div className="mt-16 max-w-lg">
             <Reveal i={1}>
-              <span className="chip bg-white/80 px-3 py-1.5 text-brand-dark">Coraline · assistente de IA para clínicas</span>
+              <span className="chip bg-white/80 px-3 py-1.5 text-brand-dark">Coraline AI · assistente de IA para clínicas</span>
               <h1 className="mt-4 text-[44px] font-extrabold leading-[1.05] tracking-tight text-ink">
                 Sua clínica organizada, do WhatsApp à agenda.
               </h1>
-              <p className="mt-4 text-base text-slate-600">Atendimento, agenda, pacientes, marketing e financeiro em um só lugar — com a Coraline preparando o trabalho e você aprovando o que importa.</p>
+              <p className="mt-4 text-base text-slate-600">Atendimento, agenda, pacientes, marketing e financeiro em um só lugar — com a Coraline AI preparando o trabalho e você aprovando o que importa.</p>
             </Reveal>
           </div>
           {/* Ilustração da interface (exemplos, não são dados reais) */}
@@ -94,7 +94,7 @@ export default function Login() {
                 <MessageCircle size={15} /> WhatsApp
               </div>
               <p className="mt-1.5 text-sm font-semibold">Paciente pediu para remarcar</p>
-              <p className="text-xs text-muted">A Coraline preparou · aguarda aprovação</p>
+              <p className="text-xs text-muted">A Coraline AI preparou · aguarda aprovação</p>
             </Reveal>
           </div>
         </div>
@@ -174,7 +174,7 @@ function authError(m: string) {
   if (e.includes('email not confirmed')) return 'Confirme seu e-mail pelo link que enviamos antes de entrar. Não achou? Veja a caixa de spam.'
   if (e.includes('already registered') || e.includes('already been registered')) return 'Já existe uma conta com esse e-mail. Faça login ou use "Esqueci minha senha".'
   if (e.includes('not authorized') || e.includes('sending') || e.includes('smtp') || e.includes('email address'))
-    return 'Não conseguimos enviar o e-mail agora. O envio de e-mails da Coraline AI está sendo ativado — tente de novo mais tarde.'
+    return 'Não conseguimos enviar o e-mail agora. O envio de e-mails da Scalable está sendo ativado — tente de novo mais tarde.'
   if (e.includes('rate limit') || e.includes('too many') || e.includes('security purposes')) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.'
   if (e.includes('captcha')) return 'A verificação anti-robô falhou ou expirou. Confirme de novo e tente outra vez.'
   if (e.includes('password') && (e.includes('at least') || e.includes('should') || e.includes('weak'))) return `Senha fraca: use pelo menos ${SENHA_MIN} caracteres, com letras e números.`

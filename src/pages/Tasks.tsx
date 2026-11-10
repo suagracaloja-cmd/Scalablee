@@ -54,7 +54,7 @@ export default function Tasks() {
     <div>
       <PageHeader
         title="Tarefas"
-        subtitle="A Coraline antecipa tarefas para hoje, amanhã e depois. Você também pode criar as suas."
+        subtitle="A Coraline AI antecipa tarefas para hoje, amanhã e depois. Você também pode criar as suas."
         actions={
           <>
             <button className="btn-ghost" onClick={() => setShowDone(!showDone)}>
@@ -70,7 +70,7 @@ export default function Tasks() {
         <Spinner />
       ) : items.length === 0 ? (
         <Reveal i={1} className="card">
-          <Empty icon={<ClipboardList size={26} />} title={showDone ? 'Nenhuma tarefa concluída' : 'Nenhuma tarefa pendente'} text="Rode a análise no Dashboard para a Coraline sugerir tarefas." />
+          <Empty icon={<ClipboardList size={26} />} title={showDone ? 'Nenhuma tarefa concluída' : 'Nenhuma tarefa pendente'} text="Rode a análise no Dashboard para a Coraline AI sugerir tarefas." />
         </Reveal>
       ) : (
         <div className="space-y-5">
@@ -91,7 +91,7 @@ export default function Tasks() {
                         {x.description && <div className="truncate text-xs text-muted">{x.description}</div>}
                       </div>
                       {x.agent_kind && (
-                        <span className="hidden items-center gap-1.5 sm:flex" title="Criada pela Coraline">
+                        <span className="hidden items-center gap-1.5 sm:flex" title="Criada pela Coraline AI">
                           <AgentMark size={18} rounded="rounded-md" />
                           <AreaChip kind={x.agent_kind} />
                         </span>

@@ -1,5 +1,5 @@
 // Agenda da clínica: horários livres, consultas do período e preparo de marcação/alteração
-// (marcar e alterar passam pela Central de Aprovações, como as outras operações da Coraline).
+// (marcar e alterar passam pela Central de Aprovações, como as outras operações da Coraline AI).
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { norm } from "./util.ts";
 
@@ -134,7 +134,7 @@ export async function horarioLivre(db: SupabaseClient, companyId: string, inicio
   return !ocupados.some((a) => Date.parse(a.inicio) < fim.getTime() && Date.parse(a.fim) > inicio.getTime());
 }
 
-// ---------- ferramentas da Coraline ----------
+// ---------- ferramentas da Coraline AI ----------
 
 type Ctx = { db: SupabaseClient; companyId: string; today?: Date };
 type Propose = (ctx: never, a: { kind: string; area: "support"; title: string; reason: string; payload: Json; customer_id?: string | null }) => Promise<unknown>;

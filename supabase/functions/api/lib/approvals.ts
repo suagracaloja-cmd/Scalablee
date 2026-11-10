@@ -1,4 +1,4 @@
-// Central de Aprovações: executa (ou recusa) operações preparadas pela Coraline,
+// Central de Aprovações: executa (ou recusa) operações preparadas pela Coraline AI,
 // registrando quem decidiu, quando e o resultado.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { getConfig, sendAndLog, sendText } from "./whatsapp.ts";

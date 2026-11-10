@@ -59,7 +59,7 @@ export default function Agenda() {
     load()
   }, [load])
 
-  // Atualiza sozinho quando alguém da equipe (ou a Coraline) mexe na agenda
+  // Atualiza sozinho quando alguém da equipe (ou a Coraline AI) mexe na agenda
   useEffect(() => {
     if (!company) return
     const ch = supabase
@@ -206,7 +206,7 @@ export default function Agenda() {
 
       {semCadastro && (
         <Reveal className="mb-4 flex flex-col gap-2 rounded-3xl bg-brand-soft p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <span>Cadastre os profissionais, os serviços (com duração e preço) e o horário de atendimento para a agenda e a Coraline sugerirem os horários livres.</span>
+          <span>Cadastre os profissionais, os serviços (com duração e preço) e o horário de atendimento para a agenda e a Coraline AI sugerirem os horários livres.</span>
           {papel === 'dono' ? (
             <Link to="/clinica" className="btn-ghost shrink-0">Configurar a clínica</Link>
           ) : (
@@ -441,8 +441,8 @@ function CartaoConsulta({
           <span className="truncate font-semibold">{pac?.name ?? 'Sem paciente'}</span>
           <span className={`chip ${st.cls}`}>{st.label}</span>
           {a.origem !== 'manual' && (
-            <span className="chip bg-brand-soft text-ink" title={a.origem === 'ia' ? 'Marcada pela Coraline' : 'Marcada pelo WhatsApp'}>
-              <Sparkles size={11} /> {a.origem === 'ia' ? 'Coraline' : 'WhatsApp'}
+            <span className="chip bg-brand-soft text-ink" title={a.origem === 'ia' ? 'Marcada pela Coraline AI' : 'Marcada pelo WhatsApp'}>
+              <Sparkles size={11} /> {a.origem === 'ia' ? 'Coraline AI' : 'WhatsApp'}
             </span>
           )}
         </div>

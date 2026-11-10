@@ -1,5 +1,5 @@
 // Webhook da WhatsApp Cloud API (Meta). Recebe mensagens dos clientes;
-// a Coraline responde sozinho e, quando precisa, pede aprovação ao dono.
+// a Coraline AI responde sozinho e, quando precisa, pede aprovação ao dono.
 import { admin, brl, json } from "./lib/common.ts";
 import { hasAI, modelCreate } from "./lib/ai.ts";
 import { agentWhatsAppReply, AGENT_NAME } from "./lib/agent.ts";
@@ -102,7 +102,7 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
   if (dup) return; // mensagem repetida (Meta reenviou)
   await db.from("conversations").update({ unread: (conv.unread ?? 0) + 1 }).eq("id", conv.id);
 
-  // Configuração da Coraline para o WhatsApp (por empresa)
+  // Configuração da Coraline AI para o WhatsApp (por empresa)
   const { data: co } = await db
     .from("companies")
     .select("name,segment,description,website,instagram,site_analysis,agent_whatsapp,agent_auto_reply,agent_instructions")
@@ -130,7 +130,7 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
       customer_id: customer!.id,
       message_id: draft!.id,
       title: `Resposta para ${name}`,
-      reason: decision.reason || (co.agent_auto_reply ? "A Coraline pediu sua aprovação" : "Resposta automática desligada"),
+      reason: decision.reason || (co.agent_auto_reply ? "A Coraline AI pediu sua aprovação" : "Resposta automática desligada"),
       draft: decision.reply,
       payload: { cliente: name, mensagem_do_cliente: text.slice(0, 500), resposta_sugerida: decision.reply },
     });

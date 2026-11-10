@@ -1,4 +1,4 @@
-// POST /api/analise — análise geral da Coraline (todas as áreas, no máximo uma chamada de IA).
+// POST /api/analise — análise geral da Coraline AI (todas as áreas, no máximo uma chamada de IA).
 import { assertAccess } from "./lib/billing.ts";
 import { handle, json, requireCompany } from "./lib/common.ts";
 import { hasAI, modelCreate } from "./lib/ai.ts";

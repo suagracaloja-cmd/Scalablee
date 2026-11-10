@@ -63,7 +63,7 @@ export default function Onboarding() {
             </div>
           )}
           <h1 className="text-[28px] font-bold leading-tight tracking-tight">Vamos conhecer sua clínica</h1>
-          <p className="mt-2 text-sm text-muted">A Coraline usa essas informações para atender seus pacientes no WhatsApp e ajudar na agenda, no funil, no marketing e na gestão. Se tiver site, ele também é avaliado.</p>
+          <p className="mt-2 text-sm text-muted">A Coraline AI usa essas informações para atender seus pacientes no WhatsApp e ajudar na agenda, no funil, no marketing e na gestão. Se tiver site, ele também é avaliado.</p>
         </Reveal>
         <div className="mt-8 space-y-4">
           <Reveal i={2}>
@@ -96,7 +96,7 @@ export default function Onboarding() {
           </Reveal>
           <Reveal i={6} className="pt-2">
             <button className="btn-primary h-12 w-full" disabled={busy || !f.name.trim()}>
-              {busy && <Spinner />} Criar clínica e ativar a Coraline
+              {busy && <Spinner />} Criar clínica e ativar a Coraline AI
             </button>
             <button type="button" className="mt-3 w-full text-center text-xs text-muted hover:text-ink" onClick={() => supabase.auth.signOut()}>
               Sair

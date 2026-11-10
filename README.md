@@ -1,8 +1,8 @@
-# Coraline AI — Gestão inteligente para clínicas
+# Scalable — Gestão inteligente para clínicas
 
-Plataforma web (computador e celular) de gestão para **clínicas e consultórios**, com a **Coraline**, assistente de IA:
+Plataforma web (computador e celular) de gestão para **clínicas e consultórios**, com a **Coraline AI**, assistente de IA:
 
-- **Coraline** — uma única assistente numa conversa estilo ChatGPT/Claude, com ferramentas por área: atendimento e WhatsApp, **agenda** (horários livres, marcar, remarcar, confirmar, cancelar), **pacientes e funil**, marketing, vendas, financeiro e gestão. Não faz diagnóstico nem orientação clínica.
+- **Coraline AI** — uma única assistente numa conversa estilo ChatGPT/Claude, com ferramentas por área: atendimento e WhatsApp, **agenda** (horários livres, marcar, remarcar, confirmar, cancelar), **pacientes e funil**, marketing, vendas, financeiro e gestão. Não faz diagnóstico nem orientação clínica.
 - **Equipe com logins e papéis** — dono, recepção e profissional de saúde (convites por e-mail). Recepção não vê o financeiro; profissional vê agenda, pacientes e tarefas. Regras aplicadas no banco (RLS) e no servidor.
 - **Agenda** — profissionais (com cor), serviços (duração e preço), horário de atendimento e fuso; visão por dia e semana, horários livres, confirmação pelo WhatsApp, sem conflito de horário (garantido pelo banco).
 - **Pacientes (CRM)** — funil (novo, em contato, agendado, compareceu, orçamento, paciente, perdido), follow-ups, origem e próxima consulta; visão em lista e em quadro.
@@ -13,7 +13,7 @@ Plataforma web (computador e celular) de gestão para **clínicas e consultório
 
 - React + Vite + TypeScript + Tailwind CSS v4
 - Supabase: Auth, Postgres (com RLS por empresa), Realtime, Storage, Edge Function `api`
-- IA da Coraline: Groq (plano gratuito) e, opcionalmente, Claude (Anthropic API)
+- IA da Coraline AI: Groq (plano gratuito) e, opcionalmente, Claude (Anthropic API)
 
 ## Rodar localmente
 
@@ -84,7 +84,7 @@ Observação: pela regra da Meta, mensagens iniciadas pela empresa (ex.: reativa
 src/                     front-end (páginas em src/pages; conversa em src/pages/Agent.tsx)
 supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp; 0007 = assinaturas; 0008 = Mercado Pago; 0009 = novidades por e-mail; 0010 = segurança; 0011 = clínica: equipe, agenda e funil)
 supabase/functions/api/  Edge Function com as rotas:
-  agente.ts      POST /api/agente       conversa com a Coraline
+  agente.ts      POST /api/agente       conversa com a Coraline AI
   aprovacoes.ts  POST /api/aprovacoes   aprovar/recusar operações
   assinatura.ts  POST /api/assinatura   assinatura pelo Mercado Pago (status, assinar, cobranças, cancelar)
   mp-webhook.ts  POST /api/mp-webhook   avisos do Mercado Pago

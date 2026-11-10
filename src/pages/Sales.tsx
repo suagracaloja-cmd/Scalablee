@@ -70,7 +70,7 @@ export default function Sales() {
     <div>
       <PageHeader
         title="Vendas"
-        subtitle="Registre suas vendas — o dashboard e a Coraline atualizam na hora."
+        subtitle="Registre suas vendas — o dashboard e a Coraline AI atualizam na hora."
         actions={
           <button className="btn-primary" onClick={() => (setEditId(null), setForm(empty()))}>
             <Plus size={16} /> Nova venda

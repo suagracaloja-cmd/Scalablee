@@ -4,7 +4,7 @@ import { HttpError } from "./util.ts";
 // CORS e cabeçalhos de segurança são aplicados a TODAS as respostas em index.ts (securityHeaders).
 export const cors: Record<string, string> = {};
 
-/** Sites que podem chamar a API pelo navegador (o próprio site da Coraline AI). Ajustável com ALLOWED_ORIGINS. */
+/** Sites que podem chamar a API pelo navegador (o próprio site da Scalable). Ajustável com ALLOWED_ORIGINS. */
 export function allowedOrigins(): string[] {
   const env = Deno.env.get("ALLOWED_ORIGINS");
   const list = env ? env.split(",") : ["https://scalablee.vercel.app", "http://localhost:5173", "http://127.0.0.1:5173"];

@@ -1,5 +1,5 @@
-// Coraline AI API — Edge Function única com rotas:
-//   POST /api/agente        → conversa com a Coraline (ponto único de IA, com ferramentas)
+// Scalable API — Edge Function única com rotas:
+//   POST /api/agente        → conversa com a Coraline AI (ponto único de IA, com ferramentas)
 //   POST /api/aprovacoes    → aprovar/recusar operações preparadas pelo agente (Central de Aprovações)
 //   POST /api/assinatura    → assinatura pelo Mercado Pago (status, assinar, faturas, cancelar)
 //   POST /api/mp-webhook    → avisos do Mercado Pago
@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     console.error(e);
     return json({ error: "Erro interno. Tente de novo em instantes." }, 500);
   });
-  // Cabeçalhos de segurança e CORS (só para o site da Coraline AI) em todas as respostas
+  // Cabeçalhos de segurança e CORS (só para o site da Scalable) em todas as respostas
   const headers = new Headers(res.headers);
   for (const [k, v] of Object.entries(securityHeaders(req))) headers.set(k, v);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });

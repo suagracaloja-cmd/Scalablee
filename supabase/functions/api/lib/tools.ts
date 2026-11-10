@@ -1,4 +1,4 @@
-// Ferramentas da Coraline, organizadas por domínio.
+// Ferramentas da Coraline AI, organizadas por domínio.
 // Regras:
 //  - Ferramentas de consulta leem dados reais da empresa (sempre filtradas por company_id; o cliente do banco
 //    usado nas conversas é o do próprio usuário, então o RLS também garante o isolamento).
@@ -753,7 +753,7 @@ export const TOOLS: Tool[] = [
       if (!c.phone) throw new Error(`${c.name} não tem telefone cadastrado.`);
       const msg = str(i.mensagem);
       if (!msg) throw new Error("Mensagem vazia.");
-      return propose(ctx, { kind: "whatsapp_outreach", area: "support", title: `Enviar mensagem para ${c.name}`, reason: str(i.motivo) || "Mensagem preparada pela Coraline", payload: { customer_id: c.id, telefone: c.phone, mensagem: msg }, draft: msg, customer_id: String(c.id) });
+      return propose(ctx, { kind: "whatsapp_outreach", area: "support", title: `Enviar mensagem para ${c.name}`, reason: str(i.motivo) || "Mensagem preparada pela Coraline AI", payload: { customer_id: c.id, telefone: c.phone, mensagem: msg }, draft: msg, customer_id: String(c.id) });
     },
   },
   {

@@ -41,7 +41,7 @@ export async function fetchPublico(url: string, limite = 600_000): Promise<{ url
     const res = await fetch(atual, {
       redirect: "manual",
       signal: AbortSignal.timeout(15000),
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; CoralineBot/1.0)", Accept: "text/html" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; ScalableBot/1.0)", Accept: "text/html" },
     });
     if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
       await res.body?.cancel();

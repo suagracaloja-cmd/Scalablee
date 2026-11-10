@@ -1,4 +1,4 @@
-// Coraline — ponto único de inteligência artificial da plataforma.
+// Coraline AI — ponto único de inteligência artificial da plataforma.
 // Todas as chamadas ao modelo passam por aqui: conversa com o dono (com ferramentas),
 // resposta a clientes no WhatsApp, análise periódica e avaliação de site.
 // O cliente do modelo é injetado (CreateFn), o que permite testar o loop sem gastar créditos.
@@ -11,8 +11,8 @@ export type ModelResponse = { content: Block[]; stop_reason: string | null };
 export type ModelRequest = { system: string; messages: { role: "user" | "assistant"; content: unknown }[]; tools?: Json[]; max_tokens?: number; effort?: "low" | "medium" | "high" };
 export type CreateFn = (req: ModelRequest) => Promise<ModelResponse>;
 
-export const PLATAFORMA = "Coraline AI";
-export const AGENT_NAME = "Coraline";
+export const PLATAFORMA = "Scalable";
+export const AGENT_NAME = "Coraline AI";
 
 export type CompanyProfile = {
   name: string;

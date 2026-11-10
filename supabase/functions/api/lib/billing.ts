@@ -58,7 +58,7 @@ export function billingConfig() {
     sandbox: (env("MERCADOPAGO_AMBIENTE") ?? "").toLowerCase().startsWith("test") || (!!token && token.startsWith("TEST-")),
     webhookSecret: env("MERCADOPAGO_WEBHOOK_SECRET") ?? null,
     appUrl: (env("APP_URL") ?? "https://scalablee.vercel.app").replace(/\/$/, ""),
-    planName: env("PLANO_NOME") ?? "Coraline AI",
+    planName: env("PLANO_NOME") ?? "Scalable",
     value,
     trialDays: Math.max(0, Number(env("PLANO_TESTE_DIAS") ?? 7) || 0),
     graceDays: Math.max(0, Number(env("PLANO_TOLERANCIA_DIAS") ?? 5) || 0),
@@ -370,14 +370,14 @@ async function processMp(admin: SupabaseClient, type: string, dataId: string, mp
       return { ok: true, ignored: `cobrança ${String(ap.status ?? "")}`, companyId: b.company_id };
     }
   } else if (PAYMENT_TYPES.has(type)) {
-    // Pagamento (GET /v1/payments/{id}). Só conta se for de uma assinatura da Coraline AI;
+    // Pagamento (GET /v1/payments/{id}). Só conta se for de uma assinatura da Scalable;
     // pagamentos de outras vendas da mesma conta do Mercado Pago são ignorados.
     const p = await mp.getPayment(dataId);
     const meta = (p.metadata ?? {}) as Json;
     const poi = (((p.point_of_interaction ?? {}) as Json).transaction_data ?? {}) as Json;
     const subId = String(meta.preapproval_id ?? poi.subscription_id ?? "") || null;
     b = await findBilling(subId, String(p.external_reference ?? "") || null);
-    if (!b || !b.subscription_id) return { ok: true, ignored: "pagamento não é de assinatura da Coraline AI" };
+    if (!b || !b.subscription_id) return { ok: true, ignored: "pagamento não é de assinatura da Scalable" };
     const st = String(p.status ?? "");
     if (st === "approved") {
       upd.status = "active";

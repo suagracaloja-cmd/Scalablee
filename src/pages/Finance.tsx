@@ -85,7 +85,7 @@ export default function Finance() {
     <div>
       <PageHeader
         title="Financeiro"
-        subtitle="Contas a pagar e a receber. A Coraline avisa vencimentos e riscos."
+        subtitle="Contas a pagar e a receber. A Coraline AI avisa vencimentos e riscos."
         actions={
           <>
             <button className="btn-ghost" onClick={() => (setEditId(null), setForm(empty('income')))}>

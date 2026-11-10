@@ -1,4 +1,4 @@
-// Núcleo da conversa com a Coraline (usado pela rota /api/agente).
+// Núcleo da conversa com a Coraline AI (usado pela rota /api/agente).
 // Fica separado da rota HTTP para poder ser testado com qualquer cliente de banco e modelo.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import type { Company } from "./common.ts";

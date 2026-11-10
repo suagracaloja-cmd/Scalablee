@@ -40,7 +40,7 @@ export default function Approvals() {
 
   return (
     <div>
-      <PageHeader title="Central de Aprovações" subtitle={`O ${AGENT_NAME} prepara envios, campanhas, lançamentos e exclusões — nada acontece sem a sua decisão. Cada decisão fica registrada.`} />
+      <PageHeader title="Central de Aprovações" subtitle={`A ${AGENT_NAME} prepara envios, campanhas, lançamentos e exclusões — nada acontece sem a sua decisão. Cada decisão fica registrada.`} />
       <Reveal i={1} className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="inline-flex rounded-full bg-panel p-1 text-sm">
           {(['pending', 'done'] as const).map((t) => (
@@ -66,7 +66,7 @@ export default function Approvals() {
           <Empty
             icon={<CheckCircle2 size={24} />}
             title={tab === 'pending' ? 'Nada aguardando aprovação' : 'Nenhuma decisão registrada'}
-            text={`Quando o ${AGENT_NAME} preparar uma operação que precisa da sua autorização, ela aparece aqui.`}
+            text={`Quando a ${AGENT_NAME} preparar uma operação que precisa da sua autorização, ela aparece aqui.`}
           />
         </Reveal>
       ) : (

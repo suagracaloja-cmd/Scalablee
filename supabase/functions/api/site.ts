@@ -20,7 +20,7 @@ type Analysis = {
 
 export default (
   handle(async (req) => {
-    const { db, company } = await requireCompany(req, { limite: [5, 600] });
+    const { db, company } = await requireCompany(req, { limite: [5, 600], papeis: ["dono"] });
     await assertAccess(db, company);
     const body = await lerJson(req);
     let url: string = textoOpcional(body.url, "Endereço do site", 300) || (company.website ?? "").trim();

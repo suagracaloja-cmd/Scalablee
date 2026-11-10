@@ -1,4 +1,4 @@
-# Guia de lançamento da Scalable
+# Guia de lançamento da Coraline AI
 
 O que já está pronto no sistema e o que **só o dono da conta pode fazer** (criar contas em outros serviços, pagar planos, revisar textos legais). Itens marcados com **[obrigatório]** impedem o lançamento comercial.
 
@@ -17,15 +17,15 @@ Hoje o cadastro exige confirmação por e-mail, e o serviço de e-mail padrão d
 
 ### Modelos de e-mail em português
 
-**Confirm signup** — Assunto: `Confirme seu cadastro na Scalable`
+**Confirm signup** — Assunto: `Confirme seu cadastro na Coraline AI`
 ```html
-<h2>Bem-vindo à Scalable!</h2>
+<h2>Bem-vindo à Coraline AI!</h2>
 <p>Clique no botão abaixo para confirmar seu e-mail e ativar sua conta.</p>
 <p><a href="{{ .ConfirmationURL }}" style="background:#0B0D12;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">Confirmar e-mail</a></p>
 <p>Se você não criou uma conta, ignore este e-mail.</p>
 ```
 
-**Reset password** — Assunto: `Redefinir sua senha da Scalable`
+**Reset password** — Assunto: `Redefinir sua senha da Coraline AI`
 ```html
 <h2>Redefinir senha</h2>
 <p>Recebemos um pedido para redefinir a senha da sua conta. Clique no botão para escolher uma nova senha.</p>
@@ -52,7 +52,7 @@ Sem isso, os links de confirmação e de nova senha podem abrir um endereço err
 
 - Hoje a IA é a **Groq gratuita**, e a cota é **uma só para todos os clientes** (cerca de 1.000 pedidos/dia e 8.000 tokens/minuto no modelo principal).
 - O sistema já limita o uso por empresa: **30 perguntas com IA por dia** (padrão). Para mudar, crie no Supabase → Edge Functions → Secrets o segredo `AGENT_DAILY_LIMIT` com o número desejado (`0` = sem limite). Acima do limite, o agente responde em modo básico (com os dados reais) e avisa.
-- O consumo de cada empresa aparece em **Configurações → Agente SCALABLE**.
+- O consumo de cada empresa aparece em **Configurações → Coraline**.
 - Para ter muitos clientes: ative o plano pago da Groq (cobra por uso) ou coloque créditos na Anthropic. O sistema troca de IA automaticamente quando uma falha.
 
 ## 5. Textos legais **[obrigatório]**
@@ -81,7 +81,7 @@ A integração já está pronta e **desligada**. Ela liga sozinha quando os secr
      - *Planos e assinaturas* → **pagamento recorrente** (`subscription_authorized_payment`);
      - **Pagamentos** (`payment`) — a documentação pede este também;
    - **Salvar** → o painel mostra a **assinatura secreta** (chave secreta) → copie;
-   - use **Simular notificação** para testar: a Scalable responde 200 (com id de exemplo, o aviso é ignorado sem erro).
+   - use **Simular notificação** para testar: a Coraline AI responde 200 (com id de exemplo, o aviso é ignorado sem erro).
    - Não use **IPN** (sistema antigo, sem assinatura): só **Webhooks**.
    - A criação da assinatura **não** envia `notification_url` (o campo não existe na API de assinaturas); os avisos vêm da configuração do painel.
 
@@ -93,7 +93,7 @@ A integração já está pronta e **desligada**. Ela liga sozinha quando os secr
 | `MERCADOPAGO_WEBHOOK_SECRET` | a assinatura secreta do webhook |
 | `MERCADOPAGO_AMBIENTE` | (opcional) `teste` para mostrar "Ambiente de testes" quando usar credenciais `APP_USR` de um **usuário de teste vendedor** |
 | `PLANO_VALOR` | preço mensal, ex.: `97.00` |
-| `PLANO_NOME` | (opcional) nome do plano, ex.: `Scalable Pro` |
+| `PLANO_NOME` | (opcional) nome do plano, ex.: `Coraline AI Pro` |
 | `PLANO_TESTE_DIAS` | (opcional) dias de teste grátis; padrão `7` |
 | `COBRANCA_ATIVA` | `on` para **pausar o acesso** de quem não estiver em dia; sem isso, ninguém é bloqueado |
 | `PLANO_TOLERANCIA_DIAS` | (opcional) dias de tolerância após uma cobrança recusada; padrão `5` |
@@ -109,14 +109,14 @@ Os avisos do Mercado Pago atualizam a situação sozinhos: autorizada, cobrança
 
 ## 8. Novidades por e-mail (grátis)
 
-Na tela **Assinatura**, o cliente pode clicar em **Assinar grátis** para receber novidades da Scalable por e-mail. Não tem relação com o plano pago nem com o Mercado Pago.
+Na tela **Assinatura**, o cliente pode clicar em **Assinar grátis** para receber novidades da Coraline AI por e-mail. Não tem relação com o plano pago nem com o Mercado Pago.
 - **Onde ver a lista:** Supabase → projeto **Scalablee** → **Table Editor** → tabela `inscricoes_novidades`. Envie só para quem está com `status = inscrito`.
 - Cada inscrição guarda a data, o texto e a versão do aceite (prova do consentimento) e, se a pessoa cancelar, a data do cancelamento.
-- **Envio dos e-mails:** a Scalable ainda não envia e-mails sozinha. Você pode copiar a lista e enviar pelo seu e-mail ou por um serviço de e-mail marketing. Todo e-mail deve ter um jeito de cancelar (a pessoa também pode cancelar na própria tela Assinatura).
+- **Envio dos e-mails:** a Coraline AI ainda não envia e-mails sozinha. Você pode copiar a lista e enviar pelo seu e-mail ou por um serviço de e-mail marketing. Todo e-mail deve ter um jeito de cancelar (a pessoa também pode cancelar na própria tela Assinatura).
 
 ## 9. Segurança
 
-**Já está ativo no sistema:** RLS em todas as tabelas; visitante sem login não acessa nenhuma tabela; tokens do WhatsApp criptografados (chave no Vault do Supabase); limite de tentativas em todas as rotas da API; validação de entradas no servidor e no banco; erros sem detalhes internos; uploads só de imagem até 2 MB; proteção contra SSRF na análise de site; webhooks do WhatsApp e do Mercado Pago só com assinatura válida; cabeçalhos de segurança (CSP, HSTS, anti-clickjacking) no site e na API; CORS só para o site da Scalable; senha nova com no mínimo 8 caracteres, letras e números.
+**Já está ativo no sistema:** RLS em todas as tabelas; visitante sem login não acessa nenhuma tabela; tokens do WhatsApp criptografados (chave no Vault do Supabase); limite de tentativas em todas as rotas da API; validação de entradas no servidor e no banco; erros sem detalhes internos; uploads só de imagem até 2 MB; proteção contra SSRF na análise de site; webhooks do WhatsApp e do Mercado Pago só com assinatura válida; cabeçalhos de segurança (CSP, HSTS, anti-clickjacking) no site e na API; CORS só para o site da Coraline AI; senha nova com no mínimo 8 caracteres, letras e números.
 
 **O que só você pode ligar (painel do Supabase → projeto Scalablee):**
 1. **Authentication → Sign In / Providers → Email:** *Minimum password length* = **8** e *Password requirements* = **letras e números** (assim o servidor também exige, não só o site).

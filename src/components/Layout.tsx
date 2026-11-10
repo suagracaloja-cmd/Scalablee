@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
+  Building2,
+  CalendarDays,
   CheckCircle2,
   ClipboardList,
   CreditCard,
@@ -20,22 +22,33 @@ import {
 import { useApp } from '../lib/store'
 import { supabase } from '../lib/supabase'
 import { Logo } from './ui'
+import type { Papel } from '../lib/types'
 import { LegalFooter } from './LegalFooter'
 
-const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutGrid },
-  { to: '/agente', label: 'Agente SCALABLE', icon: Sparkles },
-  { to: '/aprovacoes', label: 'Aprovações', icon: CheckCircle2, badge: 'approvals' as const },
-  { to: '/whatsapp', label: 'WhatsApp', icon: MessageCircle, badge: 'conversations' as const },
-  { to: '/vendas', label: 'Vendas', icon: ShoppingBag },
-  { to: '/clientes', label: 'Clientes', icon: Users },
-  { to: '/financeiro', label: 'Financeiro', icon: Wallet },
+type NavItem = { to: string; label: string; icon: typeof LayoutGrid; badge?: 'approvals' | 'conversations' | 'insights'; papeis?: Papel[] }
+const NAV: NavItem[] = [
+  { to: '/', label: 'Início', icon: LayoutGrid },
+  { to: '/agente', label: 'Coraline', icon: Sparkles },
+  { to: '/agenda', label: 'Agenda', icon: CalendarDays },
+  { to: '/aprovacoes', label: 'Aprovações', icon: CheckCircle2, badge: 'approvals', papeis: ['dono', 'recepcao'] },
+  { to: '/whatsapp', label: 'WhatsApp', icon: MessageCircle, badge: 'conversations', papeis: ['dono', 'recepcao'] },
+  { to: '/clientes', label: 'Pacientes', icon: Users },
+  { to: '/vendas', label: 'Vendas', icon: ShoppingBag, papeis: ['dono', 'recepcao'] },
+  { to: '/financeiro', label: 'Financeiro', icon: Wallet, papeis: ['dono'] },
   { to: '/tarefas', label: 'Tarefas', icon: ClipboardList },
 ]
-const MOBILE = ['/', '/agente', '/aprovacoes', '/whatsapp']
+const EXTRAS: NavItem[] = [
+  { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' },
+  { to: '/clinica', label: 'Clínica e equipe', icon: Building2, papeis: ['dono'] },
+  { to: '/assinatura', label: 'Assinatura', icon: CreditCard, papeis: ['dono'] },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings },
+]
+const pode = (n: NavItem, papel: Papel) => !n.papeis || n.papeis.includes(papel)
 
 export default function Layout() {
-  const { company, counts, billing } = useApp()
+  const { company, counts, billing, papel } = useApp()
+  const navItems = NAV.filter((n) => pode(n, papel))
+  const mobile = ['/', '/agenda', '/agente', papel === 'profissional' ? '/clientes' : '/whatsapp']
   const [sheet, setSheet] = useState(false)
   const [q, setQ] = useState('')
   const loc = useLocation()
@@ -72,7 +85,7 @@ export default function Layout() {
           <Logo size={46} word={false} />
         </NavLink>
         <nav className="flex flex-1 flex-col items-center gap-2.5 rounded-full bg-panel px-2.5 py-3 shadow-[0_1px_12px_rgba(16,24,40,0.05)]">
-          {NAV.map((n, i) => {
+          {navItems.map((n, i) => {
             const c = n.badge ? counts[n.badge] : 0
             const active = isActive(n.to)
             return (
@@ -94,9 +107,16 @@ export default function Layout() {
           })}
         </nav>
         <div className="mt-4 flex flex-col items-center gap-2.5">
-          <NavLink to="/assinatura" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/assinatura') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Assinatura">
-            <CreditCard size={19} />
-          </NavLink>
+          {papel === 'dono' && (
+            <>
+              <NavLink to="/clinica" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/clinica') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Clínica e equipe" aria-label="Clínica e equipe">
+                <Building2 size={19} />
+              </NavLink>
+              <NavLink to="/assinatura" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/assinatura') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Assinatura" aria-label="Assinatura">
+                <CreditCard size={19} />
+              </NavLink>
+            </>
+          )}
           <NavLink to="/configuracoes" className={`flex h-11 w-11 items-center justify-center rounded-full ${isActive('/configuracoes') ? 'bg-brand text-ink' : 'bg-panel text-slate-500 hover:text-ink'}`} title="Configurações">
             <Settings size={19} />
           </NavLink>
@@ -117,10 +137,12 @@ export default function Layout() {
             {today}
           </span>
           <div className="ml-auto flex items-center gap-2.5">
-            <NavLink to="/aprovacoes" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-panel text-ink hover:bg-white/70" title="Aprovações">
-              <CheckCircle2 size={19} />
-              {counts.approvals > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
-            </NavLink>
+            {papel !== 'profissional' && (
+              <NavLink to="/aprovacoes" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-panel text-ink hover:bg-white/70" title="Aprovações" aria-label="Aprovações">
+                <CheckCircle2 size={19} />
+                {counts.approvals > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
+              </NavLink>
+            )}
             <NavLink to="/notificacoes" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-panel text-ink hover:bg-white/70" title="Notificações">
               <Bell size={19} />
               {counts.insights > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
@@ -129,7 +151,7 @@ export default function Layout() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-sm font-bold text-white">{company?.name?.[0]?.toUpperCase()}</span>
               <span className="max-w-[160px] leading-tight">
                 <span className="block truncate text-sm font-bold">{company?.name}</span>
-                <span className="block truncate text-[11px] text-muted">{company?.segment ?? 'Minha empresa'}</span>
+                <span className="block truncate text-[11px] text-muted">{company?.segment ?? 'Minha clínica'}</span>
               </span>
             </NavLink>
           </div>
@@ -145,10 +167,12 @@ export default function Layout() {
             </div>
           </NavLink>
           <div className="flex items-center gap-2">
-            <NavLink to="/aprovacoes" className="icon-btn relative">
-              <CheckCircle2 size={18} />
-              {counts.approvals > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
-            </NavLink>
+            {papel !== 'profissional' && (
+              <NavLink to="/aprovacoes" className="icon-btn relative" aria-label="Aprovações">
+                <CheckCircle2 size={18} />
+                {counts.approvals > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
+              </NavLink>
+            )}
             <NavLink to="/notificacoes" className="icon-btn relative">
               <Bell size={18} />
               {counts.insights > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
@@ -173,7 +197,7 @@ export default function Layout() {
 
       {/* Menu flutuante (celular) */}
       <nav className="fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-40 flex items-center justify-between rounded-full bg-graphite p-2 shadow-2xl md:hidden">
-        {NAV.filter((n) => MOBILE.includes(n.to)).map((n) => {
+        {navItems.filter((n) => mobile.includes(n.to)).map((n) => {
           const active = isActive(n.to)
           const c = n.badge ? counts[n.badge] : 0
           return (
@@ -198,7 +222,7 @@ export default function Layout() {
               </button>
             </div>
             <div className="grid grid-cols-3 gap-2.5">
-              {[...NAV, { to: '/notificacoes', label: 'Notificações', icon: Bell, badge: 'insights' as const }, { to: '/assinatura', label: 'Assinatura', icon: CreditCard }, { to: '/configuracoes', label: 'Configurações', icon: Settings }].map((n) => {
+              {[...navItems, ...EXTRAS.filter((n) => pode(n, papel))].map((n) => {
                 const c = 'badge' in n && n.badge ? counts[n.badge] : 0
                 return (
                   <NavLink

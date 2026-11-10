@@ -23,7 +23,8 @@ const LABELS: Record<string, string> = {
 }
 
 export default function Settings() {
-  const { company, reloadCompany, toast, session } = useApp()
+  const { company, reloadCompany, toast, session, papel } = useApp()
+  const dono = papel === 'dono'
   const [f, setF] = useState({
     name: company?.name ?? '',
     segment: company?.segment ?? '',
@@ -116,7 +117,7 @@ export default function Settings() {
     setSavingAg(false)
     if (error) return toast(error.message, 'err')
     await reloadCompany()
-    toast('Configurações do agente salvas')
+    toast('Configurações da Coraline salvas')
   }
 
   async function analyze() {
@@ -135,8 +136,9 @@ export default function Settings() {
 
   return (
     <div>
-      <PageHeader title="Configurações" subtitle="Dados da empresa e configurações do Agente SCALABLE." />
+      <PageHeader title="Configurações" subtitle={dono ? "Dados da clínica e configurações da Coraline." : "Sua conta e seus dados."} />
       <div className="grid gap-4 lg:grid-cols-2">
+        {dono && (<>
         <Reveal i={1} className="card p-5">
           <form onSubmit={save} className="space-y-3">
             <Field label="Nome da empresa">
@@ -170,12 +172,12 @@ export default function Settings() {
               <div>
                 <h2 className="font-semibold">{AGENT_NAME}</h2>
                 <p className="text-xs text-muted">
-                  Um único agente para vendas, marketing, financeiro, atendimento e gestão.
+                  Uma única assistente para atendimento, agenda, pacientes, marketing, vendas, financeiro e gestão.
                   {company?.agent_last_run_at ? ` Última análise: ${fmtDate(company.agent_last_run_at)}.` : ''}
                 </p>
               </div>
             </div>
-            <Field label="Instruções para o agente (tom de voz, regras, o que evitar…)">
+            <Field label="Instruções para a Coraline (tom de voz, regras, o que evitar…)">
               <textarea
                 maxLength={4000}
                 className="input min-h-28"
@@ -188,7 +190,7 @@ export default function Settings() {
               checked={ag.agent_whatsapp}
               onChange={(v) => setAg({ ...ag, agent_whatsapp: v })}
               title="Atender clientes no WhatsApp"
-              text="O agente lê as mensagens recebidas e prepara as respostas."
+              text="A Coraline lê as mensagens recebidas e prepara as respostas."
             />
             <Toggle
               checked={ag.agent_auto_reply}
@@ -198,7 +200,7 @@ export default function Settings() {
               text="Desligado: toda resposta vai para a Central de Aprovações antes de ser enviada. Pedidos de desconto, reclamações e assuntos sensíveis sempre pedem sua aprovação."
             />
             <button className="btn-primary w-full" disabled={savingAg}>
-              {savingAg && <Spinner />} Salvar configurações do agente
+              {savingAg && <Spinner />} Salvar configurações da Coraline
             </button>
             {uso && (
               <div className="rounded-2xl bg-panel-2 p-3 text-xs text-muted">
@@ -293,6 +295,7 @@ export default function Settings() {
             </div>
           )}
         </Reveal>
+        </>)}
         <Reveal i={4} className="card p-5 lg:col-span-2">
           <h2 className="flex items-center gap-2 font-semibold">
             <ShieldCheck size={18} /> Privacidade e dados
@@ -319,7 +322,15 @@ export default function Settings() {
       </div>
       <Modal open={delOpen} onClose={() => setDelOpen(false)} title="Excluir conta">
         <p className="text-sm text-muted">
-          Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da empresa: vendas, clientes, financeiro, tarefas, conversas, aprovações e a conexão do WhatsApp. Não dá para desfazer. Se quiser, exporte seus dados antes.
+          {dono ? (
+            <>
+              Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da clínica: pacientes, agenda, vendas, financeiro, tarefas, conversas, aprovações, a equipe e a conexão do WhatsApp. Não dá para desfazer. Se quiser, exporte seus dados antes.
+            </>
+          ) : (
+            <>
+              Isso apaga <b className="text-ink">definitivamente</b> o seu acesso. Os dados da clínica continuam com o dono da conta.
+            </>
+          )}
         </p>
         <Field label='Para confirmar, digite EXCLUIR'>
           <input maxLength={20} className="input" value={delText} onChange={(e) => setDelText(e.target.value)} placeholder="EXCLUIR" />

@@ -1,4 +1,4 @@
-// Núcleo da conversa com o Agente SCALABLE (usado pela rota /api/agente).
+// Núcleo da conversa com a Coraline (usado pela rota /api/agente).
 // Fica separado da rota HTTP para poder ser testado com qualquer cliente de banco e modelo.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import type { Company } from "./common.ts";
@@ -7,6 +7,7 @@ import { buildSnapshot } from "./snapshot.ts";
 import { fallbackAnswer } from "./fallback.ts";
 import { todayBR } from "./tools.ts";
 import { HttpError, isoDate } from "./util.ts";
+import type { Papel } from "./tools.ts";
 
 /** Perguntas com IA por empresa por dia (protege a cota gratuita compartilhada). 0 = sem limite. */
 export const dailyLimit = () => {
@@ -27,12 +28,13 @@ export async function usageToday(db: SupabaseClient, companyId: string, today = 
   return count ?? 0;
 }
 
-export async function conversar({ db, company, message: raw, threadId, create: createFn }: {
+export async function conversar({ db, company, message: raw, threadId, create: createFn, papel = "dono" }: {
   db: SupabaseClient; // cliente do usuário (RLS)
   company: Company;
   message: unknown;
   threadId?: unknown;
   create: CreateFn | null; // null = IA não configurada (modo básico)
+  papel?: Papel; // papel de quem conversa (define as ferramentas disponíveis)
 }) {
   let create = createFn;
   const message = String(raw ?? "").trim().slice(0, 8000);
@@ -77,7 +79,7 @@ export async function conversar({ db, company, message: raw, threadId, create: c
   }
   if (create) {
     try {
-      ({ text, steps, approvals } = await agentChat({ ctx: { db, companyId: company.id, threadId: thread.id, today: todayBR() }, company, history, message, create }));
+      ({ text, steps, approvals } = await agentChat({ ctx: { db, companyId: company.id, threadId: thread.id, today: todayBR(), papel }, company, history, message, create }));
     } catch (e) {
       aiError = e instanceof Error ? e.message : String(e);
       console.error("[agente] erro da IA:", aiError);

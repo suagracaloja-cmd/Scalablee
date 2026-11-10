@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { BellRing, MessageCircle, TrendingUp } from 'lucide-react'
+import { BellRing, CalendarDays, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { LEGAL_VERSION } from '../lib/legal'
@@ -63,34 +63,38 @@ export default function Login() {
           </Reveal>
           <div className="mt-16 max-w-lg">
             <Reveal i={1}>
-              <span className="chip bg-white/80 px-3 py-1.5 text-brand">Agente SCALABLE · uma IA para toda a empresa</span>
+              <span className="chip bg-white/80 px-3 py-1.5 text-brand-dark">Coraline · assistente de IA para clínicas</span>
               <h1 className="mt-4 text-[44px] font-extrabold leading-[1.05] tracking-tight text-ink">
-                Sua empresa no piloto automático.
+                Sua clínica organizada, do WhatsApp à agenda.
               </h1>
-              <p className="mt-4 text-base text-slate-600">Vendas, marketing, financeiro, atendimento e gestão em uma única conversa — com você aprovando só o que importa.</p>
+              <p className="mt-4 text-base text-slate-600">Atendimento, agenda, pacientes, marketing e financeiro em um só lugar — com a Coraline preparando o trabalho e você aprovando o que importa.</p>
             </Reveal>
           </div>
-          <div className="relative mt-auto h-72">
+          {/* Ilustração da interface (exemplos, não são dados reais) */}
+          <div className="relative mt-auto h-72" aria-hidden="true">
             <Reveal i={3} className="absolute left-0 top-6 w-64 -rotate-6 rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
               <div className="flex items-center gap-2 text-xs font-bold text-amber-600">
-                <BellRing size={15} /> Alerta financeiro
+                <BellRing size={15} /> Lembrete
               </div>
-              <p className="mt-1.5 text-sm font-semibold">Aluguel vence amanhã</p>
-              <p className="text-xs text-muted">R$ 3.500,00 · Agente SCALABLE</p>
+              <p className="mt-1.5 text-sm font-semibold">Consulta amanhã às 9h</p>
+              <p className="text-xs text-muted">Confirmação pelo WhatsApp</p>
             </Reveal>
             <Reveal i={4} className="absolute left-48 top-28 w-72 rotate-2 rounded-3xl bg-brand p-5 text-white shadow-2xl">
               <div className="flex items-center gap-2 text-xs font-semibold text-white/80">
-                <TrendingUp size={15} /> Vendas no mês
+                <CalendarDays size={15} /> Agenda de hoje
               </div>
-              <p className="mt-2 text-3xl font-bold">R$ 48.920</p>
-              <span className="chip mt-3 bg-white text-brand">↑ 18,4% vs mês passado</span>
+              <ul className="mt-2 space-y-1.5 text-sm font-semibold">
+                <li>09:00 · Avaliação</li>
+                <li>10:30 · Limpeza</li>
+                <li>14:00 · Retorno</li>
+              </ul>
             </Reveal>
             <Reveal i={5} className="absolute right-6 top-0 w-60 rotate-6 rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-600">
                 <MessageCircle size={15} /> WhatsApp
               </div>
-              <p className="mt-1.5 text-sm font-semibold">12 clientes respondidos</p>
-              <p className="text-xs text-muted">2 aguardam sua aprovação</p>
+              <p className="mt-1.5 text-sm font-semibold">Paciente pediu para remarcar</p>
+              <p className="text-xs text-muted">A Coraline preparou · aguarda aprovação</p>
             </Reveal>
           </div>
         </div>
@@ -104,7 +108,7 @@ export default function Login() {
           </Reveal>
           <Reveal i={1}>
             <h2 className="text-3xl font-bold tracking-tight">{mode === 'login' ? 'Bem-vindo de volta' : mode === 'signup' ? 'Crie sua conta' : 'Recuperar senha'}</h2>
-            <p className="mt-2 text-sm text-muted">{mode === 'signup' ? 'Comece a gerir sua empresa com IA em minutos.' : mode === 'login' ? 'Entre para ver como está sua empresa hoje.' : 'Enviaremos um link para o seu e-mail.'}</p>
+            <p className="mt-2 text-sm text-muted">{mode === 'signup' ? 'Comece a organizar sua clínica com IA em minutos.' : mode === 'login' ? 'Entre para ver como está sua clínica hoje.' : 'Enviaremos um link para o seu e-mail.'}</p>
           </Reveal>
           <Reveal i={2} className="mt-8 space-y-3">
             <input maxLength={254} className="input h-12" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
@@ -170,7 +174,7 @@ function authError(m: string) {
   if (e.includes('email not confirmed')) return 'Confirme seu e-mail pelo link que enviamos antes de entrar. Não achou? Veja a caixa de spam.'
   if (e.includes('already registered') || e.includes('already been registered')) return 'Já existe uma conta com esse e-mail. Faça login ou use "Esqueci minha senha".'
   if (e.includes('not authorized') || e.includes('sending') || e.includes('smtp') || e.includes('email address'))
-    return 'Não conseguimos enviar o e-mail agora. O envio de e-mails da Scalable está sendo ativado — tente de novo mais tarde.'
+    return 'Não conseguimos enviar o e-mail agora. O envio de e-mails da Coraline AI está sendo ativado — tente de novo mais tarde.'
   if (e.includes('rate limit') || e.includes('too many') || e.includes('security purposes')) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.'
   if (e.includes('captcha')) return 'A verificação anti-robô falhou ou expirou. Confirme de novo e tente outra vez.'
   if (e.includes('password') && (e.includes('at least') || e.includes('should') || e.includes('weak'))) return `Senha fraca: use pelo menos ${SENHA_MIN} caracteres, com letras e números.`

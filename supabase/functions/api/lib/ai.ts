@@ -47,7 +47,7 @@ function getClient() {
 export const webSearchEnabled = () => (Deno.env.get("AGENT_WEB_SEARCH") ?? "").toLowerCase() === "on";
 
 /**
- * Adaptador usado pelo Agente SCALABLE (lib/agent.ts) para chamar o modelo.
+ * Adaptador usado pela Coraline (lib/agent.ts) para chamar o modelo.
  * Tenta os provedores em ordem (Groq → Anthropic); se um falhar (limite diário, sem créditos, instabilidade),
  * o próximo assume. Só dá erro quando todos falham.
  */

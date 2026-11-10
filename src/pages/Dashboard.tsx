@@ -5,14 +5,16 @@ import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval, Customer, Insight, Sale, Task, Transaction } from '../lib/types'
 import { addDays, brl, brlShort, fmtDate, relativeDay, timeAgo, toISO, today } from '../lib/format'
-import { AgentMark, AreaChip, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
+import { AgentMark, AreaChip, CoralineIcon, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
 import { DONUT_COLORS, Donut, DualBars, LineChart } from '../components/LineChart'
 import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
+import { HojeNaAgenda } from '../components/HojeNaAgenda'
 
 type Range = 7 | 30 | 90
 
 export default function Dashboard() {
-  const { company, toast, reloadCounts } = useApp()
+  const { company, papel, toast, reloadCounts } = useApp()
+  const dono = papel === 'dono'
   const [ask, setAsk] = useState('')
   const navigate = useNavigate()
   const [sales, setSales] = useState<Sale[]>([])
@@ -139,7 +141,7 @@ export default function Dashboard() {
     setRunning(true)
     try {
       const r = await api<{ ai: boolean; aiError: string | null; insights: number; tasks: number; approvals: number }>('analise')
-      toast(`${AGENT_NAME} analisou a empresa: ${r.insights} notificações, ${r.tasks} tarefas novas${r.approvals ? ` e ${r.approvals} aprovação(ões)` : ''}`)
+      toast(`${AGENT_NAME} analisou a clínica: ${r.insights} notificações, ${r.tasks} tarefas novas${r.approvals ? ` e ${r.approvals} aprovação(ões)` : ''}`)
       if (r.aiError) toast(`Análise feita com regras (IA: ${r.aiError})`, 'err')
       await load()
       reloadCounts()
@@ -156,7 +158,7 @@ export default function Dashboard() {
   })()
   const attention = [
     ...approvals.map((a) => ({ key: a.id, icon: CheckCircle2, text: a.title, sub: 'Aprovação pendente', to: '/aprovacoes', tone: 'bg-brand-soft text-brand' })),
-    ...m.overdue.map((x) => ({ key: x.id, icon: AlertTriangle, text: x.description, sub: `Venceu ${fmtDate(x.due_date)} · ${brl(x.amount)}`, to: '/financeiro', tone: 'bg-rose-50 text-rose-600' })),
+    ...(dono ? m.overdue : []).map((x) => ({ key: x.id, icon: AlertTriangle, text: x.description, sub: `Venceu ${fmtDate(x.due_date)} · ${brl(x.amount)}`, to: '/financeiro', tone: 'bg-rose-50 text-rose-600' })),
     ...insights
       .filter((i) => i.priority === 'high' && !i.read)
       .map((i) => ({ key: i.id, icon: Sparkles, text: i.title, sub: `Alerta · ${areaOf(i.agent_kind).label}`, to: '/notificacoes', tone: 'bg-amber-50 text-amber-600' })),
@@ -170,22 +172,32 @@ export default function Dashboard() {
           <h1 className="text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
             {hello}, {company?.name}! <span className="inline-block">👋</span>
           </h1>
-          <p className="mt-1 text-sm text-muted">Veja o que está acontecendo na sua empresa este mês.</p>
+          <p className="mt-1 text-sm text-muted">Veja o que está acontecendo na sua clínica.</p>
         </div>
         <div className="flex gap-2">
           <Link to="/agente" className="btn-ghost flex-1 sm:flex-none">
-            <Sparkles size={16} className="text-brand-dark" /> Falar com o agente
+            <Sparkles size={16} className="text-brand-dark" /> Falar com a Coraline
           </Link>
-          <button className="btn-primary flex-1 sm:flex-none" onClick={runAgents} disabled={running}>
-            {running ? <Spinner /> : <Play size={15} fill="currentColor" />} {running ? 'Analisando…' : 'Rodar análise'}
-          </button>
+          {dono && (
+            <button className="btn-primary flex-1 sm:flex-none" onClick={runAgents} disabled={running}>
+              {running ? <Spinner /> : <Play size={15} fill="currentColor" />} {running ? 'Analisando…' : 'Rodar análise'}
+            </button>
+          )}
         </div>
       </Reveal>
 
+      <HojeNaAgenda />
+
+      {papel === 'profissional' ? (
+        <Reveal i={2} className="card p-5 text-sm text-muted sm:p-6">
+          Use o menu para ver os <Link className="font-semibold text-ink underline underline-offset-2" to="/clientes">pacientes</Link>, as <Link className="font-semibold text-ink underline underline-offset-2" to="/tarefas">tarefas</Link> ou conversar com a <Link className="font-semibold text-ink underline underline-offset-2" to="/agente">Coraline</Link>.
+        </Reveal>
+      ) : (
+      <>
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Reveal i={1} className="relative col-span-2 overflow-hidden rounded-[26px] bg-brand p-5 text-white shadow-[0_18px_40px_-18px_rgba(72,168,252,0.9)] sm:col-span-1 sm:p-6">
-          <img src="/logo-mark-white.png" alt="" className="pointer-events-none absolute -bottom-6 -right-4 w-32 rotate-12 opacity-[0.13]" />
+          <CoralineIcon flat size={128} className="pointer-events-none absolute -bottom-6 -right-4 rotate-12 opacity-[0.13]" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-2.5 text-sm font-semibold">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
@@ -203,8 +215,8 @@ export default function Dashboard() {
           </div>
         </Reveal>
         <Kpi i={2} icon={<Wallet size={17} />} label="Ticket médio" to="/vendas" ready={ready} value={<Money value={m.ticket} delay={350} />} delta={<Delta value={m.ticketDelta} />} sub={<><Count value={m.count} delay={350} /> vendas</>} />
-        <Kpi i={3} icon={<Users size={17} />} label="Clientes" to="/clientes" ready={ready} value={<Count value={customers.length} delay={450} />} delta={<Delta value={m.customersDelta} />} sub={`+${m.newCustomers} novos`} />
-        <Kpi
+        <Kpi i={3} icon={<Users size={17} />} label="Pacientes" to="/clientes" ready={ready} value={<Count value={customers.length} delay={450} />} delta={<Delta value={m.customersDelta} />} sub={`+${m.newCustomers} novos`} />
+        {dono && <Kpi
           wide
           i={4}
           icon={<CalendarClock size={17} />}
@@ -214,7 +226,7 @@ export default function Dashboard() {
           value={<Money value={m.payablesTotal} delay={550} />}
           delta={m.overdue.length ? <span className="chip bg-rose-50 text-rose-600">{m.overdue.length} vencida(s)</span> : <span className="chip bg-emerald-50 text-emerald-600">em dia</span>}
           sub="em aberto"
-        />
+        />}
       </div>
 
       {/* Curva de vendas + atenção */}
@@ -293,11 +305,11 @@ export default function Dashboard() {
         </Reveal>
       </div>
 
-      {/* Agente SCALABLE */}
+      {/* Coraline */}
       <Reveal i={7} className="card mt-4 overflow-hidden">
         <div className="grid lg:grid-cols-[1.1fr_1fr]">
           <div className="relative overflow-hidden bg-graphite p-6 text-white sm:p-7">
-            <img src="/logo-mark-white.png" alt="" className="pointer-events-none absolute -bottom-10 -right-6 w-44 rotate-12 opacity-[0.07]" />
+            <CoralineIcon flat size={176} className="pointer-events-none absolute -bottom-10 -right-6 rotate-12 opacity-[0.07]" />
             <div className="relative flex items-center gap-3">
               <AgentMark size={44} rounded="rounded-2xl" />
               <div>
@@ -361,7 +373,7 @@ export default function Dashboard() {
           )}
         </Reveal>
 
-        <Reveal i={14} className="card p-5 sm:p-6">
+        {dono && <Reveal i={14} className="card p-5 sm:p-6">
           <div className="mb-4 flex items-start justify-between">
             <div>
               <h2 className="text-lg font-bold">Entradas x Saídas</h2>
@@ -377,7 +389,7 @@ export default function Dashboard() {
             </div>
           </div>
           <DualBars data={m.months} delay={1200} />
-        </Reveal>
+        </Reveal>}
 
         <Reveal i={15} className="card p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between">
@@ -479,7 +491,7 @@ export default function Dashboard() {
 
         <Reveal i={17} className="card p-5 sm:p-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Alertas do agente</h2>
+            <h2 className="text-lg font-bold">Alertas da Coraline</h2>
             <Link to="/notificacoes" className="text-xs font-bold text-brand">
               Ver todas
             </Link>
@@ -502,6 +514,8 @@ export default function Dashboard() {
           </div>
         </Reveal>
       </div>
+      </>
+      )}
     </div>
   )
 }

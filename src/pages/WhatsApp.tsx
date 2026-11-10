@@ -10,7 +10,7 @@ import { AgentMark, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../
 type Status = { phone_number_id: string; display_phone: string | null; verify_token: string; connected: boolean } | null
 
 export default function WhatsApp() {
-  const { company, toast, reloadCounts } = useApp()
+  const { company, toast, reloadCounts, papel } = useApp()
   const [status, setStatus] = useState<Status | undefined>(undefined)
   const [showSetup, setShowSetup] = useState(false)
   const [convs, setConvs] = useState<Conversation[]>([])
@@ -117,12 +117,14 @@ export default function WhatsApp() {
         subtitle={
           status
             ? `${status.display_phone ?? status.phone_number_id} · ${status.connected ? 'Recebendo mensagens' : 'Aguardando configuração do webhook'}`
-            : 'Conecte seu número para a IA atender seus clientes'
+            : 'Conecte o número da clínica para a Coraline atender os pacientes'
         }
         actions={
-          <button className="btn-ghost" onClick={() => setShowSetup(true)}>
-            <Settings2 size={16} /> {status ? 'Configuração' : 'Conectar WhatsApp'}
-          </button>
+          papel === 'dono' ? (
+            <button className="btn-ghost" onClick={() => setShowSetup(true)}>
+              <Settings2 size={16} /> {status ? 'Configuração' : 'Conectar WhatsApp'}
+            </button>
+          ) : undefined
         }
       />
 
@@ -131,11 +133,13 @@ export default function WhatsApp() {
           <Empty
             icon={<MessageCircle size={28} />}
             title="WhatsApp ainda não conectado"
-            text={`Conecte o WhatsApp Business (API oficial da Meta). ${AGENT_NAME} vai responder seus clientes automaticamente e pedir sua aprovação quando for necessário.`}
+            text={`Conecte o WhatsApp Business (API oficial da Meta). A ${AGENT_NAME} vai responder os pacientes automaticamente e pedir aprovação da equipe quando for necessário.${papel === 'dono' ? '' : ' Só o dono da conta pode conectar.'}`}
             action={
-              <button className="btn-primary" onClick={() => setShowSetup(true)}>
-                Conectar agora
-              </button>
+              papel === 'dono' ? (
+                <button className="btn-primary" onClick={() => setShowSetup(true)}>
+                  Conectar agora
+                </button>
+              ) : undefined
             }
           />
         </Reveal>
@@ -302,7 +306,11 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
   }
   async function disconnect() {
     if (!confirm('Desconectar o WhatsApp? A IA para de responder.')) return
-    await supabase.rpc('whatsapp_disconnect')
+    try {
+      await api('wa-send', { action: 'disconnect' })
+    } catch (err) {
+      return toast(err instanceof Error ? err.message : String(err), 'err')
+    }
     location.reload()
   }
   const copy = (v: string) => navigator.clipboard.writeText(v).then(() => toast('Copiado!'))
@@ -335,7 +343,7 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
           <p className={`rounded-xl px-3 py-2 text-xs ${hasSecret ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
             {hasSecret
               ? '✓ Verificação de autenticidade ligada: só mensagens assinadas pela Meta são aceitas.'
-              : '⚠️ A chave secreta do app é obrigatória: sem ela a Scalable não consegue confirmar que as mensagens recebidas vieram mesmo da Meta, e elas são recusadas.'}
+              : '⚠️ A chave secreta do app é obrigatória: sem ela a Coraline AI não consegue confirmar que as mensagens recebidas vieram mesmo da Meta, e elas são recusadas.'}
           </p>
         )}
         <button className="btn-primary w-full" disabled={busy}>

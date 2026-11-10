@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Check, CheckCircle2, Mail, Megaphone, MessageCircle, Send, ShoppingBag, Trash2, UserPlus, Wallet, X } from 'lucide-react'
+import { CalendarDays, Check, CheckCircle2, Mail, Megaphone, MessageCircle, Send, ShoppingBag, Trash2, UserPlus, Wallet, X } from 'lucide-react'
 import { api } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval, ApprovalKind } from '../lib/types'
@@ -16,13 +16,13 @@ export const KIND_INFO: Record<ApprovalKind, Info> = {
   finance_create: { label: 'Lançamento financeiro', icon: Wallet },
   finance_update: { label: 'Alteração financeira', icon: Wallet },
   sale_create: { label: 'Registro de venda', icon: ShoppingBag },
-  customer_upsert: { label: 'Cadastro de cliente', icon: UserPlus },
+  customer_upsert: { label: 'Cadastro de paciente', icon: UserPlus },
   record_delete: { label: 'Exclusão de dados', icon: Trash2 },
   action: { label: 'Ação', icon: CheckCircle2 },
 }
 
 const dt = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-const TABLE_LABEL: Record<string, string> = { sales: 'Venda', customers: 'Cliente', transactions: 'Lançamento financeiro', tasks: 'Tarefa' }
+const TABLE_LABEL: Record<string, string> = { sales: 'Venda', customers: 'Paciente', transactions: 'Lançamento financeiro', tasks: 'Tarefa' }
 const STATUS_LABEL: Record<string, string> = { lead: 'Lead', active: 'Ativo', vip: 'VIP', inactive: 'Inativo', paid: 'Pago', pending: 'Pendente' }
 
 function Row({ k, v }: { k: string; v: ReactNode }) {
@@ -80,6 +80,8 @@ function Details({ a }: { a: Approval }) {
           <Row k="Telefone" v={(p.phone as string) ?? null} />
           <Row k="E-mail" v={(p.email as string) ?? null} />
           <Row k="Status" v={p.status ? STATUS_LABEL[String(p.status)] ?? String(p.status) : null} />
+          <Row k="Etapa no funil" v={(p.etapa as string) ?? null} />
+          <Row k="Próximo contato" v={p.proximo_contato ? fmtDate(String(p.proximo_contato)) : null} />
           <Row k="Observações" v={(p.notes as string) ?? null} />
         </>
       )
@@ -95,8 +97,8 @@ function Details({ a }: { a: Approval }) {
     case 'whatsapp_reply':
       return (
         <>
-          <Row k="Cliente" v={(p.cliente as string) ?? null} />
-          <Row k="Mensagem do cliente" v={(p.mensagem_do_cliente as string) ?? null} />
+          <Row k="Paciente" v={(p.cliente as string) ?? null} />
+          <Row k="Mensagem do paciente" v={(p.mensagem_do_cliente as string) ?? null} />
         </>
       )
     case 'email_send':
@@ -119,6 +121,28 @@ function Details({ a }: { a: Approval }) {
         </>
       )
     }
+    case 'action':
+      if (p.acao === 'agenda_marcar')
+        return (
+          <>
+            <Row k="Paciente" v={`${String(p.paciente_nome ?? '')}${p.paciente_novo ? ' (novo cadastro)' : ''}`} />
+            <Row k="Quando" v={(p.quando as string) ?? null} />
+            <Row k="Serviço" v={(p.servico as string) ?? null} />
+            <Row k="Profissional" v={(p.profissional as string) ?? null} />
+            <Row k="Observações" v={(p.observacoes as string) ?? null} />
+          </>
+        )
+      if (p.acao === 'agenda_alterar')
+        return (
+          <>
+            <Row k="Paciente" v={String(p.paciente_nome ?? '')} />
+            <Row k="Consulta de" v={(p.de as string) ?? null} />
+            <Row k="Novo horário" v={(p.quando as string) ?? null} />
+            <Row k="Nova situação" v={(p.situacao as string) ?? null} />
+            <Row k="Observações" v={(p.observacoes as string) ?? null} />
+          </>
+        )
+      return null
     default:
       return null
   }
@@ -129,13 +153,14 @@ function hasDetails(a: Approval) {
   const p = (a.payload ?? {}) as Record<string, unknown>
   if (a.kind === 'whatsapp_outreach') return !!p.telefone
   if (a.kind === 'whatsapp_reply') return !!(p.cliente || p.mensagem_do_cliente)
-  if (a.kind === 'action') return false
+  if (a.kind === 'action') return String(p.acao ?? '').startsWith('agenda_')
   return a.payload !== null && a.payload !== undefined
 }
 
 export default function ApprovalCard({ a, onChange, compact = false }: { a: Approval; onChange?: () => void; compact?: boolean }) {
   const { toast, reloadCounts } = useApp()
-  const info = KIND_INFO[a.kind] ?? KIND_INFO.action
+  const agenda = a.kind === 'action' && String(((a.payload ?? {}) as Record<string, unknown>).acao ?? '').startsWith('agenda_')
+  const info = agenda ? { label: 'Agenda', icon: CalendarDays } : (KIND_INFO[a.kind] ?? KIND_INFO.action)
   const showsText = a.draft !== null && (info.editable || a.kind === 'email_send' || a.kind === 'campaign_external')
   const [text, setText] = useState(a.draft ?? '')
   const [busy, setBusy] = useState<'approve' | 'reject' | null>(null)

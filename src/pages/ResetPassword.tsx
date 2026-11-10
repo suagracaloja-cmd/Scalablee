@@ -34,7 +34,7 @@ export default function ResetPassword() {
         </Reveal>
         <Reveal i={1}>
           <h2 className="text-3xl font-bold tracking-tight">Defina sua nova senha</h2>
-          <p className="mt-2 text-sm text-muted">Escolha uma senha nova para entrar na Scalable.</p>
+          <p className="mt-2 text-sm text-muted">Escolha uma senha nova para entrar na Coraline AI.</p>
         </Reveal>
         <Reveal i={2} className="mt-8 space-y-3">
           <input className="input h-12" type="password" required minLength={SENHA_MIN} maxLength={72} placeholder={`Nova senha (mín. ${SENHA_MIN} caracteres, letras e números)`} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />

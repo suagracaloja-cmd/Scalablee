@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { api, OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
-import type { BillingView, Company } from './types'
+import type { BillingView, Company, Papel } from './types'
 
 type Counts = { insights: number; approvals: number; conversations: number }
 
@@ -9,6 +9,8 @@ type Ctx = {
   session: Session | null
   loading: boolean
   company: Company | null
+  /** Papel de quem está logado na clínica (dono, recepção ou profissional) */
+  papel: Papel
   counts: Counts
   reloadCompany: () => Promise<void>
   reloadCounts: () => Promise<void>
@@ -28,6 +30,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<Company | null>(null)
+  const [papel, setPapel] = useState<Papel>('dono')
   const [counts, setCounts] = useState<Counts>({ insights: 0, approvals: 0, conversations: 0 })
   const [recovery, setRecovery] = useState(OPENED_FROM_RECOVERY_LINK)
   const [billing, setBilling] = useState<BillingView | null>(null)
@@ -40,7 +43,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const reloadCompany = useCallback(async () => {
-    const { data } = await supabase.from('companies').select('*').maybeSingle()
+    let { data } = await supabase.from('companies').select('*').maybeSingle()
+    // Quem foi convidado entra na clínica automaticamente no primeiro acesso
+    if (!data) {
+      const { data: entrou } = await supabase.rpc('aceitar_convite')
+      if (entrou) ({ data } = await supabase.from('companies').select('*').maybeSingle())
+    }
+    const { data: p } = await supabase.rpc('meu_papel')
+    setPapel(((p as Papel | null) ?? 'dono') as Papel)
     setCompany(data as Company | null)
   }, [])
   const reloadCounts = useCallback(async () => {
@@ -103,7 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [company, reloadCounts, toast])
 
   return (
-    <AppCtx.Provider value={{ session, loading, company, counts, reloadCompany, reloadCounts, toast, recovery, endRecovery: () => setRecovery(false), billing, reloadBilling }}>
+    <AppCtx.Provider value={{ session, loading, company, papel, counts, reloadCompany, reloadCounts, toast, recovery, endRecovery: () => setRecovery(false), billing, reloadBilling }}>
       {children}
       <div className="fixed inset-x-4 bottom-28 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:items-end">
         {toasts.map((t) => (

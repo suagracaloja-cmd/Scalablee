@@ -1,5 +1,5 @@
 // Adaptador da Groq (API compatível com OpenAI, plano gratuito com limites diários).
-// Converte o formato interno do Agente SCALABLE (blocos text / tool_use / tool_result)
+// Converte o formato interno da Coraline (blocos text / tool_use / tool_result)
 // para Chat Completions e de volta, mantendo o pedido dentro do orçamento de tokens do plano gratuito.
 import type { Block, ModelRequest, ModelResponse } from "./agent.ts";
 

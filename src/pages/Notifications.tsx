@@ -45,7 +45,7 @@ export default function Notifications() {
     <div>
       <PageHeader
         title="Notificações"
-        subtitle={`Ideias, alertas e análises enviadas pelo ${AGENT_NAME}.`}
+        subtitle={`Ideias, alertas e análises enviadas pela ${AGENT_NAME}.`}
         actions={
           <button className="btn-ghost" onClick={markAll}>
             <CheckCheck size={16} /> Marcar todas como lidas
@@ -61,7 +61,7 @@ export default function Notifications() {
       </Reveal>
       {shown.length === 0 ? (
         <Reveal i={2} className="card">
-          <Empty icon={<Bell size={26} />} title="Nenhuma notificação" text={`Vá ao Dashboard e clique em "Rodar análise" para o ${AGENT_NAME} analisar sua empresa.`} />
+          <Empty icon={<Bell size={26} />} title="Nenhuma notificação" text={`Vá ao Dashboard e clique em "Rodar análise" para a ${AGENT_NAME} analisar sua empresa.`} />
         </Reveal>
       ) : (
         <div className="space-y-3">

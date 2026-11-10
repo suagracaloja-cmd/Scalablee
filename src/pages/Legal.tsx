@@ -19,7 +19,7 @@ export default function Legal({ kind }: { kind: LegalKind }) {
   const page = PAGES[kind]
   useEffect(() => {
     const before = document.title
-    document.title = `${page.title} — Scalable`
+    document.title = `${page.title} — Coraline AI`
     window.scrollTo(0, 0)
     return () => {
       document.title = before
@@ -30,7 +30,7 @@ export default function Legal({ kind }: { kind: LegalKind }) {
     <div className="min-h-screen bg-bg px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-3xl">
         <div className="mb-8 flex items-center justify-between gap-4">
-          <Link to="/" aria-label="Scalable — página inicial">
+          <Link to="/" aria-label="Coraline AI — página inicial">
             <Logo size={36} />
           </Link>
           <Link to="/" className="btn-ghost h-10 px-4 text-sm">

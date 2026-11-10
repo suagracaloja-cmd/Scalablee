@@ -198,7 +198,7 @@ export default function Agent() {
               <div className="reveal-up flex flex-col items-center text-center">
                 <AgentMark size={56} rounded="rounded-[20px]" />
                 <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-[28px]">Como posso ajudar {company?.name ? `a ${company.name}` : ''} hoje?</h1>
-                <p className="mt-1.5 max-w-md text-sm text-muted">Sou o {AGENT_NAME}: vendas, marketing, financeiro, atendimento e gestão em uma única conversa, com os dados reais da sua empresa.</p>
+                <p className="mt-1.5 max-w-md text-sm text-muted">Sou a {AGENT_NAME}: vendas, marketing, financeiro, atendimento e gestão em uma única conversa, com os dados reais da sua empresa.</p>
               </div>
               <div className="reveal-up mt-7" style={{ '--d': '80ms' } as React.CSSProperties}>
                 <Composer onSend={send} busy={busy} autoFocus big />

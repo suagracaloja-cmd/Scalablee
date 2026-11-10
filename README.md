@@ -1,23 +1,19 @@
-# Scalable — Gestão empresarial com o Agente SCALABLE
+# Coraline AI — Gestão inteligente para clínicas
 
-Plataforma web (desktop e celular) onde o dono da empresa faz login e tem:
+Plataforma web (computador e celular) de gestão para **clínicas e consultórios**, com a **Coraline**, assistente de IA:
 
-- **Agente SCALABLE** — um único agente de IA, numa conversa estilo ChatGPT/Claude (histórico de conversas, respostas formatadas, sugestões iniciais), que cobre todas as áreas da empresa:
-  - **Vendas** – resumo e lista de vendas, desempenho por produto, leads, funil, clientes inativos, registro de vendas.
-  - **Marketing** – textos, campanhas, estratégias, calendário de conteúdo (com datas comemorativas), análise de resultados com os dados reais.
-  - **Financeiro** – receitas e despesas, movimentações, comparação de períodos, preparação de lançamentos e alterações.
-  - **Atendimento** – consulta de clientes, histórico do WhatsApp, preparação de respostas e mensagens, cadastro de clientes.
-  - **Gestão** – indicadores, tarefas e pendências, planos de ação, aprovações pendentes, exclusões.
-- **Central de Aprovações** — tudo que é relevante (enviar mensagens, e-mails, publicar campanhas, lançamentos e alterações financeiras, registro de vendas, cadastro e exclusão de dados) é **preparado** pelo agente e só é executado depois que o dono aprova. Cada decisão registra operação, dados, data/hora, status, resultado e quem decidiu.
-- **WhatsApp Business** — o agente responde clientes (sozinho em dúvidas simples, se ligado em Configurações) e pede aprovação para descontos, reclamações e assuntos sensíveis.
-- **Análise geral** (botão "Rodar análise" no Dashboard) — alertas, tarefas e mensagens de reativação para aprovação.
-- **Análise de site**, Dashboard animado, Vendas, Clientes (CRM), Financeiro, Tarefas e Notificações — tudo salvo no Supabase.
+- **Coraline** — uma única assistente numa conversa estilo ChatGPT/Claude, com ferramentas por área: atendimento e WhatsApp, **agenda** (horários livres, marcar, remarcar, confirmar, cancelar), **pacientes e funil**, marketing, vendas, financeiro e gestão. Não faz diagnóstico nem orientação clínica.
+- **Equipe com logins e papéis** — dono, recepção e profissional de saúde (convites por e-mail). Recepção não vê o financeiro; profissional vê agenda, pacientes e tarefas. Regras aplicadas no banco (RLS) e no servidor.
+- **Agenda** — profissionais (com cor), serviços (duração e preço), horário de atendimento e fuso; visão por dia e semana, horários livres, confirmação pelo WhatsApp, sem conflito de horário (garantido pelo banco).
+- **Pacientes (CRM)** — funil (novo, em contato, agendado, compareceu, orçamento, paciente, perdido), follow-ups, origem e próxima consulta; visão em lista e em quadro.
+- **Central de Aprovações** — tudo que é relevante (mensagens, campanhas, lançamentos, vendas, cadastros, exclusões e **mudanças na agenda feitas pela IA**) só acontece depois que alguém autorizado aprova. Cada decisão registra operação, dados, data/hora, resultado e quem decidiu.
+- **WhatsApp Business**, **análise geral**, **análise de site**, Início (com a agenda do dia), Vendas, Financeiro, Tarefas e Notificações — tudo salvo no Supabase.
 
 ## Stack
 
 - React + Vite + TypeScript + Tailwind CSS v4
 - Supabase: Auth, Postgres (com RLS por empresa), Realtime, Storage, Edge Function `api`
-- IA do Agente SCALABLE: Groq (plano gratuito) e, opcionalmente, Claude (Anthropic API)
+- IA da Coraline: Groq (plano gratuito) e, opcionalmente, Claude (Anthropic API)
 
 ## Rodar localmente
 
@@ -86,9 +82,9 @@ Observação: pela regra da Meta, mensagens iniciadas pela empresa (ex.: reativa
 
 ```
 src/                     front-end (páginas em src/pages; conversa em src/pages/Agent.tsx)
-supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp; 0007 = assinaturas; 0008 = Mercado Pago; 0009 = novidades por e-mail; 0010 = segurança)
+supabase/migrations/     esquema do banco (0005 = agente central; 0006 = App Secret do WhatsApp; 0007 = assinaturas; 0008 = Mercado Pago; 0009 = novidades por e-mail; 0010 = segurança; 0011 = clínica: equipe, agenda e funil)
 supabase/functions/api/  Edge Function com as rotas:
-  agente.ts      POST /api/agente       conversa com o Agente SCALABLE
+  agente.ts      POST /api/agente       conversa com a Coraline
   aprovacoes.ts  POST /api/aprovacoes   aprovar/recusar operações
   assinatura.ts  POST /api/assinatura   assinatura pelo Mercado Pago (status, assinar, cobranças, cancelar)
   mp-webhook.ts  POST /api/mp-webhook   avisos do Mercado Pago

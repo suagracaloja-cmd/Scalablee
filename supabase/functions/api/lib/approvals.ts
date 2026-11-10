@@ -1,8 +1,9 @@
-// Central de Aprovações: executa (ou recusa) operações preparadas pelo Agente SCALABLE,
+// Central de Aprovações: executa (ou recusa) operações preparadas pela Coraline,
 // registrando quem decidiu, quando e o resultado.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { getConfig, sendAndLog, sendText } from "./whatsapp.ts";
 import { isoDate, isUuid } from "./util.ts";
+import { executarAgenda } from "./agenda.ts";
 
 export type DecideEnv = {
   db: SupabaseClient; // cliente do usuário (RLS)
@@ -206,13 +207,14 @@ export async function approveApproval(env: DecideEnv, id: string, edits: { text?
       const p = payload;
       const row: Json = { name: p.name, phone: p.phone ?? null, email: p.email ?? null, notes: p.notes ?? null };
       if (p.status) row.status = p.status;
+      for (const k of ["etapa", "proximo_contato", "origem"]) if (p[k]) row[k] = p[k];
       const q = p.id
         ? env.db.from("customers").update(row).eq("company_id", env.companyId).eq("id", String(p.id)).select("id")
         : env.db.from("customers").insert({ ...row, company_id: env.companyId, status: p.status ?? "lead" }).select("id");
       const { data, error } = await q;
-      fail(error, error && /customers_company_phone|duplicate key/.test(error.message) ? "Já existe um cliente com esse telefone." : undefined);
-      if (!data?.length) throw new ApprovalError(404, "Cliente não encontrado (pode ter sido excluído).");
-      result = p.id ? "Cliente atualizado" : "Cliente cadastrado";
+      fail(error, error && /customers_company_phone|duplicate key/.test(error.message) ? "Já existe um paciente com esse telefone." : undefined);
+      if (!data?.length) throw new ApprovalError(404, "Paciente não encontrado (pode ter sido excluído).");
+      result = p.id ? "Paciente atualizado" : "Paciente cadastrado";
       break;
     }
     case "record_delete": {
@@ -224,7 +226,12 @@ export async function approveApproval(env: DecideEnv, id: string, edits: { text?
       break;
     }
     case "action":
-      result = "Aprovado";
+      // Operações da agenda usam o tipo genérico "action" com payload.acao (agenda_marcar / agenda_alterar)
+      try {
+        result = String(payload.acao ?? "").startsWith("agenda_") ? await executarAgenda(env.db, env.companyId, payload) : "Aprovado";
+      } catch (e) {
+        throw new ApprovalError(400, e instanceof Error ? e.message : String(e));
+      }
       break;
     default:
       throw new ApprovalError(400, `Tipo de operação desconhecido: ${ap.kind}`);

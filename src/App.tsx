@@ -1,6 +1,9 @@
+import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
+import type { Papel } from './lib/types'
 import Layout from './components/Layout'
+import { CoralineIcon } from './components/ui'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import Legal from './pages/Legal'
@@ -8,6 +11,8 @@ import Billing from './pages/Billing'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Agent from './pages/Agent'
+import Agenda from './pages/Agenda'
+import Clinica from './pages/Clinica'
 import Sales from './pages/Sales'
 import Customers from './pages/Customers'
 import Finance from './pages/Finance'
@@ -17,12 +22,20 @@ import Approvals from './pages/Approvals'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 
+/** Telas por papel: quem não tem acesso volta para o início (o banco também bloqueia os dados). */
+function So({ papeis, children }: { papeis: Papel[]; children: ReactNode }) {
+  const { papel } = useApp()
+  return papeis.includes(papel) ? <>{children}</> : <Navigate to="/" replace />
+}
+
 function Gate() {
   const { session, loading, company, recovery } = useApp()
   if (loading)
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <img src="/logo-icon.png" className="h-14 w-14 animate-pulse" alt="Carregando" />
+        <div className="animate-pulse" role="status" aria-label="Carregando">
+          <CoralineIcon size={56} />
+        </div>
       </div>
     )
   if (!session) return <Login />
@@ -36,15 +49,18 @@ function Gate() {
         <Route path="agente/:threadId" element={<Agent />} />
         <Route path="assistente" element={<Navigate to="/agente" replace />} />
         <Route path="agentes/*" element={<Navigate to="/agente" replace />} />
-        <Route path="aprovacoes" element={<Approvals />} />
-        <Route path="whatsapp" element={<WhatsApp />} />
-        <Route path="vendas" element={<Sales />} />
+        <Route path="agenda" element={<Agenda />} />
+        <Route path="aprovacoes" element={<So papeis={['dono', 'recepcao']}><Approvals /></So>} />
+        <Route path="whatsapp" element={<So papeis={['dono', 'recepcao']}><WhatsApp /></So>} />
+        <Route path="vendas" element={<So papeis={['dono', 'recepcao']}><Sales /></So>} />
         <Route path="clientes" element={<Customers />} />
-        <Route path="financeiro" element={<Finance />} />
+        <Route path="pacientes" element={<Customers />} />
+        <Route path="financeiro" element={<So papeis={['dono']}><Finance /></So>} />
         <Route path="tarefas" element={<Tasks />} />
         <Route path="notificacoes" element={<Notifications />} />
+        <Route path="clinica" element={<So papeis={['dono']}><Clinica /></So>} />
         <Route path="configuracoes" element={<Settings />} />
-        <Route path="assinatura" element={<Billing />} />
+        <Route path="assinatura" element={<So papeis={['dono']}><Billing /></So>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

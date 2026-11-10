@@ -1,4 +1,4 @@
-// Ferramentas do Agente SCALABLE, organizadas por domínio.
+// Ferramentas da Coraline, organizadas por domínio.
 // Regras:
 //  - Ferramentas de consulta leem dados reais da empresa (sempre filtradas por company_id; o cliente do banco
 //    usado nas conversas é o do próprio usuário, então o RLS também garante o isolamento).
@@ -7,9 +7,11 @@
 //  - Tarefas internas (criar/concluir tarefa) são executadas direto, por serem organização interna.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { addDays, brl, fmtDate, isoDate, norm, pct, resolvePeriod, sum } from "./util.ts";
+import { agendaCfg, agendamentosEntre, agendaTools, local, paraUtc } from "./agenda.ts";
 
 export type Area = "sales" | "marketing" | "finance" | "support" | "management";
-export type ToolCtx = { db: SupabaseClient; companyId: string; threadId?: string | null; today?: Date };
+export type Papel = "dono" | "recepcao" | "profissional";
+export type ToolCtx = { db: SupabaseClient; companyId: string; threadId?: string | null; today?: Date; papel?: Papel };
 type Json = Record<string, unknown>;
 export type Tool = {
   name: string;
@@ -57,9 +59,9 @@ async function sales(ctx: ToolCtx, de: string, ate: string, includeCancelled = f
   return check<SaleRow[]>(await q).map((s) => ({ ...s, amount: Number(s.amount) }));
 }
 
-type CustomerRow = { id: string; name: string; phone: string | null; email: string | null; status: string; notes: string | null; last_contact_at: string | null; created_at: string };
+type CustomerRow = { id: string; name: string; phone: string | null; email: string | null; status: string; notes: string | null; last_contact_at: string | null; created_at: string; etapa?: string; proximo_contato?: string | null; origem?: string | null };
 async function customers(ctx: ToolCtx): Promise<CustomerRow[]> {
-  return check<CustomerRow[]>(await ctx.db.from("customers").select("id,name,phone,email,status,notes,last_contact_at,created_at").eq("company_id", ctx.companyId).limit(5000));
+  return check<CustomerRow[]>(await ctx.db.from("customers").select("id,name,phone,email,status,notes,last_contact_at,created_at,etapa,proximo_contato,origem").eq("company_id", ctx.companyId).limit(5000));
 }
 
 type TxRow = { id: string; type: string; description: string; category: string | null; amount: number; due_date: string; paid_at: string | null };
@@ -118,9 +120,9 @@ async function propose(
   return {
     aprovacao_criada: true,
     aprovacao_id: ap.id,
-    status: "aguardando aprovação do dono",
+    status: "aguardando aprovação",
     titulo: ap.title,
-    observacao: "Nada foi executado. O dono precisa aprovar na Central de Aprovações.",
+    observacao: "Nada foi executado. O dono ou a recepção precisa aprovar na Central de Aprovações.",
     ...(offer ? { atencao: "O texto cita desconto/cupom/brinde que não veio dos dados. Avise o dono para confirmar se a oferta existe." } : {}),
   };
 }
@@ -289,14 +291,14 @@ export const TOOLS: Tool[] = [
     name: "leads_listar",
     area: "sales",
     label: "Consultou leads",
-    description: "Lista os leads cadastrados, indicando os que estão sem contato há 3+ dias (esfriando).",
+    description: "Lista os leads (pacientes em potencial nas etapas novo/em contato), indicando os que estão sem contato há 3+ dias (esfriando) e o próximo contato combinado.",
     input_schema: { type: "object", properties: { somente_frios: { type: "boolean" } } },
     async run(ctx, i) {
       const cust = await customers(ctx);
       const cutoff = addDays(today(ctx), -3).toISOString();
       const leads = cust
-        .filter((c) => c.status === "lead")
-        .map((c) => ({ id: c.id, nome: c.name, telefone: c.phone, email: c.email, observacoes: c.notes, ultimo_contato: c.last_contact_at, criado_em: c.created_at.slice(0, 10), esfriando: (c.last_contact_at ?? c.created_at) < cutoff }))
+        .filter((c) => c.status === "lead" || ["novo", "contato"].includes(c.etapa ?? ""))
+        .map((c) => ({ id: c.id, nome: c.name, telefone: c.phone, email: c.email, etapa: c.etapa, origem: c.origem, proximo_contato: c.proximo_contato, observacoes: c.notes, ultimo_contato: c.last_contact_at, criado_em: c.created_at.slice(0, 10), esfriando: (c.last_contact_at ?? c.created_at) < cutoff }))
         .filter((l) => !i.somente_frios || l.esfriando);
       return { quantidade: leads.length, esfriando: leads.filter((l) => l.esfriando).length, leads: leads.slice(0, 100) };
     },
@@ -305,7 +307,7 @@ export const TOOLS: Tool[] = [
     name: "funil_vendas",
     area: "sales",
     label: "Analisou o funil",
-    description: "Situação do funil comercial com dados reais: clientes por estágio (lead, ativo, VIP, inativo), leads esfriando, clientes que compraram nos últimos 30 dias e vendas aguardando pagamento.",
+    description: "Funil de pacientes com dados reais: quantos estão em cada etapa (novo, em contato, agendado, compareceu, orçamento, fechado, perdido), taxas de conversão entre etapas, follow-ups vencidos, leads esfriando e vendas aguardando pagamento.",
     input_schema: { type: "object", properties: {} },
     async run(ctx) {
       const t = today(ctx);
@@ -314,12 +316,20 @@ export const TOOLS: Tool[] = [
       const buyers = new Set(recent.filter((s) => s.status !== "cancelled" && s.customer_id).map((s) => s.customer_id));
       const cutoff = addDays(t, -3).toISOString();
       const pend = recent.filter((s) => s.status === "pending");
+      const et = (e: string) => cust.filter((c) => (c.etapa ?? "novo") === e).length;
+      const ord = ["novo", "contato", "agendado", "compareceu", "orcamento", "fechado"];
+      const chegou = (e: string) => cust.filter((c) => ord.indexOf(c.etapa ?? "novo") >= ord.indexOf(e)).length;
+      const taxa = (a: string, b: string) => (chegou(a) ? Math.round((chegou(b) / chegou(a)) * 1000) / 10 : null);
+      const hojeStr = isoDate(t);
       return {
+        etapas: { novo: et("novo"), em_contato: et("contato"), agendado: et("agendado"), compareceu: et("compareceu"), orcamento: et("orcamento"), fechado: et("fechado"), perdido: et("perdido") },
+        conversao_pct: { lead_para_agendado: taxa("novo", "agendado"), agendado_para_compareceu: taxa("agendado", "compareceu"), compareceu_para_fechado: taxa("compareceu", "fechado"), geral_lead_para_fechado: taxa("novo", "fechado") },
+        follow_ups_vencidos: cust.filter((c) => c.proximo_contato && c.proximo_contato <= hojeStr && !["fechado", "perdido"].includes(c.etapa ?? "")).map((c) => ({ nome: c.name, proximo_contato: c.proximo_contato, etapa: c.etapa })).slice(0, 30),
         estagios: { leads: by("lead"), ativos: by("active"), vip: by("vip"), inativos: by("inactive"), total: cust.length },
         leads_esfriando: cust.filter((c) => c.status === "lead" && (c.last_contact_at ?? c.created_at) < cutoff).length,
         clientes_que_compraram_30d: buyers.size,
         vendas_aguardando_pagamento_30d: { quantidade: pend.length, total: round(sum(pend)) },
-        observacao: "A plataforma não registra histórico de mudança de estágio; taxas de conversão entre estágios não estão disponíveis.",
+        observacao: "Conversão calculada pela etapa atual de cada paciente (quem está numa etapa passou pelas anteriores); pacientes perdidos não entram nas taxas.",
       };
     },
   },
@@ -677,6 +687,9 @@ export const TOOLS: Tool[] = [
           id: c.id,
           nome: c.name,
           status: c.status,
+          etapa_funil: c.etapa,
+          proximo_contato: c.proximo_contato,
+          origem: c.origem,
           telefone: c.phone,
           email: c.email,
           observacoes: c.notes,
@@ -685,6 +698,7 @@ export const TOOLS: Tool[] = [
           compras: { quantidade: valid.length, total: round(sum(valid)), ultimas: valid.slice(0, 5), pendentes_pagamento: round(sum(valid.filter((x) => x.status === "pending"))) },
           dias_sem_comprar: valid[0] ? Math.round((t.getTime() - Date.parse(valid[0].sold_at + "T12:00:00Z")) / 86400000) : null,
           tarefas_abertas: check<Json[]>(tk),
+          consultas: await consultasDoPaciente(ctx, c.id),
           whatsapp: conv.data ? { conversa_id: (conv.data as Json).id, nao_lidas: (conv.data as Json).unread, ia_pausada: (conv.data as Json).ai_paused, ultimas_mensagens: msgs } : null,
         });
       }
@@ -739,7 +753,7 @@ export const TOOLS: Tool[] = [
       if (!c.phone) throw new Error(`${c.name} não tem telefone cadastrado.`);
       const msg = str(i.mensagem);
       if (!msg) throw new Error("Mensagem vazia.");
-      return propose(ctx, { kind: "whatsapp_outreach", area: "support", title: `Enviar mensagem para ${c.name}`, reason: str(i.motivo) || "Mensagem preparada pelo Agente SCALABLE", payload: { customer_id: c.id, telefone: c.phone, mensagem: msg }, draft: msg, customer_id: String(c.id) });
+      return propose(ctx, { kind: "whatsapp_outreach", area: "support", title: `Enviar mensagem para ${c.name}`, reason: str(i.motivo) || "Mensagem preparada pela Coraline", payload: { customer_id: c.id, telefone: c.phone, mensagem: msg }, draft: msg, customer_id: String(c.id) });
     },
   },
   {
@@ -769,6 +783,9 @@ export const TOOLS: Tool[] = [
         telefone: { type: "string", description: "Com DDD; o código do país 55 é adicionado se faltar" },
         email: { type: "string" },
         status: { type: "string", enum: ["lead", "active", "vip", "inactive"] },
+        etapa: { type: "string", enum: ["novo", "contato", "agendado", "compareceu", "orcamento", "fechado", "perdido"] },
+        proximo_contato: { type: "string", description: "AAAA-MM-DD (follow-up)" },
+        origem: { type: "string", enum: ["whatsapp", "instagram", "indicacao", "site", "google", "outro"] },
         observacoes: { type: "string" },
       },
     },
@@ -777,9 +794,12 @@ export const TOOLS: Tool[] = [
       if (id) await ownRow(ctx, "customers", id);
       let phone = str(i.telefone).replace(/\D/g, "");
       if (phone && phone.length <= 11) phone = "55" + phone;
-      const payload = { id, name: str(i.nome), phone: phone || null, email: str(i.email) || null, status: str(i.status) || (id ? null : "lead"), notes: str(i.observacoes) || null };
+      const payload: Json = { id, name: str(i.nome), phone: phone || null, email: str(i.email) || null, status: str(i.status) || (id ? null : "lead"), notes: str(i.observacoes) || null };
+      if (str(i.etapa)) payload.etapa = str(i.etapa);
+      if (validDate(i.proximo_contato)) payload.proximo_contato = validDate(i.proximo_contato);
+      if (str(i.origem)) payload.origem = str(i.origem);
       if (!payload.name) throw new Error("Informe o nome.");
-      return propose(ctx, { kind: "customer_upsert", area: "support", title: `${id ? "Atualizar" : "Cadastrar"} cliente: ${payload.name}`, reason: [payload.phone && `tel ${payload.phone}`, payload.email, payload.status].filter(Boolean).join(" · "), payload });
+      return propose(ctx, { kind: "customer_upsert", area: "support", title: `${id ? "Atualizar" : "Cadastrar"} paciente: ${payload.name}`, reason: [payload.phone && `tel ${payload.phone}`, payload.email, payload.etapa && `etapa ${payload.etapa}`, payload.proximo_contato && `próximo contato ${payload.proximo_contato}`].filter(Boolean).join(" · "), payload });
     },
   },
 
@@ -819,6 +839,9 @@ export const TOOLS: Tool[] = [
         tarefas: { abertas: tk.length, atrasadas: tk.filter((x) => x.due_date && x.due_date < tStr).length, para_hoje: tk.filter((x) => x.due_date === tStr).length },
         whatsapp_aguardando: check<unknown[]>(conv).length,
         aprovacoes_pendentes: check<unknown[]>(appr).length,
+        agenda: await resumoAgenda(ctx),
+        funil: { novo: cust.filter((x) => (x.etapa ?? "novo") === "novo").length, em_contato: cust.filter((x) => x.etapa === "contato").length, agendado: cust.filter((x) => x.etapa === "agendado").length, fechado: cust.filter((x) => x.etapa === "fechado").length, follow_ups_vencidos: cust.filter((x) => x.proximo_contato && x.proximo_contato <= tStr && !["fechado", "perdido"].includes(x.etapa ?? "")).length },
+        ...(ctx.papel && ctx.papel !== "dono" ? { financeiro: "sem acesso (só o dono da conta vê o financeiro)" } : {}),
       };
     },
   },
@@ -905,7 +928,40 @@ export const TOOLS: Tool[] = [
   },
 ];
 
+TOOLS.push(...(agendaTools(propose as never) as unknown as Tool[]));
+
 export const TOOL_MAP = new Map(TOOLS.map((t) => [t.name, t]));
+
+/** O que cada papel pode usar: dono tudo; recepção sem financeiro; profissional só consulta (pacientes, agenda, tarefas). */
+const SO_LEITURA_PROFISSIONAL = new Set(["cliente_consultar", "indicadores", "tarefas_listar", "tarefa_criar", "tarefa_concluir", "agenda_consultar", "agenda_horarios_livres", "leads_listar", "funil_vendas"]);
+export function toolPermitida(papel: Papel | undefined, t: Tool) {
+  if (!papel || papel === "dono") return true;
+  if (papel === "recepcao") return t.area !== "finance";
+  return SO_LEITURA_PROFISSIONAL.has(t.name);
+}
+
+async function consultasDoPaciente(ctx: ToolCtx, customerId: string) {
+  const { data } = await ctx.db.from("agendamentos").select("inicio,status,tipo").eq("company_id", ctx.companyId).eq("customer_id", customerId).order("inicio", { ascending: false }).limit(10);
+  const cfg = await agendaCfg(ctx.db, ctx.companyId);
+  return ((data as { inicio: string; status: string; tipo: string }[] | null) ?? []).map((a) => {
+    const l = local(new Date(a.inicio), cfg.fuso);
+    return { data: l.data, hora: l.hora, situacao: a.status, tipo: a.tipo };
+  });
+}
+
+async function resumoAgenda(ctx: ToolCtx) {
+  const cfg = await agendaCfg(ctx.db, ctx.companyId);
+  const hoje = local(today(ctx), cfg.fuso).data;
+  const ini = paraUtc(`${hoje} 00:00`, cfg.fuso)!;
+  const ags = await agendamentosEntre(ctx.db, ctx.companyId, ini, new Date(ini.getTime() + 7 * 86400000));
+  const deHoje = ags.filter((a) => a.inicio < new Date(ini.getTime() + 86400000).toISOString());
+  const ativos = (l: typeof ags) => l.filter((a) => ["agendado", "confirmado"].includes(a.status));
+  return {
+    hoje: { total: ativos(deHoje).length, confirmadas: deHoje.filter((a) => a.status === "confirmado").length, a_confirmar: deHoje.filter((a) => a.status === "agendado").length },
+    proximos_7_dias: ativos(ags).length,
+    faltas_e_cancelamentos_7_dias: ags.filter((a) => ["faltou", "cancelado"].includes(a.status)).length,
+  };
+}
 
 /**
  * Roteamento por intenção: identifica as áreas citadas no pedido (palavras-chave, sem acento).
@@ -916,11 +972,11 @@ const AREA_HINTS: Record<Area, RegExp> = {
   sales: /vend|fatur|ticket|produto|mais vendid|lead|funil|oportunidad|proposta|pedido|compr[aoe]|inativ|client/,
   marketing: /marketing|campanha|post|instagram|conteudo|calendario|promo|divulg|anuncio|legenda|reels|stories|tendencia|redes? socia|comemorativ|black friday|natal|publico/,
   finance: /financ|gast|despes|receit|\bcontas?\b|pagar|pago|paguei|receb|caixa|saldo|lucro|lanc|boleto|venc|custo|dinheiro|compar|mes passado|periodo|frete|aluguel|fluxo/,
-  support: /whatsapp|mensag|atendiment|respond|resposta|conversa|e-?mail|client|cadastr|telefone|reclama|contato/,
+  support: /whatsapp|mensag|atendiment|respond|resposta|conversa|e-?mail|client|cadastr|telefone|reclama|contato|agend|agenda|consulta|horario|marcar|remarc|desmarc|retorno|paciente|confirm|falt|profissional|dentist|doutor|dra?\b|procediment|avaliac/,
   management: /tarefa|plano|indicador|relatorio|aprova|exclu|apag|remov|pendencia|resumo|geral|semana|prioridad|\bmetas?\b|organiz|\bacao|acoes/,
 };
 /** Ferramentas sempre disponíveis (visão geral e organização). */
-const CORE = new Set(["indicadores", "tarefa_criar", "cliente_consultar"]);
+const CORE = new Set(["indicadores", "tarefa_criar", "cliente_consultar", "agenda_consultar"]);
 
 export function routeAreas(text: string): Area[] | null {
   const t = norm(text);
@@ -929,8 +985,8 @@ export function routeAreas(text: string): Area[] | null {
 }
 
 /** Definições no formato da API da Anthropic (todas, ou só as das áreas indicadas + as essenciais). */
-export const toolDefinitions = (areas?: Area[] | null) =>
-  TOOLS.filter((t) => !areas || areas.includes(t.area) || CORE.has(t.name)).map((t) => ({
+export const toolDefinitions = (areas?: Area[] | null, papel?: Papel) =>
+  TOOLS.filter((t) => (!areas || areas.includes(t.area) || CORE.has(t.name)) && toolPermitida(papel, t)).map((t) => ({
     name: t.name,
     description: `[${AREA_LABEL[t.area]}] ${t.description}`,
     input_schema: t.input_schema,
@@ -940,6 +996,7 @@ export const toolDefinitions = (areas?: Area[] | null) =>
 export async function runTool(ctx: ToolCtx, name: string, input: Json): Promise<{ ok: boolean; result: unknown; label: string; area: Area | null }> {
   const t = TOOL_MAP.get(name);
   if (!t) return { ok: false, result: { erro: `Ferramenta desconhecida: ${name}` }, label: name, area: null };
+  if (!toolPermitida(ctx.papel, t)) return { ok: false, result: { erro: "Seu perfil na clínica não tem acesso a essa função." }, label: t.label, area: t.area };
   try {
     return { ok: true, result: await t.run(ctx, input ?? {}), label: t.label, area: t.area };
   } catch (e) {

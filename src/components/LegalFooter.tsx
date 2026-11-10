@@ -8,7 +8,7 @@ export const LEGAL_LINKS = [
   { to: '/reembolso', label: 'Cancelamento e Reembolso' },
 ]
 
-/** Rodapé com os documentos legais e a identificação da Scalable (usado em todas as telas). */
+/** Rodapé com os documentos legais e a identificação da Coraline AI (usado em todas as telas). */
 export function LegalFooter({ className = '' }: { className?: string }) {
   return (
     <footer className={`text-center text-xs text-muted ${className}`}>

@@ -4,7 +4,7 @@ import { HttpError } from "./util.ts";
 // CORS e cabeçalhos de segurança são aplicados a TODAS as respostas em index.ts (securityHeaders).
 export const cors: Record<string, string> = {};
 
-/** Sites que podem chamar a API pelo navegador (o próprio site da Scalable). Ajustável com ALLOWED_ORIGINS. */
+/** Sites que podem chamar a API pelo navegador (o próprio site da Coraline AI). Ajustável com ALLOWED_ORIGINS. */
 export function allowedOrigins(): string[] {
   const env = Deno.env.get("ALLOWED_ORIGINS");
   const list = env ? env.split(",") : ["https://scalablee.vercel.app", "http://localhost:5173", "http://127.0.0.1:5173"];
@@ -55,7 +55,8 @@ export async function rateLimit(db: SupabaseClient, chave: string, max: number, 
   if (data === false) throw new HttpError(429, "Muitas solicitações seguidas. Aguarde um pouco e tente de novo.");
 }
 
-type Limite = { limite?: [max: number, janelaSeg: number] };
+export type Papel = "dono" | "recepcao" | "profissional";
+type Limite = { limite?: [max: number, janelaSeg: number]; papeis?: Papel[] };
 const rotaDe = (req: Request) => new URL(req.url).pathname.split("/").filter(Boolean).pop() ?? "api";
 
 export function admin(): SupabaseClient {
@@ -85,19 +86,29 @@ export type AuthUser = { id: string; email: string | null };
  * - db: cliente administrativo (usar sempre filtrando por company.id)
  * - userDb: cliente com o token do próprio usuário — o RLS do banco garante o isolamento entre empresas
  */
-export async function requireCompany(req: Request, opts: Limite = {}): Promise<{ db: SupabaseClient; userDb: SupabaseClient; company: Company; user: AuthUser }> {
+export async function requireCompany(req: Request, opts: Limite = {}): Promise<{ db: SupabaseClient; userDb: SupabaseClient; company: Company; user: AuthUser; papel: Papel }> {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const db = admin();
   const { data: userData, error } = await db.auth.getUser(token);
   if (error || !userData.user) throw new HttpError(401, "Sessão inválida. Faça login novamente.");
   if (opts.limite) await rateLimit(db, `${rotaDe(req)}:${userData.user.id}`, ...opts.limite);
-  const { data: company } = await db.from("companies").select("*").eq("owner_id", userData.user.id).maybeSingle();
-  if (!company) throw new HttpError(404, "Cadastre sua empresa primeiro.");
+  // Dono da clínica ou membro da equipe (recepção / profissional)
+  let papel: Papel = "dono";
+  let { data: company } = await db.from("companies").select("*").eq("owner_id", userData.user.id).maybeSingle();
+  if (!company) {
+    const { data: m } = await db.from("membros").select("company_id,papel").eq("user_id", userData.user.id).maybeSingle();
+    if (m) {
+      papel = m.papel as Papel;
+      ({ data: company } = await db.from("companies").select("*").eq("id", m.company_id).maybeSingle());
+    }
+  }
+  if (!company) throw new HttpError(404, "Cadastre sua clínica primeiro.");
+  if (opts.papeis && !opts.papeis.includes(papel)) throw new HttpError(403, "Seu perfil na clínica não tem acesso a esta função. Fale com o dono da conta.");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
   const userDb = anon
     ? createClient(Deno.env.get("SUPABASE_URL")!, anon, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false } })
     : db;
-  return { db, userDb, company: company as Company, user: { id: userData.user.id, email: userData.user.email ?? null } };
+  return { db, userDb, company: company as Company, user: { id: userData.user.id, email: userData.user.email ?? null }, papel };
 }
 
 /** Usuário logado e o id da empresa dele (se já tiver cadastrado uma). */

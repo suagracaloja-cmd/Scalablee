@@ -6,9 +6,17 @@ import { isUuid, lerJson, textoOpcional } from "./lib/util.ts";
 
 export default (
   handle(async (req) => {
-    const { db, userDb, company, user } = await requireCompany(req, { limite: [30, 60] });
+    const { db, userDb, company, user, papel } = await requireCompany(req, { limite: [30, 60], papeis: ["dono", "recepcao"] });
     const body = await lerJson(req);
     const action = body.action as string;
+
+    if ((action === "connect" || action === "disconnect") && papel !== "dono") throw new HttpError(403, "Só o dono da conta conecta ou desconecta o WhatsApp.");
+
+    if (action === "disconnect") {
+      const { error } = await db.from("whatsapp_configs").delete().eq("company_id", company.id);
+      if (error) throw new HttpError(500, "Não foi possível desconectar agora. Tente de novo.");
+      return json({ ok: true });
+    }
 
     if (action === "connect") {
       const phone_number_id = textoOpcional(body.phone_number_id, "Phone Number ID", 32) ?? "";

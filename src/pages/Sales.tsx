@@ -87,7 +87,7 @@ export default function Sales() {
       <Reveal i={5} className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 lg:max-w-sm">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-          <input maxLength={100} className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none focus:ring-4 focus:ring-brand/10" placeholder="Buscar produto ou cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input maxLength={100} className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none focus:ring-4 focus:ring-brand/10" placeholder="Buscar serviço ou paciente…" aria-label="Buscar venda" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {(['all', 'paid', 'pending', 'cancelled'] as const).map((st) => (
@@ -196,7 +196,7 @@ export default function Sales() {
             </div>
             <Field label="Cliente (opcional)">
               <select className="input" value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })}>
-                <option value="">— Sem cliente —</option>
+                <option value="">— Sem paciente —</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}

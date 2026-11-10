@@ -131,7 +131,7 @@ export default function Layout() {
         <header className="sticky top-0 z-30 hidden items-center gap-3 bg-bg/80 px-8 py-5 backdrop-blur-md md:flex">
           <form onSubmit={search} className="reveal relative w-full max-w-sm">
             <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-            <input className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar paciente…" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
           <span className="reveal hidden rounded-full bg-panel px-4 py-2.5 text-sm font-semibold lg:inline" style={{ '--d': '60ms' } as React.CSSProperties}>
             {today}

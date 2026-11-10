@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock, MessageCircle, Pencil, Plus, Sparkles, UserX, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import { cfgDe, dataLonga, DIAS_CURTO, erroAgenda, horariosLivres, hojeLocal, inicioSemana, linkWhatsApp, local, paraUtc, somaDias } from '../lib/agenda'
+import { cfgDe, dataLonga, DIAS_CURTO, maiuscula, erroAgenda, horariosLivres, hojeLocal, inicioSemana, linkWhatsApp, local, paraUtc, somaDias } from '../lib/agenda'
 import { STATUS_AGENDA, TIPO_AGENDA, type Agendamento, type Customer, type Profissional, type Servico, type StatusAgenda } from '../lib/types'
 import { brl } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
@@ -228,7 +228,7 @@ export default function Agenda() {
             <ChevronRight size={18} />
           </button>
           <div className="ml-1 min-w-0">
-            <div className="truncate font-bold capitalize">{modo === 'dia' ? dataLonga(data) : `Semana de ${dataLonga(deData).split(', ')[1]}`}</div>
+            <div className="truncate font-bold">{modo === 'dia' ? maiuscula(dataLonga(data)) : `Semana de ${dataLonga(deData).split(', ')[1]}`}</div>
             {modo === 'dia' && (
               <div className="text-xs text-muted">
                 {resumo.total} consulta(s) · {resumo.aConfirmar} a confirmar · {resumo.confirmadas} confirmada(s)

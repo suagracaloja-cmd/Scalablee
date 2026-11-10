@@ -150,7 +150,7 @@ export default function WhatsApp() {
             {!status.connected && (
               <div className="m-3 rounded-2xl bg-amber-50 p-3 text-xs text-amber-600">Finalize a configuração do webhook na Meta para começar a receber mensagens.</div>
             )}
-            {convs.length === 0 && <Empty icon={<MessageCircle size={22} />} title="Nenhuma conversa ainda" text="Quando um cliente mandar mensagem, ela aparece aqui." />}
+            {convs.length === 0 && <Empty icon={<MessageCircle size={22} />} title="Nenhuma conversa ainda" text="Quando um paciente mandar mensagem, ela aparece aqui." />}
             {convs.map((c) => (
               <button key={c.id} onClick={() => setActive(c)} className={`flex w-full items-center gap-3 border-b border-line/60 px-4 py-3 text-left hover:bg-panel-2 ${active?.id === c.id ? 'bg-panel-2' : ''}`}>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 font-semibold text-emerald-600">{(c.contact_name ?? '?')[0]?.toUpperCase()}</div>

@@ -30,6 +30,8 @@ export function dataLonga(data: string) {
   const d = new Date(data + 'T12:00:00Z')
   return `${DIAS_LONGO[d.getUTCDay()]}, ${d.getUTCDate()} de ${MESES[d.getUTCMonth()]}`
 }
+/** Primeira letra maiúscula (sem mexer no resto: "Terça, 10 de novembro"). */
+export const maiuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
 
 const ATIVOS = ['agendado', 'confirmado']
 

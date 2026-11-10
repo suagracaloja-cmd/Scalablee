@@ -126,7 +126,14 @@ Na tela **Assinatura**, o cliente pode clicar em **Assinar grátis** para recebe
 5. **Não apague** o segredo `scalable_chave_dados` em **Project Settings → Vault**: sem ele os tokens do WhatsApp salvos não podem ser lidos.
 6. Se alguma chave (Groq, Mercado Pago, Meta) for exposta, gere outra no serviço e troque em **Edge Functions → Secrets**.
 
-## 10. Recomendados (não bloqueiam)
+## 10. Clínica: equipe, agenda e funil
+
+- **Primeiros passos do dono:** menu **Clínica e equipe** → cadastre os **profissionais** (com cor), os **serviços** (duração e preço) e o **horário de atendimento** (dias, horas, intervalo e fuso). Sem isso a agenda funciona como "agenda geral", sem duração de serviço.
+- **Equipe:** em **Clínica e equipe → Equipe**, crie o convite com o e-mail e o papel (recepção ou profissional). A pessoa cria a conta no site com o mesmo e-mail e entra na clínica sozinha. **Depende do item 1 (e-mails):** sem o SMTP configurado, a pessoa não recebe o e-mail de confirmação da conta.
+- **O que cada papel vê:** recepção — agenda, pacientes, WhatsApp, vendas, aprovações e tarefas (sem financeiro). Profissional — agenda, pacientes e tarefas. Só o dono vê financeiro, assinatura e as configurações da clínica. As regras valem no banco de dados, não só na tela.
+- **Dados de saúde:** pacientes e consultas podem revelar dados de saúde (dados sensíveis na LGPD). Use as **observações** só para o necessário até o prontuário (próxima etapa), que terá acesso restrito a profissionais.
+
+## 11. Recomendados (não bloqueiam)
 
 - **Domínio próprio** (ex.: registro.br) apontado para a Vercel.
 - Supabase → Authentication → **proteção contra senhas vazadas** (disponível em planos pagos).

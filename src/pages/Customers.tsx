@@ -249,9 +249,11 @@ export default function Customers() {
                     <button className="rounded-full p-1.5 hover:bg-panel-2" onClick={() => abrir(c)} aria-label={`Editar ${c.name}`} title="Editar">
                       <Pencil size={14} />
                     </button>
-                    <button className="rounded-full p-1.5 hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(c)} aria-label={`Excluir ${c.name}`} title="Excluir">
-                      <Trash2 size={14} />
-                    </button>
+                    {papel !== 'profissional' && (
+                      <button className="rounded-full p-1.5 hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(c)} aria-label={`Excluir ${c.name}`} title="Excluir">
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </Reveal>

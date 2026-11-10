@@ -174,22 +174,25 @@ create index if not exists agendamentos_customer on public.agendamentos(customer
 alter table public.companies add column if not exists agenda_config jsonb not null
   default '{"dias":[1,2,3,4,5],"inicio":"08:00","fim":"18:00","intervalo_min":30,"fuso":"-03:00"}'::jsonb;
 
+-- Regras: a equipe vê; profissionais e serviços só o dono cadastra/altera; a agenda toda a equipe usa.
+-- Ninguém exclui pelo site: profissional e serviço viram "inativo"; consulta vira "cancelada".
 do $$
 declare t text;
 begin
   foreach t in array array['profissionais', 'servicos', 'agendamentos'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon', t);
-    execute format('create policy "company rows" on public.%I for all to authenticated using (company_id = (select public.my_company_id())) with check (company_id = (select public.my_company_id()))', t);
+    execute format('create policy "equipe ve" on public.%I for select to authenticated using (company_id = (select public.my_company_id()))', t);
+  end loop;
+  foreach t in array array['profissionais', 'servicos'] loop
+    execute format('create policy "dono cadastra" on public.%I for insert to authenticated with check (company_id = (select public.my_company_id()) and (select public.meu_papel()) = ''dono'')', t);
+    execute format('create policy "dono altera" on public.%I for update to authenticated using (company_id = (select public.my_company_id()) and (select public.meu_papel()) = ''dono'') with check (company_id = (select public.my_company_id()) and (select public.meu_papel()) = ''dono'')', t);
   end loop;
 end $$;
--- Profissionais e serviços: só o dono cadastra/altera (a equipe só consulta)
-alter policy "company rows" on public.profissionais
-  using (company_id = (select public.my_company_id()))
-  with check (company_id = (select public.my_company_id()) and (select public.meu_papel()) = 'dono');
-alter policy "company rows" on public.servicos
-  using (company_id = (select public.my_company_id()))
-  with check (company_id = (select public.my_company_id()) and (select public.meu_papel()) = 'dono');
+create policy "equipe marca" on public.agendamentos for insert to authenticated
+  with check (company_id = (select public.my_company_id()));
+create policy "equipe altera" on public.agendamentos for update to authenticated
+  using (company_id = (select public.my_company_id())) with check (company_id = (select public.my_company_id()));
 
 -- 3) FUNIL DE PACIENTES ---------------------------------------------------------------------------
 alter table public.customers add column if not exists etapa text not null default 'novo'

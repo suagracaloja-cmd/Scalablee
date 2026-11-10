@@ -10,7 +10,7 @@ import { AgentMark, AreaChip, Spinner } from '../components/ui'
 import { Markdown } from '../components/Markdown'
 import ApprovalCard from '../components/ApprovalCard'
 
-const THINKING = ['Entendendo o pedido…', 'Consultando os dados da empresa…', 'Analisando os resultados…', 'Escrevendo a resposta…']
+const THINKING = ['Entendendo o pedido…', 'Consultando os dados da clínica…', 'Analisando os resultados…', 'Escrevendo a resposta…']
 
 export default function Agent() {
   const { threadId } = useParams()
@@ -198,7 +198,7 @@ export default function Agent() {
               <div className="reveal-up flex flex-col items-center text-center">
                 <AgentMark size={56} rounded="rounded-[20px]" />
                 <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-[28px]">Como posso ajudar {company?.name ? `a ${company.name}` : ''} hoje?</h1>
-                <p className="mt-1.5 max-w-md text-sm text-muted">Sou a {AGENT_NAME}: vendas, marketing, financeiro, atendimento e gestão em uma única conversa, com os dados reais da sua empresa.</p>
+                <p className="mt-1.5 max-w-md text-sm text-muted">Sou a {AGENT_NAME}: atendimento, agenda, pacientes, marketing, vendas, financeiro e gestão em uma única conversa, com os dados reais da sua clínica.</p>
               </div>
               <div className="reveal-up mt-7" style={{ '--d': '80ms' } as React.CSSProperties}>
                 <Composer onSend={send} busy={busy} autoFocus big />
@@ -261,7 +261,7 @@ export default function Agent() {
           <div className="border-t border-line bg-panel px-3 pb-3 pt-3 sm:px-6">
             <div className="mx-auto max-w-3xl">
               <Composer onSend={send} busy={busy} />
-              <p className="mt-1.5 text-center text-[10px] text-muted">O {AGENT_NAME} usa os dados da sua empresa. Envios, lançamentos e exclusões só acontecem após a sua aprovação.</p>
+              <p className="mt-1.5 text-center text-[10px] text-muted">A {AGENT_NAME} usa os dados da clínica. Envios, lançamentos e exclusões só acontecem após a sua aprovação.</p>
             </div>
           </div>
         )}
@@ -349,7 +349,7 @@ function Composer({ onSend, busy, autoFocus = false, big = false }: { onSend: (q
         autoFocus={autoFocus}
         maxLength={8000}
         className={`max-h-56 min-h-[40px] flex-1 resize-none bg-transparent py-2 text-[15px] outline-none placeholder:text-muted ${big ? 'min-h-[52px]' : ''}`}
-        placeholder={`Pergunte ou peça algo ao ${AGENT_NAME}…`}
+        placeholder={`Pergunte ou peça algo à ${AGENT_NAME}…`}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {

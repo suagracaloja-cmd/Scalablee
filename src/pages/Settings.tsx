@@ -49,7 +49,7 @@ export default function Settings() {
     api<{ used: number; limit: number; providers: string[] }>('uso').then(setUso).catch(() => setUso(null))
   }, [])
 
-  /** Portabilidade (LGPD): baixa todos os dados da empresa num arquivo JSON. */
+  /** Portabilidade (LGPD): baixa os dados da clínica num arquivo JSON. */
   async function exportData() {
     setExporting(true)
     try {
@@ -141,7 +141,7 @@ export default function Settings() {
         {dono && (<>
         <Reveal i={1} className="card p-5">
           <form onSubmit={save} className="space-y-3">
-            <Field label="Nome da empresa">
+            <Field label="Nome da clínica">
               <input maxLength={120} className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
             </Field>
             <Field label="Segmento">
@@ -301,7 +301,7 @@ export default function Settings() {
             <ShieldCheck size={18} /> Privacidade e dados
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Seus dados pertencem à sua empresa. Baixe uma cópia completa quando quiser ou exclua a conta.
+            Os dados pertencem à clínica. Baixe uma cópia completa quando quiser ou exclua a conta.
           </p>
           <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
             {LEGAL_LINKS.map((l) => (

@@ -61,7 +61,7 @@ export default function Notifications() {
       </Reveal>
       {shown.length === 0 ? (
         <Reveal i={2} className="card">
-          <Empty icon={<Bell size={26} />} title="Nenhuma notificação" text={`Vá ao Dashboard e clique em "Rodar análise" para a ${AGENT_NAME} analisar sua empresa.`} />
+          <Empty icon={<Bell size={26} />} title="Nenhuma notificação" text={`Vá ao Início e clique em "Rodar análise" para a ${AGENT_NAME} analisar sua clínica.`} />
         </Reveal>
       ) : (
         <div className="space-y-3">

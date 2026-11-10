@@ -5,7 +5,7 @@ import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval, Customer, Insight, Sale, Task, Transaction } from '../lib/types'
 import { addDays, brl, brlShort, fmtDate, relativeDay, timeAgo, toISO, today } from '../lib/format'
-import { AgentMark, AreaChip, LogoIcon, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
+import { AgentMark, Ajusta, AreaChip, LogoIcon, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
 import { DONUT_COLORS, Donut, DualBars, LineChart } from '../components/LineChart'
 import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
 import { HojeNaAgenda } from '../components/HojeNaAgenda'
@@ -174,12 +174,13 @@ export default function Dashboard() {
           </h1>
           <p className="mt-1 text-sm text-muted">Veja o que está acontecendo na sua clínica.</p>
         </div>
-        <div className="flex gap-2">
-          <Link to="/agente" className="btn-ghost flex-1 sm:flex-none">
-            <Sparkles size={16} className="text-brand-dark" /> Falar com a Coraline AI
+        <div className="flex flex-wrap gap-2">
+          <Link to="/agente" className="btn-ghost flex-1 px-4 sm:flex-none sm:px-5">
+            <Sparkles size={16} className="text-brand-dark" /> <span className="sm:hidden">{AGENT_NAME}</span>
+            <span className="hidden sm:inline">Falar com a {AGENT_NAME}</span>
           </Link>
           {dono && (
-            <button className="btn-primary flex-1 sm:flex-none" onClick={runAgents} disabled={running}>
+            <button className="btn-primary flex-1 px-4 sm:flex-none sm:px-5" onClick={runAgents} disabled={running}>
               {running ? <Spinner /> : <Play size={15} fill="currentColor" />} {running ? 'Analisando…' : 'Rodar análise'}
             </button>
           )}
@@ -196,7 +197,7 @@ export default function Dashboard() {
       <>
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <Reveal i={1} className="relative col-span-2 overflow-hidden rounded-[26px] bg-brand p-5 text-white shadow-[0_18px_40px_-18px_rgba(72,168,252,0.9)] sm:col-span-1 sm:p-6">
+        <Reveal i={1} className="relative col-span-2 min-w-0 overflow-hidden rounded-[26px] bg-brand p-5 text-white shadow-[0_18px_40px_-18px_rgba(72,168,252,0.9)] sm:col-span-1 sm:p-6">
           <LogoIcon flat size={128} className="pointer-events-none absolute -bottom-6 -right-4 rotate-12 opacity-[0.13]" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-2.5 text-sm font-semibold">
@@ -209,7 +210,7 @@ export default function Dashboard() {
               <ArrowUpRight size={17} />
             </Link>
           </div>
-          <div className="relative mt-5 text-[30px] font-bold leading-none tracking-tight sm:text-[34px]">{ready ? <Money value={m.revenue} delay={250} /> : <span className="opacity-60">R$ —</span>}</div>
+          <Ajusta className="relative mt-5 py-0.5 text-[30px] font-bold leading-none tracking-tight sm:text-[34px]">{ready ? <Money value={m.revenue} delay={250} /> : <span className="opacity-60">R$ —</span>}</Ajusta>
           <div className="relative mt-4 flex items-center gap-2 text-xs text-white/80">
             <Delta value={m.revenueDelta} onDark /> vs mês passado
           </div>
@@ -521,21 +522,24 @@ export default function Dashboard() {
 }
 
 function Kpi({ i, icon, label, value, delta, sub, to, ready, wide }: { i: number; icon: ReactNode; label: string; value: ReactNode; delta: ReactNode; sub: ReactNode; to: string; ready: boolean; wide?: boolean }) {
+  // O cartão inteiro abre a tela (fica fácil tocar no celular); a seta é só um sinal visual
   return (
-    <Reveal i={i} className={`card p-4 sm:p-6 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
-          <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-panel-2 sm:flex">{icon}</span>
-          <span className="truncate">{label}</span>
+    <Reveal i={i} className={`card transition hover:shadow-[0_14px_34px_-20px_rgba(40,90,180,0.45)] ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
+      <Link to={to} className="block rounded-[26px] p-4 outline-none focus-visible:ring-4 focus-visible:ring-brand/30 sm:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2 text-xs font-semibold min-[360px]:text-[13px] sm:text-sm">
+            <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-panel-2 sm:flex">{icon}</span>
+            <span className="truncate">{label}</span>
+          </div>
+          <span aria-hidden="true" className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line min-[360px]:flex sm:h-9 sm:w-9">
+            <ArrowUpRight size={15} />
+          </span>
         </div>
-        <Link to={to} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line hover:bg-panel-2 sm:h-9 sm:w-9">
-          <ArrowUpRight size={16} />
-        </Link>
-      </div>
-      <div className="mt-4 truncate text-[22px] font-bold leading-none tracking-tight sm:mt-5 sm:text-[30px]">{ready ? value : <div className="skeleton h-8 w-28" />}</div>
-      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted sm:mt-4">
-        {delta} <span>{sub}</span>
-      </div>
+        {ready ? <Ajusta className="mt-4 py-0.5 text-[22px] font-bold leading-none tracking-tight sm:mt-5 sm:text-[30px]">{value}</Ajusta> : <div className="skeleton mt-4 h-8 w-28 sm:mt-5" />}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted sm:mt-4">
+          {delta} <span>{sub}</span>
+        </div>
+      </Link>
     </Reveal>
   )
 }

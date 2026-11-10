@@ -204,9 +204,9 @@ export default function Settings() {
             </button>
             {uso && (
               <div className="rounded-2xl bg-panel-2 p-3 text-xs text-muted">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <span>
-                    IA em uso: <b className="text-ink">{uso.providers.length ? uso.providers.map((p) => (p === 'groq' ? 'Groq (gratuita)' : 'Claude (Anthropic)')).join(' → ') : 'nenhuma (modo básico)'}</b>
+                    {AGENT_NAME}: <b className="text-ink">{uso.providers.length ? 'ativa' : 'modo básico'}</b>
                   </span>
                   {uso.limit > 0 && (
                     <span>

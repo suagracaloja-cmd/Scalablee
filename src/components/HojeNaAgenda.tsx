@@ -50,13 +50,17 @@ export function HojeNaAgenda({ i = 1 }: { i?: number }) {
       {linhas && linhas.length > 0 && (
         <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {linhas.slice(0, 6).map((a) => (
-            <li key={a.id} className="flex items-center gap-3 rounded-2xl bg-panel-2 px-3 py-2.5" style={{ borderLeft: `4px solid ${a.prof?.cor ?? '#94a3b8'}` }}>
+            <li key={a.id} className="flex min-w-0 items-center gap-3 rounded-2xl bg-panel-2 px-3 py-2.5" style={{ borderLeft: `4px solid ${a.prof?.cor ?? '#94a3b8'}` }}>
               <span className="w-12 shrink-0 text-sm font-bold">{local(a.inicio, cfg.fuso).hora}</span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold">{a.paciente ?? 'Sem paciente'}</span>
-                <span className="block truncate text-[11px] text-muted">{a.prof?.nome ?? 'Agenda geral'}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-[11px] text-muted">{a.prof?.nome ?? 'Agenda geral'}</span>
+                  {/* No celular o status fica embaixo do nome, para o nome aparecer inteiro */}
+                  <span className={`chip px-2 py-0.5 text-[10px] min-[420px]:hidden ${STATUS_AGENDA[a.status].cls}`}>{STATUS_AGENDA[a.status].label}</span>
+                </span>
               </span>
-              <span className={`chip ${STATUS_AGENDA[a.status].cls}`}>{STATUS_AGENDA[a.status].label}</span>
+              <span className={`chip max-[419px]:hidden ${STATUS_AGENDA[a.status].cls}`}>{STATUS_AGENDA[a.status].label}</span>
             </li>
           ))}
         </ul>

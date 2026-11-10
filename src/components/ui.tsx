@@ -1,8 +1,40 @@
-import { useEffect, type CSSProperties, type ReactNode, useId } from 'react'
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode, useId } from 'react'
 import { ArrowDownRight, ArrowUpRight, X } from 'lucide-react'
 import { areaOf } from '../lib/areas'
 import { useCountUp } from '../hooks/useCountUp'
 import { brl } from '../lib/format'
+
+/**
+ * Uma linha que nunca corta nem vaza: se o conteúdo (ex.: R$ 1.667.690,00) não couber na largura,
+ * a letra diminui só o necessário (até `min` px). O tamanho máximo vem das classes de texto.
+ */
+export function Ajusta({ children, className = '', min = 12 }: { children: ReactNode; className?: string; min?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ajustar = () => {
+      el.style.fontSize = ''
+      if (el.scrollWidth <= el.clientWidth + 0.5) return
+      const base = parseFloat(getComputedStyle(el).fontSize)
+      el.style.fontSize = `${Math.max(min, Math.floor(base * (el.clientWidth / el.scrollWidth) * 10) / 10)}px`
+    }
+    ajustar()
+    const ro = new ResizeObserver(ajustar)
+    ro.observe(el)
+    const mo = new MutationObserver(ajustar)
+    mo.observe(el, { childList: true, subtree: true, characterData: true })
+    return () => {
+      ro.disconnect()
+      mo.disconnect()
+    }
+  }, [min])
+  return (
+    <div ref={ref} className={`overflow-hidden whitespace-nowrap ${className}`}>
+      {children}
+    </div>
+  )
+}
 
 /** Faz o conteúdo aparecer da esquerda para a direita, em sequência (índice i). */
 export function Reveal({ i = 0, children, className = '', up = false, step = 80, onClick }: { i?: number; children: ReactNode; className?: string; up?: boolean; step?: number; onClick?: () => void }) {

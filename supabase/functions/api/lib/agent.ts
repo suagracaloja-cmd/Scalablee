@@ -234,10 +234,10 @@ export function parseJSON<T>(text: string): T | null {
 /** Mensagem amigável para falhas do provedor de IA. */
 export function friendlyAIError(err: string) {
   const e = err.toLowerCase();
-  // Erros da Groq vêm primeiro na cadeia (ela é a IA principal quando configurada)
-  if (e.includes("groq 429") || (e.includes("groq") && e.includes("rate_limit"))) return "o limite gratuito da IA (Groq) acabou por agora — ela volta a responder sozinha quando a cota renovar";
-  if (e.includes("groq 401") || e.includes("groq 403")) return "a chave da Groq foi recusada";
-  if (e.includes("credit") || e.includes("billing") || e.includes("balance")) return "a conta da Anthropic está sem créditos";
+  // A mensagem vai para a tela da clínica: sem nomes de fornecedores (os detalhes ficam só no registro do servidor)
+  if (e.includes("groq 429") || (e.includes("groq") && e.includes("rate_limit"))) return "o limite de uso da IA acabou por agora — ela volta a responder sozinha quando a cota renovar";
+  if (e.includes("groq 401") || e.includes("groq 403")) return "a chave da IA foi recusada";
+  if (e.includes("credit") || e.includes("billing") || e.includes("balance")) return "a IA está sem créditos no momento";
   if (e.includes("api-key") || e.includes("api key") || e.includes("authentication") || e.includes("401")) return "a chave da IA foi recusada";
   if (e.includes("rate") || e.includes("429") || e.includes("overloaded") || e.includes("529")) return "a IA está sobrecarregada, tente em instantes";
   return "falha temporária na IA";

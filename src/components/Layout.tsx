@@ -84,7 +84,7 @@ export default function Layout() {
   const navCls = (to: string) => `flex h-11 w-11 items-center justify-center rounded-full transition ${isActive(to) ? 'nav-ativo' : 'glass text-slate-500 hover:text-ink'}`
 
   return (
-    <div className="min-h-screen md:flex">
+    <div className="min-h-screen overflow-x-clip md:flex">
       {/* Trilho lateral (computador) */}
       <aside className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center py-6 md:flex">
         <NavLink to="/" className="reveal mb-8" aria-label="Scalable — início">
@@ -166,11 +166,11 @@ export default function Layout() {
         </header>
 
         {/* Topo (celular): logo à esquerda e só o menu (três linhas) à direita */}
-        <header className="sticky top-0 z-30 flex items-center justify-between px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-[#eef4fd]/85 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
           <NavLink to="/" className="flex min-w-0 items-center gap-2.5" aria-label="Scalable — início">
             <Logo size={38} word={false} />
             <div className="min-w-0 leading-tight">
-              <div className="text-[11px] text-muted">Olá 👋</div>
+              <div className="text-[11px] text-muted">Olá</div>
               <div className="truncate text-[15px] font-bold">{company?.name}</div>
             </div>
           </NavLink>

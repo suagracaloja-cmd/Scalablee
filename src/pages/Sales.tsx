@@ -98,7 +98,7 @@ export default function Sales() {
         </div>
         <div className="flex gap-1 rounded-full bg-panel p-1 lg:ml-auto">
           {PERIODS.map((p) => (
-            <button key={p.v} onClick={() => setPeriod(p.v)} className={`h-8 flex-1 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${period === p.v ? 'bg-ink text-white' : 'text-muted'}`}>
+            <button key={p.v} onClick={() => setPeriod(p.v)} className={`h-8 flex-1 whitespace-nowrap rounded-full px-2 text-xs min-[380px]:px-3 font-semibold ${period === p.v ? 'bg-ink text-white' : 'text-muted'}`}>
               {p.l}
             </button>
           ))}

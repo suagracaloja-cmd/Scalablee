@@ -13,35 +13,18 @@ export function Reveal({ i = 0, children, className = '', up = false, step = 80,
   )
 }
 
-/** Símbolo da Coraline AI: um "C" com uma faísca (a IA), em vetor. */
-export function CoralineIcon({ size = 40, flat = false, className = '' }: { size?: number; flat?: boolean; className?: string }) {
-  const id = useId().replace(/:/g, '')
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" className={`shrink-0 ${className}`} aria-hidden="true">
-      {!flat && (
-        <>
-          <defs>
-            <linearGradient id={`cg${id}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#6cc0ff" />
-              <stop offset="1" stopColor="#2f7fe6" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="14" fill={`url(#cg${id})`} />
-        </>
-      )}
-      <path d="M32.2 16.4A11 11 0 1 0 32.2 31.6" fill="none" stroke="#fff" strokeWidth="4.6" strokeLinecap="round" />
-      <path d="M35.6 18.6l1.25 3.05 3.05 1.25-3.05 1.25-1.25 3.05-1.25-3.05-3.05-1.25 3.05-1.25z" fill="#fff" />
-    </svg>
-  )
+/** Símbolo da marca (o mesmo de sempre). flat = só o desenho branco, para fundos coloridos. */
+export function LogoIcon({ size = 40, flat = false, className = '' }: { size?: number; flat?: boolean; className?: string }) {
+  return <img src={flat ? '/logo-mark-white.png' : '/logo-icon.png'} alt="" aria-hidden="true" style={{ width: size, height: flat ? 'auto' : size }} className={`shrink-0 ${className}`} />
 }
 
 export function Logo({ size = 40, word = true, light = false }: { size?: number; word?: boolean; light?: boolean }) {
   return (
     <div className="flex items-center gap-2.5" role="img" aria-label="Coraline AI">
-      <CoralineIcon size={size} />
+      <LogoIcon size={size} />
       {word && (
         <span className={`font-extrabold leading-none tracking-tight ${light ? 'text-white' : 'text-ink'}`} style={{ fontSize: size * 0.52 }}>
-          Coraline <span className={light ? 'text-white/70' : 'text-brand-dark'}>AI</span>
+          Coraline AI
         </span>
       )}
     </div>
@@ -63,8 +46,8 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 /** Identidade da Coraline, a assistente de IA (símbolo da marca). */
 export function AgentMark({ size = 36, rounded = 'rounded-2xl', className = '' }: { size?: number; rounded?: string; className?: string }) {
   return (
-    <div className={`flex shrink-0 items-center justify-center bg-gradient-to-br from-[#6cc0ff] to-[#2f7fe6] ${rounded} ${className}`} style={{ width: size, height: size }} role="img" aria-label="Coraline">
-      <CoralineIcon size={size * 0.92} flat />
+    <div className={`flex shrink-0 items-center justify-center bg-brand ${rounded} ${className}`} style={{ width: size, height: size }} role="img" aria-label="Coraline">
+      <LogoIcon size={size * 0.56} flat />
     </div>
   )
 }

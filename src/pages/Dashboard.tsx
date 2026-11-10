@@ -5,7 +5,7 @@ import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval, Customer, Insight, Sale, Task, Transaction } from '../lib/types'
 import { addDays, brl, brlShort, fmtDate, relativeDay, timeAgo, toISO, today } from '../lib/format'
-import { AgentMark, AreaChip, CoralineIcon, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
+import { AgentMark, AreaChip, LogoIcon, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
 import { DONUT_COLORS, Donut, DualBars, LineChart } from '../components/LineChart'
 import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
 import { HojeNaAgenda } from '../components/HojeNaAgenda'
@@ -197,7 +197,7 @@ export default function Dashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Reveal i={1} className="relative col-span-2 overflow-hidden rounded-[26px] bg-brand p-5 text-white shadow-[0_18px_40px_-18px_rgba(72,168,252,0.9)] sm:col-span-1 sm:p-6">
-          <CoralineIcon flat size={128} className="pointer-events-none absolute -bottom-6 -right-4 rotate-12 opacity-[0.13]" />
+          <LogoIcon flat size={128} className="pointer-events-none absolute -bottom-6 -right-4 rotate-12 opacity-[0.13]" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-2.5 text-sm font-semibold">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
@@ -309,7 +309,7 @@ export default function Dashboard() {
       <Reveal i={7} className="card mt-4 overflow-hidden">
         <div className="grid lg:grid-cols-[1.1fr_1fr]">
           <div className="relative overflow-hidden bg-graphite p-6 text-white sm:p-7">
-            <CoralineIcon flat size={176} className="pointer-events-none absolute -bottom-10 -right-6 rotate-12 opacity-[0.07]" />
+            <LogoIcon flat size={176} className="pointer-events-none absolute -bottom-10 -right-6 rotate-12 opacity-[0.07]" />
             <div className="relative flex items-center gap-3">
               <AgentMark size={44} rounded="rounded-2xl" />
               <div>

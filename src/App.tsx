@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
 import type { Papel } from './lib/types'
 import Layout from './components/Layout'
-import { CoralineIcon } from './components/ui'
+import { LogoIcon } from './components/ui'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import Legal from './pages/Legal'
@@ -34,7 +34,7 @@ function Gate() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse" role="status" aria-label="Carregando">
-          <CoralineIcon size={56} />
+          <LogoIcon size={56} />
         </div>
       </div>
     )

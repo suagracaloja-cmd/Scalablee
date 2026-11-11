@@ -133,7 +133,13 @@ Na tela **Assinatura**, o cliente pode clicar em **Assinar grátis** para recebe
 - **O que cada papel vê:** recepção — agenda, pacientes, WhatsApp, vendas, aprovações e tarefas (sem financeiro). Profissional — agenda, pacientes e tarefas. Só o dono vê financeiro, assinatura e as configurações da clínica. As regras valem no banco de dados, não só na tela.
 - **Dados de saúde:** pacientes e consultas podem revelar dados de saúde (dados sensíveis na LGPD). Use as **observações** só para o necessário até o prontuário (próxima etapa), que terá acesso restrito a profissionais.
 
-## 11. Recomendados (não bloqueiam)
+## 11. E-mails de confirmação e de senha
+
+- Os modelos com a marca da Scalable, em português, estão em `supabase/email-templates/` (passo a passo no `LEIA-ME.md` da pasta). Precisam ser colados em Supabase → Authentication → Emails → Templates.
+- **Antes de lançar:** confira em Authentication → Emails → **SMTP Settings** se há SMTP próprio. Pela documentação do Supabase, o envio padrão só entrega para e-mails de membros da organização e tem limite baixo por hora: clientes de verdade podem não receber a confirmação.
+- Em Authentication → **URL Configuration**: Site URL = `https://scalablee.vercel.app` e, em Redirect URLs, `https://scalablee.vercel.app/**`.
+
+## 12. Recomendados (não bloqueiam)
 
 - **Domínio próprio** (ex.: registro.br) apontado para a Vercel.
 - Supabase → Authentication → **proteção contra senhas vazadas** (disponível em planos pagos).

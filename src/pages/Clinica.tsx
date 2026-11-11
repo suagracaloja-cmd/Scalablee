@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Clock, Mail, Pencil, Plus, Stethoscope, Tag, Trash2, Users } from 'lucide-react'
+import { Clock, Mail, Pencil, Plus, ShieldCheck, Stethoscope, Tag, Trash2, Users } from 'lucide-react'
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { cfgDe, DIAS_LONGO } from '../lib/agenda'
+import { ACAO_ACESSO, type AcessoProntuario } from '../lib/prontuario'
 import { PAPEL_LABEL, type AgendaConfig, type Convite, type Membro, type Profissional, type Servico } from '../lib/types'
 import { brl, fmtDate } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
@@ -12,6 +13,7 @@ const ABAS = [
   { id: 'profissionais', label: 'Profissionais', icon: Stethoscope },
   { id: 'servicos', label: 'Serviços', icon: Tag },
   { id: 'horarios', label: 'Horários', icon: Clock },
+  { id: 'acessos', label: 'Acessos ao prontuário', icon: ShieldCheck },
 ] as const
 type Aba = (typeof ABAS)[number]['id']
 const CORES = ['#48a8fc', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#ef4444', '#64748b']
@@ -35,6 +37,7 @@ export default function Clinica() {
       {aba === 'profissionais' && <Profissionais />}
       {aba === 'servicos' && <Servicos />}
       {aba === 'horarios' && <Horarios />}
+      {aba === 'acessos' && <Acessos />}
     </div>
   )
 }
@@ -455,6 +458,53 @@ function Horarios() {
           {busy && <Spinner />} Salvar horários
         </button>
       </form>
+    </Reveal>
+  )
+}
+
+/** Registro de acessos ao prontuário (quem abriu ou gravou, e quando). Só o dono vê. */
+function Acessos() {
+  const [linhas, setLinhas] = useState<AcessoProntuario[] | null>(null)
+  const [erro, setErro] = useState('')
+  useEffect(() => {
+    supabase.rpc('prontuario_auditoria', { p_limit: 200 }).then(({ data, error }) => {
+      if (error) setErro(error.message)
+      else setLinhas((data ?? []) as AcessoProntuario[])
+    })
+  }, [])
+  const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return (
+    <Reveal i={1} className="card p-5 sm:p-6">
+      <h2 className="font-semibold">Quem acessou os prontuários</h2>
+      <p className="mt-1 text-sm text-muted">Dados de saúde são sensíveis. Aqui fica o registro de quem abriu o prontuário de um paciente ou gravou nele, com data e hora (os 200 mais recentes). O registro não pode ser alterado.</p>
+      {erro ? (
+        <p className="mt-4 text-sm text-rose-700" role="alert">
+          {erro}
+        </p>
+      ) : linhas === null ? (
+        <div className="py-6">
+          <Spinner />
+        </div>
+      ) : linhas.length === 0 ? (
+        <Empty icon={<ShieldCheck size={24} />} title="Nenhum acesso registrado" text="Quando alguém abrir um prontuário, aparece aqui." />
+      ) : (
+        <ul className="mt-4 divide-y divide-line">
+          {linhas.map((l) => (
+            <li key={l.id} className="py-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <span className="min-w-0 break-words text-sm font-semibold">
+                  {l.user_nome} <span className="font-normal text-muted">({PAPEL_LABEL[l.papel as keyof typeof PAPEL_LABEL] ?? l.papel})</span>
+                </span>
+                <span className="text-xs text-muted">{quando(l.criado_em)}</span>
+              </div>
+              <div className="text-sm text-muted">
+                {ACAO_ACESSO[l.acao]}
+                {l.customer_id ? ` · ${l.paciente ?? 'paciente removido'}` : ''}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </Reveal>
   )
 }

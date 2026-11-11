@@ -2,7 +2,7 @@
 //
 // DADOS DO RESPONSÁVEL — preencha só com dados reais informados pelo dono (nada aqui deve ser inventado).
 // Enquanto um campo estiver vazio, as páginas omitem esse dado.
-export const LEGAL_VERSION = '2026-11-10'
+export const LEGAL_VERSION = '2026-11-11'
 export const EMPRESA = 'Scalable'
 /** Nome completo (pessoa física) ou razão social (empresa) de quem responde pela Scalable. */
 export const RESPONSAVEL = ''
@@ -64,6 +64,8 @@ Uma plataforma online de gestão para clínicas e consultórios: atendimento pel
 ### 5. Dados dos pacientes
 Os dados que a clínica cadastra sobre os pacientes pertencem à clínica. A clínica é a **controladora** desses dados e deve ter uma base legal para tratá-los (LGPD). Dados de saúde são **dados pessoais sensíveis** (LGPD, art. 11) e exigem cuidado redobrado: a clínica deve respeitar o sigilo profissional e as normas do conselho de cada profissional, e dar acesso a esses dados só a quem precisa. A ${EMPRESA} atua como **operadora**, tratando-os só para prestar o serviço, conforme a Política de Privacidade.
 
+O **prontuário digital** (anamnese e evolução dos atendimentos) é de responsabilidade da clínica e dos profissionais: o conteúdo, a guarda e o prazo de guarda seguem a lei e as normas do conselho profissional (a ${EMPRESA} não define esses prazos). Na plataforma, os registros do prontuário não podem ser alterados nem apagados; correções são feitas com novas versões ou complementos. Ao excluir a conta, o prontuário é apagado junto, por isso a clínica deve exportar uma cópia e confirmar os prazos de guarda antes.
+
 ### 6. Uso permitido
 É proibido usar a plataforma para atividades ilegais, envio de spam, conteúdo ofensivo ou enganoso, tentar acessar dados de outras empresas, copiar ou fazer engenharia reversa do sistema, ou sobrecarregá-lo de propósito.
 
@@ -107,6 +109,7 @@ Esta Política explica como a **${identificacao}** trata dados pessoais, conform
 - **Clínica:** nome, tipo, descrição, site, Instagram, horário de atendimento, profissionais, serviços e instruções dadas à Coraline AI.
 - **Equipe:** nome, e-mail e papel (recepção ou profissional) de quem o dono convida, e os convites enviados.
 - **Dados que a clínica insere:** pacientes (nome, CPF, telefone, e-mail, data de nascimento, como conheceu a clínica, etapa no funil, próximo contato, observações), consultas (data, horário, serviço, profissional, situação, observações), atendimentos (o que foi feito, tipo, valor, data, forma e situação do pagamento), lançamentos financeiros e tarefas. Informações de consultas e atendimentos podem revelar dados de saúde, que são **dados sensíveis**. O CPF não é enviado aos provedores de inteligência artificial.
+- **Prontuário digital:** anamnese (queixa principal, histórico médico, medicamentos, alergias, cirurgias anteriores, hábitos, gestante ou lactante) e evolução dos atendimentos (o que foi observado e feito, conduta e orientações). São **dados de saúde**, sensíveis. Só o dono da conta e os profissionais da clínica abrem o prontuário; cada acesso é registrado (quem, quando e qual paciente) e o dono pode consultar esse registro. O conteúdo do prontuário **não é enviado** aos provedores de inteligência artificial.
 - **Conversas e aprovações:** perguntas feitas à Coraline AI, respostas e o registro de cada aprovação (o quê, quando e por quem).
 - **WhatsApp (se conectado):** mensagens trocadas com os pacientes e as credenciais da Meta, guardadas criptografadas e só no servidor.
 - **Novidades por e-mail (só se você assinar):** o e-mail da conta, a data, o texto e a versão do aceite e, se cancelar, a data do cancelamento.

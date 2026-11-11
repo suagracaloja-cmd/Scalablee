@@ -15,6 +15,7 @@ import Agenda from './pages/Agenda'
 import Clinica from './pages/Clinica'
 import Atendimentos from './pages/Atendimentos'
 import Customers from './pages/Customers'
+import Prontuario from './pages/Prontuario'
 import Finance from './pages/Finance'
 import Tasks from './pages/Tasks'
 import WhatsApp from './pages/WhatsApp'
@@ -56,6 +57,7 @@ function Gate() {
         <Route path="vendas" element={<Navigate to="/atendimentos" replace />} />
         <Route path="clientes" element={<Customers />} />
         <Route path="pacientes" element={<Customers />} />
+        <Route path="pacientes/:id" element={<So papeis={['dono', 'profissional']}><Prontuario /></So>} />
         <Route path="financeiro" element={<So papeis={['dono']}><Finance /></So>} />
         <Route path="tarefas" element={<Tasks />} />
         <Route path="notificacoes" element={<Notifications />} />

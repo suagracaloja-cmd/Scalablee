@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { BellRing, Columns3, List, MessageCircle, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { BellRing, Columns3, HeartPulse, List, MessageCircle, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { ETAPAS, etapaInfo, ORIGENS, type Customer, type Etapa } from '../lib/types'
@@ -26,6 +26,7 @@ export default function Customers() {
   const [editId, setEditId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const veVendas = papel !== 'profissional'
+  const veProntuario = papel === 'dono' || papel === 'profissional'
 
   const load = async () => {
     const [c, s, a] = await Promise.all([
@@ -99,7 +100,9 @@ export default function Customers() {
   }
   async function remove(c: Customer) {
     if (!confirm(`Excluir ${c.name}? As consultas dele continuam na agenda, sem o nome.`)) return
-    await supabase.from('customers').delete().eq('id', c.id)
+    const { error } = await supabase.from('customers').delete().eq('id', c.id)
+    // Quem tem prontuário não pode ser excluído (o prontuário precisa ser guardado)
+    if (error) return toast(error.code === '23503' || /foreign key/i.test(error.message) ? `${c.name} tem prontuário e não pode ser excluído. Para tirar da lista de ativos, mude a situação para "Inativo".` : error.message, 'err')
     load()
   }
   async function touch(c: Customer) {
@@ -252,6 +255,11 @@ export default function Customers() {
                 <div className="mt-3 flex items-center justify-between text-xs text-muted">
                   <span>{c.last_contact_at ? `Contato ${timeAgo(c.last_contact_at)}` : 'Sem contato registrado'}</span>
                   <div className="flex gap-1">
+                    {veProntuario && (
+                      <Link to={`/pacientes/${c.id}`} className="rounded-full p-1.5 text-brand-dark hover:bg-panel-2" title="Abrir o prontuário" aria-label={`Abrir o prontuário de ${c.name}`}>
+                        <HeartPulse size={15} />
+                      </Link>
+                    )}
                     {c.phone && (
                       <a href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer" onClick={() => touch(c)} className="rounded-full p-1.5 text-emerald-600 hover:bg-panel-2" title="Abrir no WhatsApp" aria-label={`Abrir conversa com ${c.name} no WhatsApp`}>
                         <MessageCircle size={15} />
@@ -332,7 +340,7 @@ export default function Customers() {
                 <option value="inactive">Inativo</option>
               </select>
             </Field>
-            <Field label="Observações (não coloque dados clínicos aqui — o prontuário chega na próxima etapa)">
+            <Field label="Observações administrativas (dados clínicos vão no prontuário, não aqui)">
               <textarea maxLength={5000} className="input min-h-20" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </Field>
             <button className="btn-primary w-full" disabled={busy}>

@@ -65,6 +65,12 @@ export default function Settings() {
         }
         out[t] = rows
       }
+      // Prontuário (dados de saúde): só o dono exporta; o acesso fica registrado
+      if (dono) {
+        const { data, error } = await supabase.rpc('prontuario_exportar')
+        if (error) throw new Error(`prontuário: ${error.message}`)
+        out.prontuario = data
+      }
       const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -324,7 +330,7 @@ export default function Settings() {
         <p className="text-sm text-muted">
           {dono ? (
             <>
-              Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da clínica: pacientes, agenda, atendimentos, financeiro, tarefas, conversas, aprovações, a equipe e a conexão do WhatsApp. Não dá para desfazer. Se quiser, exporte seus dados antes.
+              Isso apaga <b className="text-ink">definitivamente</b> a sua conta e todos os dados da clínica: pacientes, <b className="text-ink">prontuários</b>, agenda, atendimentos, financeiro, tarefas, conversas, aprovações, a equipe e a conexão do WhatsApp. Não dá para desfazer. Exporte seus dados antes. E, como a guarda de prontuários pode ser uma obrigação da clínica, confirme com o seu conselho profissional ou advogado por quanto tempo eles devem ser guardados antes de excluir.
             </>
           ) : (
             <>

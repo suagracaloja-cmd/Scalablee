@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { BellRing, CalendarDays, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { avisoConfirmacao, supabase } from '../lib/supabase'
 import { LEGAL_VERSION } from '../lib/legal'
 import { Logo, Reveal, Spinner } from '../components/ui'
 import { LegalFooter } from '../components/LegalFooter'
@@ -13,13 +13,21 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
+  const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(
+    avisoConfirmacao.pendente
+      ? { t: 'ok', m: 'E-mail confirmado! Agora é só entrar com o seu e-mail e a sua senha.' }
+      : avisoConfirmacao.erro
+        ? { t: 'err', m: 'Esse link expirou ou já foi usado. Se você já confirmou o e-mail, é só entrar com o e-mail e a senha.' }
+        : null,
+  )
   const [accepted, setAccepted] = useState(false)
   const [captcha, setCaptcha] = useState<string | null>(null)
   const [rodada, setRodada] = useState(0)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    avisoConfirmacao.pendente = false
+    avisoConfirmacao.erro = false
     setMsg(null)
     if (CAPTCHA_ATIVO && !captcha) return setMsg({ t: 'err', m: 'Confirme que você não é um robô.' })
     const captchaToken = captcha ?? undefined
@@ -35,7 +43,7 @@ export default function Login() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { captchaToken, emailRedirectTo: window.location.origin, data: { terms_accepted_at: new Date().toISOString(), terms_version: LEGAL_VERSION } },
+          options: { captchaToken, emailRedirectTo: `${window.location.origin}/?email=confirmado`, data: { terms_accepted_at: new Date().toISOString(), terms_version: LEGAL_VERSION } },
         })
         if (error) throw error
         if (!data.session) setMsg({ t: 'ok', m: 'Conta criada! Confirme pelo link enviado ao seu e-mail e depois faça login.' })

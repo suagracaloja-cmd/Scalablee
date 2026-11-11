@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { api, OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
+import { api, avisoConfirmacao, OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
 import type { BillingView, Company, Papel } from './types'
 
 type Counts = { insights: number; approvals: number; conversations: number }
@@ -63,11 +63,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    // Voltou do link de confirmação do e-mail: o cadastro está confirmado, mas a pessoa entra pela tela de login
+    const limparEndereco = () => window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+    if (avisoConfirmacao.pendente || avisoConfirmacao.erro) limparEndereco()
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      if (!data.session) setLoading(false)
+      const confirmando = avisoConfirmacao.pendente && !!data.session
+      setSession(confirmando ? null : data.session)
+      if (!data.session || confirmando) setLoading(false)
+      if (confirmando) supabase.auth.signOut()
     })
     const { data: sub } = supabase.auth.onAuthStateChange((e, s) => {
+      if (avisoConfirmacao.pendente && s && (e === 'SIGNED_IN' || e === 'INITIAL_SESSION')) return // a sessão da confirmação não entra no app
       if (e === 'PASSWORD_RECOVERY') setRecovery(true)
       setSession(s)
       if (!s) {

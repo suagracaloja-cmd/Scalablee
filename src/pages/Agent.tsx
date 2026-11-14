@@ -9,6 +9,7 @@ import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
 import { AgentMark, AreaChip, Spinner } from '../components/ui'
 import { Markdown } from '../components/Markdown'
 import ApprovalCard from '../components/ApprovalCard'
+import { useConfirmar } from '../components/Confirmar'
 
 const THINKING = ['Entendendo o pedido…', 'Consultando os dados da clínica…', 'Analisando os resultados…', 'Escrevendo a resposta…']
 
@@ -17,6 +18,7 @@ export default function Agent() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const { company, toast } = useApp()
+  const confirmar = useConfirmar()
   const [threads, setThreads] = useState<Thread[]>([])
   const [msgs, setMsgs] = useState<AgentMessage[]>([])
   const [approvals, setApprovals] = useState<Approval[]>([])
@@ -107,7 +109,7 @@ export default function Agent() {
     loadThreads()
   }
   async function remove(t: Thread) {
-    if (!confirm(`Apagar a conversa "${t.title}"? As mensagens serão removidas (as aprovações continuam registradas).`)) return
+    if (!(await confirmar({ titulo: 'Apagar esta conversa?', texto: `"${t.title}": as mensagens são removidas. As aprovações continuam registradas.`, botao: 'Apagar conversa' }))) return
     await supabase.from('agent_threads').delete().eq('id', t.id)
     if (t.id === threadId) navigate('/agente', { replace: true })
     loadThreads()

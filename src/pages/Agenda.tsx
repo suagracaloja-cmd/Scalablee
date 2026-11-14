@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock, MessageCircle, Pencil, Plus, Sparkles, UserX, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock, MessageCircle, Pencil, Plus, Sparkles, Trash2, UserX, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { cfgDe, dataLonga, DIAS_CURTO, maiuscula, erroAgenda, horariosLivres, hojeLocal, inicioSemana, linkWhatsApp, local, paraUtc, somaDias } from '../lib/agenda'
 import { STATUS_AGENDA, TIPO_AGENDA, type Agendamento, type Customer, type Profissional, type Servico, type StatusAgenda } from '../lib/types'
 import { brl } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { useConfirmar } from '../components/Confirmar'
+import { erroTelefone, lerTelefone } from '../lib/telefone'
 
 type Pac = Pick<Customer, 'id' | 'name' | 'phone' | 'etapa'>
 type Form = {
@@ -24,6 +26,10 @@ type Form = {
 
 export default function Agenda() {
   const { company, papel, toast } = useApp()
+  const confirmar = useConfirmar()
+  const podeExcluir = papel === 'dono' || papel === 'recepcao'
+  /** Só sai da agenda a consulta cancelada ou a que ficou sem paciente; as outras são canceladas. */
+  const excluivel = (a: Agendamento) => a.status === 'cancelado' || !a.customer_id
   const cfg = cfgDe(company)
   const [modo, setModo] = useState<'dia' | 'semana'>('dia')
   const [data, setData] = useState(() => hojeLocal(cfg.fuso))
@@ -141,9 +147,9 @@ export default function Agenda() {
       if (!customerId) {
         const nome = form.pacienteTexto.trim()
         if (!nome) throw new Error('Informe o paciente.')
-        let tel = form.telefoneNovo.replace(/\D/g, '')
-        if (tel && tel.length <= 11) tel = '55' + tel
-        const { data: criado, error } = await supabase.from('customers').insert({ company_id: company.id, name: nome, phone: tel || null, status: 'lead', etapa: 'agendado' }).select('id').single()
+        const tel = lerTelefone(form.telefoneNovo)
+        if ('erro' in tel) throw new Error(tel.erro)
+        const { data: criado, error } = await supabase.from('customers').insert({ company_id: company.id, name: nome, phone: tel.valor, status: 'lead', etapa: 'agendado' }).select('id').single()
         if (error) throw new Error(error.message.includes('customers_company_phone') ? 'Já existe um paciente com esse telefone. Escolha-o na lista.' : error.message)
         customerId = criado.id
       }
@@ -178,7 +184,7 @@ export default function Agenda() {
   }
 
   async function mudarStatus(a: Agendamento, status: StatusAgenda) {
-    if (status === 'cancelado' && !confirm('Cancelar esta consulta? O horário fica livre.')) return
+    if (status === 'cancelado' && !(await confirmar({ titulo: 'Cancelar esta consulta?', texto: `${pacDe(a.customer_id)?.name ?? 'Consulta sem paciente'} — ${dataLonga(local(a.inicio, cfg.fuso).data)} às ${local(a.inicio, cfg.fuso).hora}. O horário fica livre.`, botao: 'Cancelar consulta' }))) return
     const { error } = await supabase
       .from('agendamentos')
       .update({ status, atualizado_em: new Date().toISOString(), ...(status === 'confirmado' ? { confirmado_em: new Date().toISOString() } : {}) })
@@ -186,6 +192,22 @@ export default function Agenda() {
     if (error) return toast(erroAgenda(error.message), 'err')
     if (status === 'realizado' && a.customer_id) await supabase.from('customers').update({ etapa: 'compareceu' }).eq('id', a.customer_id).in('etapa', ['novo', 'contato', 'agendado'])
     toast(`Consulta: ${STATUS_AGENDA[status].label.toLowerCase()}`)
+    load()
+  }
+
+  async function excluir(a: Agendamento) {
+    const ini = local(a.inicio, cfg.fuso)
+    const ok = await confirmar({
+      titulo: 'Excluir esta consulta da agenda?',
+      texto: `${pacDe(a.customer_id)?.name ?? 'Consulta sem paciente'} — ${dataLonga(ini.data)} às ${ini.hora}. Ela sai da agenda e não dá para desfazer.`,
+      botao: 'Excluir consulta',
+    })
+    if (!ok) return
+    const { error, count } = await supabase.from('agendamentos').delete({ count: 'exact' }).eq('id', a.id)
+    if (error) return toast(/foreign key/i.test(error.message) ? 'Esta consulta está ligada a um registro do prontuário e não pode ser excluída.' : erroAgenda(error.message), 'err')
+    if (!count) return toast('Só dá para excluir consultas canceladas ou sem paciente. Cancele a consulta antes.', 'err')
+    toast('Consulta excluída da agenda')
+    setForm(null)
     load()
   }
 
@@ -275,7 +297,7 @@ export default function Agenda() {
           ) : (
             <ul className="space-y-2.5">
               {doDia(data).map((a) => (
-                <CartaoConsulta key={a.id} a={a} fuso={cfg.fuso} pac={pacDe(a.customer_id)} prof={profDe(a.profissional_id)} serv={servDe(a.servico_id)} clinica={company?.name ?? ''} onStatus={mudarStatus} onEditar={editar} />
+                <CartaoConsulta key={a.id} a={a} fuso={cfg.fuso} pac={pacDe(a.customer_id)} prof={profDe(a.profissional_id)} serv={servDe(a.servico_id)} clinica={company?.name ?? ''} onStatus={mudarStatus} onEditar={editar} onExcluir={podeExcluir && excluivel(a) ? excluir : undefined} />
               ))}
             </ul>
           )}
@@ -338,7 +360,8 @@ export default function Agenda() {
             </Field>
             {!form.pacienteId && form.pacienteTexto.trim() && (
               <Field label="WhatsApp do paciente novo (com DDD)">
-                <input className="input" inputMode="tel" maxLength={40} value={form.telefoneNovo} onChange={(e) => setForm({ ...form, telefoneNovo: e.target.value })} placeholder="11 99999-9999" />
+                <input className={`input ${erroTelefone(form.telefoneNovo) ? 'border-rose-400 focus:border-rose-400' : ''}`} type="tel" inputMode="tel" maxLength={40} value={form.telefoneNovo} onChange={(e) => setForm({ ...form, telefoneNovo: e.target.value })} placeholder="11 99999-9999" aria-invalid={!!erroTelefone(form.telefoneNovo)} />
+                {erroTelefone(form.telefoneNovo) && <span className="mt-1 block text-xs font-medium text-rose-600">{erroTelefone(form.telefoneNovo)}</span>}
               </Field>
             )}
             <div className="grid gap-3 sm:grid-cols-2">
@@ -398,6 +421,14 @@ export default function Agenda() {
             <button className="btn-primary w-full" disabled={busy}>
               {busy && <Spinner />} {form.id ? 'Salvar alterações' : 'Marcar consulta'}
             </button>
+            {(() => {
+              const atual = form.id ? ags.find((x) => x.id === form.id) : undefined
+              return atual && podeExcluir && excluivel(atual) ? (
+                <button type="button" className="btn-danger w-full" onClick={() => excluir(atual)}>
+                  <Trash2 size={15} /> Excluir consulta da agenda
+                </button>
+              ) : null
+            })()}
           </form>
         )}
       </Modal>
@@ -416,6 +447,7 @@ function CartaoConsulta({
   clinica,
   onStatus,
   onEditar,
+  onExcluir,
 }: {
   a: Agendamento
   fuso: string
@@ -425,6 +457,7 @@ function CartaoConsulta({
   clinica: string
   onStatus: (a: Agendamento, s: StatusAgenda) => void
   onEditar: (a: Agendamento) => void
+  onExcluir?: (a: Agendamento) => void
 }) {
   const ini = local(a.inicio, fuso)
   const st = STATUS_AGENDA[a.status]
@@ -478,6 +511,11 @@ function CartaoConsulta({
         <button className="icon-btn h-9 w-9" onClick={() => onEditar(a)} title="Editar ou remarcar" aria-label="Editar ou remarcar">
           <Pencil size={14} />
         </button>
+        {onExcluir && (
+          <button className="icon-btn h-9 w-9 hover:text-rose-600" onClick={() => onExcluir(a)} title="Excluir da agenda" aria-label="Excluir consulta da agenda">
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
     </li>
   )

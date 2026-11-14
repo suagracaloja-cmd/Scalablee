@@ -1,7 +1,7 @@
 // Agenda da clínica: horários livres, consultas do período e preparo de marcação/alteração
 // (marcar e alterar passam pela Central de Aprovações, como as outras operações da Coraline AI).
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
-import { norm } from "./util.ts";
+import { norm, telefoneBR } from "./util.ts";
 
 type Json = Record<string, unknown>;
 export type AgendaCfg = { dias: number[]; inicio: string; fim: string; intervalo_min: number; fuso: string };
@@ -260,8 +260,7 @@ export function agendaTools(propose: Propose) {
         if (!prof && ativos.length > 1) throw new Error(`Informe o profissional: ${ativos.map((p) => p.nome).join(", ")}.`);
         const pac = achar(pacs, i.paciente, (p) => p.name, "Paciente");
         const novoNome = str(i.paciente_novo_nome);
-        let novoTel = str(i.paciente_novo_telefone).replace(/\D/g, "");
-        if (novoTel && novoTel.length <= 11) novoTel = "55" + novoTel;
+        const novoTel = telefoneBR(i.paciente_novo_telefone);
         if (!pac && !novoNome) throw new Error("Informe o paciente (cadastrado) ou o nome e telefone do paciente novo.");
         const inicio = paraUtc(str(i.inicio), cfg.fuso);
         if (!inicio) throw new Error("Informe o início como AAAA-MM-DD HH:MM.");

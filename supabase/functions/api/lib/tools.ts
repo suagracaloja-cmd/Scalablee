@@ -6,7 +6,7 @@
 //    NÃO executam: apenas criam um pedido na Central de Aprovações.
 //  - Tarefas internas (criar/concluir tarefa) são executadas direto, por serem organização interna.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
-import { addDays, brl, fmtDate, isoDate, norm, pct, resolvePeriod, sum } from "./util.ts";
+import { addDays, brl, fmtDate, isoDate, norm, pct, resolvePeriod, sum, telefoneBR } from "./util.ts";
 import { agendaCfg, agendamentosEntre, agendaTools, local, paraUtc } from "./agenda.ts";
 
 export type Area = "sales" | "marketing" | "finance" | "support" | "management";
@@ -350,7 +350,8 @@ export const TOOLS: Tool[] = [
         status: { type: "string", enum: ["paid", "pending"] },
         tipo: { type: "string", enum: ["consulta", "retorno", "exame", "procedimento", "cirurgia", "outro"] },
         forma_pagamento: { type: "string", enum: ["pix", "credito", "debito", "dinheiro", "boleto", "transferencia", "outro"] },
-        cliente_id: { type: "string", description: "id do paciente (opcional, use cliente_consultar para achar)" },
+        paciente: { type: "string", description: "Nome do paciente atendido (sempre que souber). O atendimento fica ligado ao cadastro dele." },
+        cliente_id: { type: "string", description: "id do paciente, se já tiver (alternativa ao nome)" },
       },
     },
     async run(ctx, i) {
@@ -358,7 +359,20 @@ export const TOOLS: Tool[] = [
       const valor = num(i.valor);
       if (!descricao || !(valor >= 0)) throw new Error("Informe descrição e valor válidos.");
       let cliente: string | null = null;
-      if (str(i.cliente_id)) cliente = String((await ownRow(ctx, "customers", str(i.cliente_id), "id,name")).name);
+      let clienteId: string | null = null;
+      if (str(i.cliente_id)) {
+        cliente = String((await ownRow(ctx, "customers", str(i.cliente_id), "id,name")).name);
+        clienteId = str(i.cliente_id);
+      } else if (str(i.paciente)) {
+        const n = norm(str(i.paciente));
+        const todos = await customers(ctx);
+        const exatos = todos.filter((c) => norm(c.name) === n);
+        const achados = exatos.length ? exatos : todos.filter((c) => norm(c.name).includes(n));
+        if (!achados.length) throw new Error(`Paciente "${str(i.paciente)}" não encontrado. Cadastre o paciente antes (cliente_salvar_preparar) ou confirme o nome.`);
+        if (achados.length > 1) throw new Error(`Mais de um paciente com esse nome: ${achados.slice(0, 5).map((c) => c.name).join(", ")}. Diga qual.`);
+        cliente = achados[0].name;
+        clienteId = achados[0].id;
+      }
       const TIPOS = ["consulta", "retorno", "exame", "procedimento", "cirurgia", "outro"];
       const FORMAS = ["pix", "credito", "debito", "dinheiro", "boleto", "transferencia", "outro"];
       const payload = {
@@ -366,11 +380,15 @@ export const TOOLS: Tool[] = [
         amount: valor,
         sold_at: validDate(i.data) ?? isoDate(today(ctx)),
         status: i.status === "pending" ? "pending" : "paid",
-        customer_id: str(i.cliente_id) || null,
+        customer_id: clienteId,
+        paciente_nome: cliente,
         tipo: TIPOS.includes(str(i.tipo)) ? str(i.tipo) : null,
         forma_pagamento: FORMAS.includes(str(i.forma_pagamento)) ? str(i.forma_pagamento) : null,
       };
-      return propose(ctx, { kind: "sale_create", area: "sales", title: `Registrar atendimento: ${descricao} (${brl(valor)})`, reason: `Atendimento ${payload.status === "paid" ? "pago" : "a receber"} em ${fmtDate(payload.sold_at)}${cliente ? ` de ${cliente}` : ""}`, payload });
+      const reason = cliente
+        ? `Atendimento ${payload.status === "paid" ? "pago" : "a receber"} em ${fmtDate(payload.sold_at)} de ${cliente}`
+        : `⚠️ Sem paciente ligado: o valor não entra no total de nenhum paciente. Atendimento ${payload.status === "paid" ? "pago" : "a receber"} em ${fmtDate(payload.sold_at)}.`;
+      return propose(ctx, { kind: "sale_create", area: "sales", title: `Registrar atendimento: ${descricao} (${brl(valor)})`, reason, payload });
     },
   },
 
@@ -500,7 +518,8 @@ export const TOOLS: Tool[] = [
     async run(ctx, i) {
       const t = today(ctx);
       const { atual, anterior } = resolvePeriod(str(i.periodo) || undefined, validDate(i.de) ?? undefined, validDate(i.ate) ?? undefined, t);
-      const [txs, sCur, sPrev] = await Promise.all([transactions(ctx), sales(ctx, atual.de, atual.ate), sales(ctx, anterior.de, anterior.ate)]);
+      const [txs, sCur, sPrev, sTodas] = await Promise.all([transactions(ctx), sales(ctx, atual.de, atual.ate), sales(ctx, anterior.de, anterior.ate), sales(ctx, "2000-01-01", isoDate(addDays(t, 365)))]);
+      const atendPendentes = sTodas.filter((x) => x.status === "pending");
       const paidIn = (r: { de: string; ate: string }, type: string) => txs.filter((x) => x.type === type && x.paid_at && x.paid_at >= r.de && x.paid_at <= r.ate);
       const calc = (r: { de: string; ate: string }, s: SaleRow[]) => {
         const vendas = sum(s.filter((x) => x.status === "paid"));
@@ -526,10 +545,11 @@ export const TOOLS: Tool[] = [
           a_receber_atrasadas: open.filter((x) => x.type === "income" && x.due_date < tStr).map(item),
           a_receber_proximos_7_dias: open.filter((x) => x.type === "income" && x.due_date >= tStr && x.due_date <= in7).map(item),
           total_a_pagar: round(sum(open.filter((x) => x.type === "expense"))),
-          total_a_receber: round(sum(open.filter((x) => x.type === "income"))),
+          atendimentos_a_receber: { quantidade: atendPendentes.length, total: round(sum(atendPendentes)) },
+          total_a_receber: round(sum(open.filter((x) => x.type === "income")) + sum(atendPendentes)),
         },
         comparacao: { periodo_anterior: anterior, ...prev, variacao_saldo_pct: pct(cur.saldo, prev.saldo), variacao_despesas_pct: pct(cur.despesas_pagas, prev.despesas_pagas) },
-        observacao: "Despesas consideram lançamentos marcados como pagos no período. Lançamentos sem data de pagamento aparecem em 'em_aberto'.",
+        observacao: "Saldo = atendimentos pagos + outras receitas pagas − despesas pagas no período (o mesmo cálculo da tela Financeiro). Lançamentos sem data de pagamento e atendimentos 'a receber' aparecem em 'em_aberto'.",
       };
     },
   },
@@ -661,7 +681,13 @@ export const TOOLS: Tool[] = [
         area: "finance",
         title: `Alterar lançamento: ${row.description}`,
         reason: Object.entries(changes)
-          .map(([k, v]) => `${k}: ${typeof v === "number" ? brl(v) : String(v)}`)
+          .map(([k, v]) =>
+            k === "paid" ? (v ? "Marcar como pago" : "Marcar como em aberto")
+            : k === "amount" ? `Valor: ${brl(Number(v))}`
+            : k === "due_date" ? `Vencimento: ${fmtDate(String(v))}`
+            : k === "description" ? `Descrição: ${String(v)}`
+            : k === "category" ? `Categoria: ${String(v)}`
+            : String(v))
           .join(" · "),
         payload: { id: row.id, antes: row, changes },
       });
@@ -806,14 +832,13 @@ export const TOOLS: Tool[] = [
     async run(ctx, i) {
       const id = str(i.id) || null;
       if (id) await ownRow(ctx, "customers", id);
-      let phone = str(i.telefone).replace(/\D/g, "");
-      if (phone && phone.length <= 11) phone = "55" + phone;
+      const phone = telefoneBR(i.telefone);
       const payload: Json = { id, name: str(i.nome), phone: phone || null, email: str(i.email) || null, status: str(i.status) || (id ? null : "lead"), notes: str(i.observacoes) || null };
       if (str(i.etapa)) payload.etapa = str(i.etapa);
       if (validDate(i.proximo_contato)) payload.proximo_contato = validDate(i.proximo_contato);
       if (str(i.origem)) payload.origem = str(i.origem);
       if (!payload.name) throw new Error("Informe o nome.");
-      return propose(ctx, { kind: "customer_upsert", area: "support", title: `${id ? "Atualizar" : "Cadastrar"} paciente: ${payload.name}`, reason: [payload.phone && `tel ${payload.phone}`, payload.email, payload.etapa && `etapa ${payload.etapa}`, payload.proximo_contato && `próximo contato ${payload.proximo_contato}`].filter(Boolean).join(" · "), payload });
+      return propose(ctx, { kind: "customer_upsert", area: "support", title: `${id ? "Atualizar" : "Cadastrar"} paciente: ${payload.name}`, reason: [payload.phone && `tel. +${payload.phone}`, payload.email, payload.etapa && `etapa ${payload.etapa}`, payload.proximo_contato && `próximo contato ${payload.proximo_contato}`].filter(Boolean).join(" · "), payload });
     },
   },
 

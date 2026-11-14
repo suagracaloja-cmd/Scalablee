@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
+import { ConfirmarProvider } from './components/Confirmar'
 import type { Papel } from './lib/types'
 import Layout from './components/Layout'
 import { LogoIcon } from './components/ui'
@@ -74,6 +75,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProvider>
+        <ConfirmarProvider>
         <Routes>
           {/* Páginas públicas (abrem mesmo sem login) */}
           <Route path="/termos" element={<Legal kind="termos" />} />
@@ -82,6 +84,7 @@ export default function App() {
           <Route path="/reembolso" element={<Legal kind="reembolso" />} />
           <Route path="/*" element={<Gate />} />
         </Routes>
+        </ConfirmarProvider>
       </AppProvider>
     </BrowserRouter>
   )

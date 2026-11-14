@@ -6,6 +6,7 @@ import { AGENT_NAME } from '../lib/areas'
 import type { Approval, Conversation, Message } from '../lib/types'
 import { fmtTime, timeAgo } from '../lib/format'
 import { AgentMark, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { useConfirmar } from '../components/Confirmar'
 
 type Status = { phone_number_id: string; display_phone: string | null; verify_token: string; connected: boolean } | null
 
@@ -275,6 +276,7 @@ function InlineApproval({ a, onDecide }: { a: Approval; onDecide: (a: Approval, 
 
 function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => void; onSaved: () => void }) {
   const { toast } = useApp()
+  const confirmar = useConfirmar()
   const [phoneId, setPhoneId] = useState(status?.phone_number_id ?? '')
   const [token, setToken] = useState('')
   const [appSecret, setAppSecret] = useState('')
@@ -305,7 +307,7 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
     }
   }
   async function disconnect() {
-    if (!confirm('Desconectar o WhatsApp? A IA para de responder.')) return
+    if (!(await confirmar({ titulo: 'Desconectar o WhatsApp?', texto: 'A Coraline AI para de ler e responder as mensagens até você conectar de novo.', botao: 'Desconectar' }))) return
     try {
       await api('wa-send', { action: 'disconnect' })
     } catch (err) {

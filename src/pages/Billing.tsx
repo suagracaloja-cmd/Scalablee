@@ -6,6 +6,7 @@ import { useApp } from '../lib/store'
 import { brl, fmtDate } from '../lib/format'
 import { LEGAL_VERSION, NOVIDADES_ACEITE } from '../lib/legal'
 import { Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { useConfirmar } from '../components/Confirmar'
 
 type Fatura = { id: string; dueDate: string; value: number; status: string; invoiceUrl: string | null }
 const STATUS_FATURA: Record<string, { l: string; c: string }> = {
@@ -122,6 +123,7 @@ function Novidades() {
 /** Plano pago (Mercado Pago): status, assinar, cobranças e cancelamento. Só aparece quando a cobrança está ativada. */
 function PlanoPago() {
   const { billing, reloadBilling, session, toast } = useApp()
+  const confirmar = useConfirmar()
   const [faturas, setFaturas] = useState<Fatura[] | null>(null)
   const [form, setForm] = useState<null | { email: string }>(null)
   const [busy, setBusy] = useState(false)
@@ -168,7 +170,7 @@ function PlanoPago() {
   }
 
   async function cancel() {
-    if (!confirm('Cancelar a assinatura? Não haverá novas cobranças e o acesso continua até o fim do período já pago.')) return
+    if (!(await confirmar({ titulo: 'Cancelar a assinatura?', texto: 'Não haverá novas cobranças. O acesso continua até o fim do período já pago.', botao: 'Cancelar assinatura' }))) return
     setBusy(true)
     try {
       await api('assinatura', { action: 'cancelar' })

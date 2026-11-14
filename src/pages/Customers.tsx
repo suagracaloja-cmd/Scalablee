@@ -7,6 +7,8 @@ import { ETAPAS, etapaInfo, ORIGENS, type Customer, type Etapa } from '../lib/ty
 import { brl, fmtDate, timeAgo } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 import { cpfValido, formatarCpf, soDigitos } from '../lib/cpf'
+import { erroTelefone, lerTelefone } from '../lib/telefone'
+import { useConfirmar } from '../components/Confirmar'
 
 const empty = () => ({ name: '', phone: '', email: '', status: 'lead' as Customer['status'], notes: '', etapa: 'novo' as Etapa, proximo_contato: '', origem: '', data_nascimento: '', cpf: '' })
 type Form = ReturnType<typeof empty>
@@ -27,11 +29,24 @@ export default function Customers() {
   const [busy, setBusy] = useState(false)
   const veVendas = papel !== 'profissional'
   const veProntuario = papel === 'dono' || papel === 'profissional'
+  const confirmar = useConfirmar()
+
+  /** Atendimentos pagos ligados a pacientes, todos (em páginas de 1000). */
+  async function atendimentosPagos() {
+    const linhas: { customer_id: string | null; amount: number; sold_at: string }[] = []
+    for (let de = 0; ; de += 1000) {
+      const { data, error } = await supabase.from('sales').select('customer_id,amount,sold_at').eq('status', 'paid').not('customer_id', 'is', null).order('id').range(de, de + 999)
+      if (error) break
+      linhas.push(...((data ?? []) as typeof linhas))
+      if (!data || data.length < 1000) break
+    }
+    return { data: linhas }
+  }
 
   const load = async () => {
     const [c, s, a] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
-      veVendas ? supabase.from('sales').select('customer_id,amount,sold_at,status').neq('status', 'cancelled') : Promise.resolve({ data: [] as { customer_id: string | null; amount: number; sold_at: string }[] }),
+      veVendas ? atendimentosPagos() : Promise.resolve({ data: [] as { customer_id: string | null; amount: number; sold_at: string }[] }),
       supabase.from('agendamentos').select('customer_id,inicio').gte('inicio', new Date().toISOString()).in('status', ['agendado', 'confirmado']).order('inicio'),
     ])
     setItems((c.data ?? []) as Customer[])
@@ -68,11 +83,12 @@ export default function Customers() {
     e.preventDefault()
     if (!form || !company) return
     if (!cpfValido(form.cpf)) return toast('CPF inválido. Confira os números.', 'err')
+    const tel = lerTelefone(form.phone)
+    if ('erro' in tel) return toast(tel.erro, 'err')
     setBusy(true)
-    const phone = form.phone.replace(/\D/g, '')
     const row = {
       name: form.name.trim(),
-      phone: phone ? (phone.length <= 11 ? '55' + phone : phone) : null,
+      phone: tel.valor,
       email: form.email || null,
       status: form.status,
       notes: form.notes || null,
@@ -99,10 +115,25 @@ export default function Customers() {
     setItems((l) => l.map((x) => (x.id === c.id ? { ...x, etapa: nova } : x)))
   }
   async function remove(c: Customer) {
-    if (!confirm(`Excluir ${c.name}? As consultas dele continuam na agenda, sem o nome.`)) return
+    const { data: consultas } = await supabase.from('agendamentos').select('id').eq('customer_id', c.id)
+    const n = consultas?.length ?? 0
+    const ok = await confirmar({
+      titulo: `Excluir ${c.name}?`,
+      texto: (
+        <>
+          O cadastro é apagado e não dá para desfazer.
+          {n > 0 && ` As ${n} consulta(s) dele também saem da agenda.`}
+          {veVendas && ' Os atendimentos pagos continuam no histórico financeiro, sem o nome.'}
+        </>
+      ),
+      botao: 'Excluir paciente',
+    })
+    if (!ok) return
     const { error } = await supabase.from('customers').delete().eq('id', c.id)
     // Quem tem prontuário não pode ser excluído (o prontuário precisa ser guardado)
     if (error) return toast(error.code === '23503' || /foreign key/i.test(error.message) ? `${c.name} tem prontuário e não pode ser excluído. Para tirar da lista de ativos, mude a situação para "Inativo".` : error.message, 'err')
+    if (n > 0) await supabase.from('agendamentos').delete().in('id', consultas!.map((x) => x.id)).is('customer_id', null)
+    toast('Paciente excluído')
     load()
   }
   async function touch(c: Customer) {
@@ -236,7 +267,7 @@ export default function Customers() {
                   </div>
                   {veVendas ? (
                     <div className="rounded-2xl bg-panel-2 p-3">
-                      <div className="text-muted">Total gasto</div>
+                      <div className="text-muted">Total pago</div>
                       <div className="font-semibold">{brl(t?.total ?? 0)}</div>
                     </div>
                   ) : (
@@ -289,7 +320,8 @@ export default function Customers() {
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="WhatsApp (com DDD)">
-                <input maxLength={40} className="input" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="11 99999-9999" />
+                <input maxLength={40} className={`input ${erroTelefone(form.phone) ? 'border-rose-400 focus:border-rose-400' : ''}`} type="tel" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="11 99999-9999" aria-invalid={!!erroTelefone(form.phone)} />
+                {erroTelefone(form.phone) && <span className="mt-1 block text-xs font-medium text-rose-600">{erroTelefone(form.phone)}</span>}
               </Field>
               <Field label="E-mail">
                 <input maxLength={254} className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />

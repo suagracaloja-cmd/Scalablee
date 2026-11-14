@@ -102,3 +102,25 @@ export function umDe<T extends string>(v: unknown, opcoes: readonly T[], campo: 
   if (typeof v !== "string" || !(opcoes as readonly string[]).includes(v)) throw new HttpError(400, `${campo}: valor inválido.`);
   return v as T;
 }
+
+/**
+ * Telefone do paciente no formato do WhatsApp (só números, com 55). Vazio → null.
+ * Recusa números incompletos como "123" (mesma regra da tela e do banco).
+ */
+export function telefoneBR(texto: unknown): string | null {
+  const t = typeof texto === "string" ? texto.trim() : "";
+  let d = t.replace(/\D/g, "");
+  if (!d) return null;
+  const erro = "Telefone inválido: use DDD + número (ex.: 11 91234-5678).";
+  if (t.startsWith("+") && !d.startsWith("55")) {
+    if (d.length >= 8 && d.length <= 15) return d;
+    throw new Error(erro);
+  }
+  if (d.startsWith("0") && (d.length === 11 || d.length === 12)) d = d.slice(1);
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2);
+  if (d.length !== 10 && d.length !== 11) throw new Error(erro);
+  if (!/^[1-9]{2}$/.test(d.slice(0, 2))) throw new Error(erro);
+  if (d.length === 11 && d[2] !== "9") throw new Error(erro);
+  if (d.length === 10 && !/[2-5]/.test(d[2])) throw new Error(erro);
+  return "55" + d;
+}

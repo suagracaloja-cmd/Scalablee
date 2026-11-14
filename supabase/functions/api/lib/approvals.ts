@@ -202,7 +202,8 @@ export async function approveApproval(env: DecideEnv, id: string, edits: { text?
       });
       fail(error);
       if (p.customer_id) await env.db.from("customers").update({ status: "active", last_contact_at: new Date().toISOString() }).eq("company_id", env.companyId).eq("id", String(p.customer_id)).eq("status", "lead");
-      result = "Atendimento registrado";
+      if (p.customer_id && p.status !== "pending") await env.db.from("customers").update({ etapa: "fechado" }).eq("company_id", env.companyId).eq("id", String(p.customer_id)).neq("etapa", "fechado");
+      result = p.paciente_nome ? `Atendimento registrado para ${p.paciente_nome}` : "Atendimento registrado";
       break;
     }
     case "customer_upsert": {
@@ -222,9 +223,14 @@ export async function approveApproval(env: DecideEnv, id: string, edits: { text?
     case "record_delete": {
       const table = String(payload.table);
       if (!["sales", "customers", "transactions", "tasks"].includes(table)) throw new ApprovalError(400, "Tipo de registro inválido.");
+      // Paciente: as consultas dele saem da agenda junto (senão ficariam lá como "Sem paciente")
+      const consultas = table === "customers"
+        ? ((await env.db.from("agendamentos").select("id").eq("company_id", env.companyId).eq("customer_id", String(payload.id))).data ?? []).map((x: { id: string }) => x.id)
+        : [];
       const { data, error } = await env.db.from(table).delete().eq("company_id", env.companyId).eq("id", String(payload.id)).select("id");
-      fail(error);
-      result = data?.length ? `Registro excluído: ${payload.label ?? payload.id}` : "O registro já não existia";
+      fail(error, error && table === "customers" && /foreign key/i.test(error.message) ? "Este paciente tem prontuário e não pode ser excluído. Para tirar da lista de ativos, mude a situação para \"Inativo\"." : undefined);
+      if (data?.length && consultas.length) await env.db.from("agendamentos").delete().eq("company_id", env.companyId).in("id", consultas).is("customer_id", null);
+      result = data?.length ? `Registro excluído: ${payload.label ?? payload.id}${consultas.length ? ` (e ${consultas.length} consulta(s) da agenda)` : ""}` : "O registro já não existia";
       break;
     }
     case "action":

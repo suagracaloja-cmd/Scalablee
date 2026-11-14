@@ -5,8 +5,10 @@ import { useApp } from '../lib/store'
 import { FORMAS_PAGAMENTO, TIPOS_ATENDIMENTO, type Customer, type FormaPagamento, type Sale, type Servico, type TipoAtendimento } from '../lib/types'
 import { addDays, brl, fmtDate, today } from '../lib/format'
 import { cpfValido, formatarCpf, mascararCpf, soDigitos } from '../lib/cpf'
+import { erroTelefone, lerTelefone } from '../lib/telefone'
 import { AGENT_NAME } from '../lib/areas'
 import { Count, Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, StatusCard } from '../components/ui'
+import { useConfirmar } from '../components/Confirmar'
 
 /** Situação do pagamento do atendimento */
 const SITUACAO: Record<Sale['status'], string> = { paid: 'Pago', pending: 'A receber', cancelled: 'Cancelado' }
@@ -46,10 +48,6 @@ const lerValor = (v: string) => {
 
 /** O telefone fica salvo com o 55 do Brasil na frente (formato do WhatsApp); no formulário aparece sem ele. */
 const telefoneNoCampo = (p: string | null | undefined) => (p && p.startsWith('55') && p.length >= 12 ? p.slice(2) : (p ?? ''))
-const telefoneParaSalvar = (t: string) => {
-  const d = soDigitos(t)
-  return d ? (d.length <= 11 ? '55' + d : d) : null
-}
 const dadosDoPaciente = (c: Paciente) => ({
   customer_id: c.id,
   nome: c.name,
@@ -61,6 +59,7 @@ const dadosDoPaciente = (c: Paciente) => ({
 
 export default function Atendimentos() {
   const { company, toast } = useApp()
+  const confirmar = useConfirmar()
   const [items, setItems] = useState<Sale[]>([])
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [servicos, setServicos] = useState<Pick<Servico, 'id' | 'nome' | 'preco'>[]>([])
@@ -154,13 +153,15 @@ export default function Atendimentos() {
     e.preventDefault()
     if (!form || !company) return
     if (cpfErro) return toast(cpfErro, 'err')
+    const tel = lerTelefone(form.telefone)
+    if ('erro' in tel) return toast(tel.erro, 'err')
     const amount = lerValor(form.amount)
     if (!form.amount.trim() || !Number.isFinite(amount) || amount < 0) return toast('Valor inválido. Use, por exemplo, 400 ou 400,00.', 'err')
     setBusy(true)
     try {
       // 1) Paciente: usa o já cadastrado (atualizando os dados) ou cadastra um novo
       const cpf = soDigitos(form.cpf) || null
-      const phone = telefoneParaSalvar(form.telefone)
+      const phone = tel.valor
       const dados = { name: form.nome.trim(), cpf, phone, email: form.email.trim() || null, data_nascimento: form.nascimento || null }
       let customerId = form.customer_id
       if (!customerId) {
@@ -209,7 +210,9 @@ export default function Atendimentos() {
     } catch (err) {
       const m = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err)
       toast(
-        m.includes('customers_company_cpf')
+        m.includes('Telefone inválido')
+          ? m
+          : m.includes('customers_company_cpf')
           ? 'Já existe outro paciente com esse CPF. Busque pelo nome ou CPF e escolha o cadastro dele.'
           : m.includes('customers_company_phone')
             ? 'Já existe outro paciente com esse telefone. Busque pelo nome ou telefone e escolha o cadastro dele.'
@@ -224,7 +227,7 @@ export default function Atendimentos() {
   }
   async function remover(s: Sale) {
     const p = porId.get(s.customer_id ?? '')
-    if (!confirm(`Excluir o atendimento "${s.description}"${p ? ` de ${p.name}` : ''}? O cadastro do paciente continua.`)) return
+    if (!(await confirmar({ titulo: 'Excluir este atendimento?', texto: `"${s.description}"${p ? ` de ${p.name}` : ''}, ${brl(s.amount)}. O registro é apagado e não dá para desfazer. O cadastro do paciente continua.`, botao: 'Excluir atendimento' }))) return
     const { error } = await supabase.from('sales').delete().eq('id', s.id)
     if (error) return toast(error.message, 'err')
     toast('Atendimento excluído')
@@ -429,7 +432,8 @@ export default function Atendimentos() {
                   <input className="input" type="date" max={today()} value={form.nascimento} onChange={(e) => setForm({ ...form, nascimento: e.target.value })} />
                 </Field>
                 <Field label="Telefone / WhatsApp (com DDD)">
-                  <input maxLength={40} className="input" type="tel" inputMode="tel" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} placeholder="11 99999-9999" />
+                  <input maxLength={40} className={`input ${erroTelefone(form.telefone) ? 'border-rose-400 focus:border-rose-400' : ''}`} type="tel" inputMode="tel" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} placeholder="11 99999-9999" aria-invalid={!!erroTelefone(form.telefone)} />
+                  {erroTelefone(form.telefone) && <span className="mt-1 block text-xs font-medium text-rose-600">{erroTelefone(form.telefone)}</span>}
                 </Field>
                 <Field label="E-mail">
                   <input maxLength={254} className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="paciente@email.com" />

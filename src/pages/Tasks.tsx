@@ -5,9 +5,11 @@ import { useApp } from '../lib/store'
 import type { Task } from '../lib/types'
 import { addDays, relativeDay, today } from '../lib/format'
 import { AgentMark, AreaChip, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { useConfirmar } from '../components/Confirmar'
 
 export default function Tasks() {
   const { company, toast } = useApp()
+  const confirmar = useConfirmar()
   const [items, setItems] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showDone, setShowDone] = useState(false)
@@ -28,7 +30,10 @@ export default function Tasks() {
     if (!t.done) toast('Tarefa concluída ✅')
   }
   async function remove(t: Task) {
-    await supabase.from('tasks').delete().eq('id', t.id)
+    if (!(await confirmar({ titulo: 'Excluir esta tarefa?', texto: `"${t.title}" é apagada e não dá para desfazer.`, botao: 'Excluir tarefa' }))) return
+    const { error } = await supabase.from('tasks').delete().eq('id', t.id)
+    if (error) return toast(error.message, 'err')
+    toast('Tarefa excluída')
     load()
   }
   async function save(e: FormEvent) {
@@ -97,7 +102,7 @@ export default function Tasks() {
                         </span>
                       )}
                       <span className="text-[11px] text-muted">{relativeDay(x.due_date)}</span>
-                      <button onClick={() => remove(x)} className="p-1 text-muted hover:text-rose-600">
+                      <button onClick={() => remove(x)} className="-m-1 rounded-full p-2 text-muted hover:bg-panel-2 hover:text-rose-600" title="Excluir" aria-label={`Excluir a tarefa ${x.title}`}>
                         <Trash2 size={14} />
                       </button>
                     </Reveal>

@@ -7,6 +7,7 @@ import { ACAO_ACESSO, type AcessoProntuario } from '../lib/prontuario'
 import { PAPEL_LABEL, type AgendaConfig, type Convite, type Membro, type Profissional, type Servico } from '../lib/types'
 import { brl, fmtDate } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
+import { useConfirmar } from '../components/Confirmar'
 
 const ABAS = [
   { id: 'equipe', label: 'Equipe', icon: Users },
@@ -45,6 +46,7 @@ export default function Clinica() {
 // ---------------- Equipe ----------------
 function Equipe() {
   const { company, session, toast } = useApp()
+  const confirmar = useConfirmar()
   const [membros, setMembros] = useState<Membro[]>([])
   const [convites, setConvites] = useState<Convite[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,7 +77,7 @@ function Equipe() {
     load()
   }
   async function cancelarConvite(c: Convite) {
-    if (!confirm(`Cancelar o convite de ${c.email}?`)) return
+    if (!(await confirmar({ titulo: 'Cancelar o convite?', texto: `${c.email} não poderá mais entrar na clínica com este convite.`, botao: 'Cancelar convite' }))) return
     await supabase.from('convites').delete().eq('id', c.id)
     load()
   }
@@ -86,7 +88,7 @@ function Equipe() {
     load()
   }
   async function remover(m: Membro) {
-    if (!confirm(`Remover ${m.nome ?? m.email} da equipe? A pessoa perde o acesso à clínica.`)) return
+    if (!(await confirmar({ titulo: `Remover ${m.nome ?? m.email} da equipe?`, texto: 'A pessoa perde o acesso à clínica na hora.', botao: 'Remover da equipe' }))) return
     try {
       await api('equipe', { action: 'remover', user_id: m.user_id })
       toast('Removido da equipe')

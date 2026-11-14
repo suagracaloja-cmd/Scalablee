@@ -23,6 +23,10 @@ export const KIND_INFO: Record<ApprovalKind, Info> = {
 
 const dt = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 const TABLE_LABEL: Record<string, string> = { sales: 'Atendimento', customers: 'Paciente', transactions: 'Lançamento financeiro', tasks: 'Tarefa' }
+const TIPO_LABEL: Record<string, string> = { consulta: 'Consulta', retorno: 'Retorno', exame: 'Exame', procedimento: 'Procedimento', cirurgia: 'Cirurgia', outro: 'Outro' }
+const FORMA_LABEL: Record<string, string> = { pix: 'Pix', credito: 'Cartão de crédito', debito: 'Cartão de débito', dinheiro: 'Dinheiro', boleto: 'Boleto', transferencia: 'Transferência', outro: 'Outro' }
+/** Aprovações antigas de alteração financeira traziam um resumo técnico (ex.: "paid: true"); os detalhes abaixo já mostram tudo. */
+const resumoTecnico = (a: Approval) => a.kind === 'finance_update' && /\b(paid|amount|due_date|description|category):/.test(a.reason ?? '')
 const STATUS_LABEL: Record<string, string> = { lead: 'Lead', active: 'Ativo', vip: 'VIP', inactive: 'Inativo', paid: 'Pago', pending: 'Pendente' }
 
 function Row({ k, v }: { k: string; v: ReactNode }) {
@@ -67,10 +71,13 @@ function Details({ a }: { a: Approval }) {
     case 'sale_create':
       return (
         <>
-          <Row k="Produto" v={String(p.description ?? '')} />
+          <Row k="Paciente" v={p.paciente_nome ? String(p.paciente_nome) : p.customer_id ? 'Paciente cadastrado' : 'Nenhum (sem vínculo)'} />
+          <Row k="O que foi feito" v={String(p.description ?? '')} />
+          <Row k="Tipo" v={p.tipo ? TIPO_LABEL[String(p.tipo)] ?? String(p.tipo) : null} />
           <Row k="Valor" v={brl(Number(p.amount))} />
           <Row k="Data" v={p.sold_at ? fmtDate(String(p.sold_at)) : null} />
-          <Row k="Status" v={STATUS_LABEL[String(p.status)] ?? String(p.status ?? '')} />
+          <Row k="Pagamento" v={p.forma_pagamento ? FORMA_LABEL[String(p.forma_pagamento)] ?? String(p.forma_pagamento) : null} />
+          <Row k="Situação" v={p.status === 'pending' ? 'A receber' : 'Pago'} />
         </>
       )
     case 'customer_upsert':
@@ -201,7 +208,7 @@ export default function ApprovalCard({ a, onChange, compact = false }: { a: Appr
             <AreaChip kind={a.agent_kind} />
           </div>
           <div className="mt-0.5 font-semibold leading-snug">{a.title}</div>
-          {a.reason &&
+          {a.reason && !resumoTecnico(a) &&
             (a.reason.startsWith('⚠️') ? (
               <div className="mt-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">{a.reason}</div>
             ) : (

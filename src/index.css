@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Telas baixas (notebook com barra do navegador e do Windows): menu lateral mais compacto */
+@custom-variant baixa (@media (max-height: 820px));
+@custom-variant curta (@media (max-height: 700px));
+
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --color-bg: #f2f6fc;
@@ -255,4 +259,14 @@ body::before {
     0%, 100% { transform: translateY(0) scale(1); }
     50% { transform: translateY(-4px) scale(1.03); }
   }
+}
+
+/* Nome da opção do menu lateral */
+@keyframes dica-entra {
+  from {
+    opacity: 0;
+  }
+}
+.dica-entra {
+  animation: dica-entra 0.12s ease-out;
 }

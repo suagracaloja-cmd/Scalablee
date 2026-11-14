@@ -1,4 +1,4 @@
-import { Suspense, useState, type FormEvent } from 'react'
+import { Suspense, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -55,6 +55,8 @@ export default function Layout() {
   const [painel, setPainel] = useState(false)
   const [q, setQ] = useState('')
   const rolou = useRolou()
+  const [dica, setDica] = useState<{ texto: string; x: number; y: number } | null>(null)
+  const alvoDica = useRef<{ el: HTMLElement; texto: string } | null>(null)
   const loc = useLocation()
   const nav = useNavigate()
   const isActive = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
@@ -83,16 +85,36 @@ export default function Layout() {
 
   const todos = [...navItems, ...EXTRAS.filter((n) => pode(n, papel))]
   const pendencias = counts.approvals + counts.insights + (papel === 'profissional' ? 0 : counts.conversations)
-  const navCls = (to: string) => `flex h-11 w-11 items-center justify-center rounded-full transition ${isActive(to) ? 'nav-ativo' : 'glass text-slate-500 hover:text-ink'}`
+  const navCls = (to: string) => `flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition baixa:h-10 baixa:w-10 curta:h-9 curta:w-9 ${isActive(to) ? 'nav-ativo' : 'glass text-slate-500 hover:text-ink'}`
+
+  // Nome da opção ao passar o mouse no menu lateral. Fica fora do menu, por cima da página, para nunca ser coberto.
+  const mostrarDica = (el: HTMLElement, texto: string) => {
+    alvoDica.current = { el, texto }
+    const r = el.getBoundingClientRect()
+    setDica({ texto, x: r.right + 12, y: r.top + r.height / 2 })
+  }
+  const esconderDica = () => {
+    alvoDica.current = null
+    setDica(null)
+  }
+  const dicaDe = (texto: string) => ({
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => mostrarDica(e.currentTarget, texto),
+    onMouseLeave: esconderDica,
+    onFocus: (e: React.FocusEvent<HTMLElement>) => mostrarDica(e.currentTarget, texto),
+    onBlur: esconderDica,
+  })
 
   return (
     <div className="min-h-screen overflow-x-clip md:flex">
-      {/* Trilho lateral (computador) */}
-      <aside className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center py-6 md:flex">
-        <NavLink to="/" className="reveal mb-8" aria-label="Scalable — início">
+      {/* Trilho lateral (computador). Em telas baixas (notebook) fica mais compacto e, se ainda faltar espaço, rola. */}
+      <aside
+        className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center overflow-y-auto overflow-x-hidden py-6 [scrollbar-width:thin] md:flex baixa:py-4 curta:py-3"
+        onScroll={() => alvoDica.current && mostrarDica(alvoDica.current.el, alvoDica.current.texto)}
+      >
+        <NavLink to="/" className="reveal mb-8 shrink-0 baixa:mb-5 curta:mb-3" aria-label="Scalable — início" {...dicaDe('Início')}>
           <Logo size={46} word={false} />
         </NavLink>
-        <nav className="glass flex flex-1 flex-col items-center gap-2.5 rounded-full px-2.5 py-3 shadow-[0_10px_30px_-18px_rgba(40,90,180,0.35)]" aria-label="Menu principal">
+        <nav className="glass flex flex-1 flex-col items-center gap-2.5 rounded-full px-2.5 py-3 shadow-[0_10px_30px_-18px_rgba(40,90,180,0.35)] baixa:gap-1.5 baixa:py-2 curta:gap-1" aria-label="Menu principal">
           {navItems.map((n, i) => {
             const c = n.badge ? counts[n.badge] : 0
             const active = isActive(n.to)
@@ -101,33 +123,31 @@ export default function Layout() {
                 key={n.to}
                 to={n.to}
                 aria-label={n.label}
-                className={`reveal group relative flex h-11 w-11 items-center justify-center rounded-full transition ${active ? 'nav-ativo' : 'text-slate-500 hover:bg-white hover:text-ink'}`}
+                className={`reveal relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition baixa:h-10 baixa:w-10 curta:h-9 curta:w-9 ${active ? 'nav-ativo' : 'text-slate-500 hover:bg-white hover:text-ink'}`}
                 style={{ '--d': `${i * 45}ms` } as React.CSSProperties}
+                {...dicaDe(n.label)}
               >
                 <n.icon size={20} strokeWidth={active ? 2.2 : 1.9} />
                 {c > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">{c}</span>}
-                <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 whitespace-nowrap rounded-xl bg-ink px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-                  {n.label}
-                </span>
               </NavLink>
             )
           })}
         </nav>
-        <div className="mt-4 flex flex-col items-center gap-2.5">
+        <div className="mt-4 flex shrink-0 flex-col items-center gap-2.5 baixa:mt-3 baixa:gap-1.5 curta:mt-2 curta:gap-1">
           {papel === 'dono' && (
             <>
-              <NavLink to="/clinica" className={navCls('/clinica')} title="Clínica e equipe" aria-label="Clínica e equipe">
+              <NavLink to="/clinica" className={navCls('/clinica')} aria-label="Clínica e equipe" {...dicaDe('Clínica e equipe')}>
                 <Building2 size={19} />
               </NavLink>
-              <NavLink to="/assinatura" className={navCls('/assinatura')} title="Assinatura" aria-label="Assinatura">
+              <NavLink to="/assinatura" className={navCls('/assinatura')} aria-label="Assinatura" {...dicaDe('Assinatura')}>
                 <CreditCard size={19} />
               </NavLink>
             </>
           )}
-          <NavLink to="/configuracoes" className={navCls('/configuracoes')} title="Configurações" aria-label="Configurações">
+          <NavLink to="/configuracoes" className={navCls('/configuracoes')} aria-label="Configurações" {...dicaDe('Configurações')}>
             <Settings size={19} />
           </NavLink>
-          <button onClick={() => supabase.auth.signOut()} className="glass flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:text-rose-600" title="Sair" aria-label="Sair">
+          <button onClick={() => supabase.auth.signOut()} className="glass flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-500 hover:text-rose-600 baixa:h-10 baixa:w-10 curta:h-9 curta:w-9" aria-label="Sair" {...dicaDe('Sair')}>
             <LogOut size={18} />
           </button>
         </div>
@@ -242,6 +262,15 @@ export default function Layout() {
         </div>
       )}
 
+      {dica && (
+        <span
+          role="tooltip"
+          className="dica-entra pointer-events-none fixed z-40 hidden -translate-y-1/2 whitespace-nowrap rounded-xl bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-lg md:block"
+          style={{ left: dica.x, top: dica.y }}
+        >
+          {dica.texto}
+        </span>
+      )}
       <CoralinePainel open={painel} onClose={() => setPainel(false)} />
     </div>
   )

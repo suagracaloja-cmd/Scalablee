@@ -127,8 +127,8 @@ export default function Finance() {
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatusCard i={1} tone="rose" label="A pagar (em aberto)" value={<Money value={m.payable} delay={200} />} sub="contas em aberto" />
         <StatusCard i={2} tone={m.overdue ? 'amber' : 'slate'} label="Vencido" value={<Money value={m.overdue} delay={300} />} sub={m.overdue ? 'pague o quanto antes' : 'nada vencido'} />
-        <StatusCard i={3} tone="green" label="A receber" value={<Money value={m.receivable + atend.aReceber} delay={400} />} sub={atend.nAReceber ? `inclui ${atend.nAReceber} atendimento(s)` : 'valores em aberto'} />
-        <StatusCard i={4} tone="blue" label="Saldo do mês" value={<Money value={atend.pagosMes + m.outrasReceitas - m.despesasPagas} delay={500} />} sub="entradas − saídas pagas" />
+        <StatusCard i={3} tone="green" label="A receber" value={<Money value={m.receivable + atend.aReceber} delay={400} />} sub={atend.nAReceber ? `+${atend.nAReceber} atendimento(s)` : 'valores em aberto'} />
+        <StatusCard i={4} tone="blue" label="Saldo do mês" value={<Money value={atend.pagosMes + m.outrasReceitas - m.despesasPagas} delay={500} />} sub="entradas − saídas" />
       </div>
       {!loading && (
         <Reveal i={5} className="mt-3 rounded-2xl bg-panel px-4 py-3 text-xs leading-relaxed text-muted">

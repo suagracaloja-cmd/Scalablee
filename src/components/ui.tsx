@@ -20,13 +20,24 @@ export function Ajusta({ children, className = '', min = 12 }: { children: React
       el.style.fontSize = `${Math.max(min, Math.floor(base * (el.clientWidth / el.scrollWidth) * 10) / 10)}px`
     }
     ajustar()
-    const ro = new ResizeObserver(ajustar)
+    // Durante a contagem animada o texto muda a cada quadro: mede no máximo a cada 150 ms (e ao final),
+    // para não forçar o navegador a recalcular a página inteira 60 vezes por segundo
+    let espera: number | undefined
+    const agendar = () => {
+      if (espera !== undefined) return
+      espera = window.setTimeout(() => {
+        espera = undefined
+        ajustar()
+      }, 150)
+    }
+    const ro = new ResizeObserver(agendar)
     ro.observe(el)
-    const mo = new MutationObserver(ajustar)
+    const mo = new MutationObserver(agendar)
     mo.observe(el, { childList: true, subtree: true, characterData: true })
     return () => {
       ro.disconnect()
       mo.disconnect()
+      if (espera !== undefined) window.clearTimeout(espera)
     }
   }, [min])
   return (
@@ -220,5 +231,16 @@ export function StatusCard({ i = 0, label, value, sub, tone }: { i?: number; lab
         {sub && <div className="mt-1 truncate text-xs text-muted">{sub}</div>}
       </div>
     </Reveal>
+  )
+}
+
+/** Enquanto uma tela é baixada (fração de segundo na maioria das vezes). */
+export function CarregandoTela() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center" role="status" aria-label="Carregando">
+      <div className="animate-pulse">
+        <LogoIcon size={40} />
+      </div>
+    </div>
   )
 }

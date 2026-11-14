@@ -7,6 +7,7 @@ import { addDays, brl, fmtDate, today } from '../lib/format'
 import { cpfValido, formatarCpf, mascararCpf, soDigitos } from '../lib/cpf'
 import { erroTelefone, lerTelefone } from '../lib/telefone'
 import { AGENT_NAME } from '../lib/areas'
+import { useTelaLarga } from '../hooks/useTelaLarga'
 import { Count, Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, StatusCard } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
 
@@ -71,6 +72,9 @@ export default function Atendimentos() {
   const [editId, setEditId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [aviso, setAviso] = useState('')
+  const larga = useTelaLarga()
+  const [limite, setLimite] = useState(100)
+  useEffect(() => setLimite(100), [q, status, period])
 
   const load = async () => {
     let query = supabase.from('sales').select('*').order('sold_at', { ascending: false }).order('created_at', { ascending: false }).limit(2000)
@@ -283,9 +287,9 @@ export default function Atendimentos() {
           <Empty icon={<Stethoscope size={24} />} title="Nenhum atendimento encontrado" text="Registre cada paciente atendido com o procedimento e o valor." action={<button className="btn-primary" onClick={novo}>Registrar atendimento</button>} />
         ) : (
           <>
-            {/* Celular */}
-            <ul className="divide-y divide-line md:hidden">
-              {shown.map((s) => {
+            {/* Celular (só uma das duas listas é desenhada, e 100 por vez) */}
+            {!larga && <ul className="divide-y divide-line">
+              {shown.slice(0, limite).map((s) => {
                 const p = porId.get(s.customer_id ?? '')
                 return (
                   <li key={s.id}>
@@ -312,9 +316,9 @@ export default function Atendimentos() {
                   </li>
                 )
               })}
-            </ul>
+            </ul>}
             {/* Computador */}
-            <table className="hidden w-full text-left text-sm md:table">
+            {larga && <table className="w-full text-left text-sm">
               <thead className="bg-panel-2 text-xs text-muted">
                 <tr>
                   <th className="px-6 py-3.5 font-semibold">Paciente</th>
@@ -329,10 +333,10 @@ export default function Atendimentos() {
                 </tr>
               </thead>
               <tbody>
-                {shown.slice(0, 300).map((s, i) => {
+                {shown.slice(0, limite).map((s, i) => {
                   const p = porId.get(s.customer_id ?? '')
                   return (
-                    <tr key={s.id} className="reveal border-t border-line hover:bg-panel-2/60" style={{ '--d': `${Math.min(i, 15) * 35 + 300}ms` } as React.CSSProperties}>
+                    <tr key={s.id} className={`border-t border-line hover:bg-panel-2/60 ${i < 15 ? 'reveal' : ''}`} style={i < 15 ? ({ '--d': `${i * 35 + 300}ms` } as React.CSSProperties) : undefined}>
                       <td className="px-6 py-3.5">
                         <div className="font-semibold">{p?.name ?? '—'}</div>
                         {p?.cpf && <div className="text-xs text-muted">CPF {mascararCpf(p.cpf)}</div>}
@@ -362,7 +366,14 @@ export default function Atendimentos() {
                   )
                 })}
               </tbody>
-            </table>
+            </table>}
+            {shown.length > limite && (
+              <div className="border-t border-line p-3 text-center">
+                <button className="btn-ghost h-10 px-5 text-sm" onClick={() => setLimite((l) => l + 100)}>
+                  Mostrar mais ({shown.length - limite} restantes)
+                </button>
+              </div>
+            )}
           </>
         )}
       </Reveal>

@@ -20,22 +20,32 @@ body,
   min-height: 100%;
 }
 body {
-  background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(120, 170, 255, 0.18), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(140, 200, 255, 0.16), transparent 55%),
-    linear-gradient(180deg, #eef4fd 0%, #f3f6fb 45%, #f4f6fa 100%);
-  background-attachment: fixed;
+  background-color: #f3f6fb;
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
+/* Fundo em degradê numa camada fixa própria: ao rolar, o navegador só desliza o conteúdo
+   (antes, com "background-attachment: fixed", redesenhava a tela inteira a cada passo) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(120, 170, 255, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(140, 200, 255, 0.16), transparent 55%),
+    linear-gradient(180deg, #eef4fd 0%, #f3f6fb 45%, #f4f6fa 100%);
+}
 
 @utility card {
-  @apply min-w-0 rounded-[26px] border border-white/70 bg-white/85 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_10px_30px_-18px_rgba(40,90,180,0.25)] backdrop-blur-xl;
+  @apply min-w-0 rounded-[26px] border border-white/70 bg-white/90 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_10px_30px_-18px_rgba(40,90,180,0.25)];
 }
 @utility glass {
-  @apply border border-white/70 bg-white/75 backdrop-blur-xl;
+  @apply border border-white/70 bg-white/85;
 }
 @utility nav-ativo {
   @apply bg-gradient-to-br from-[#5aaeff] to-[#2f6fe6] text-white shadow-[0_10px_22px_-8px_rgba(47,111,230,0.75)];

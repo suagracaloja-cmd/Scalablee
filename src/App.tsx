@@ -1,28 +1,31 @@
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
 import { ConfirmarProvider } from './components/Confirmar'
 import type { Papel } from './lib/types'
 import Layout from './components/Layout'
-import { LogoIcon } from './components/ui'
+import { CarregandoTela, LogoIcon } from './components/ui'
 import Login from './pages/Login'
-import ResetPassword from './pages/ResetPassword'
-import Legal from './pages/Legal'
-import Billing from './pages/Billing'
-import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
-import Agent from './pages/Agent'
-import Agenda from './pages/Agenda'
-import Clinica from './pages/Clinica'
-import Atendimentos from './pages/Atendimentos'
-import Customers from './pages/Customers'
-import Prontuario from './pages/Prontuario'
-import Finance from './pages/Finance'
-import Tasks from './pages/Tasks'
-import WhatsApp from './pages/WhatsApp'
-import Approvals from './pages/Approvals'
-import Notifications from './pages/Notifications'
-import Settings from './pages/Settings'
+
+// Cada tela é baixada só quando é aberta (antes o site baixava e preparava todas de uma vez)
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const Legal = lazy(() => import('./pages/Legal'))
+const Billing = lazy(() => import('./pages/Billing'))
+const Onboarding = lazy(() => import('./pages/Onboarding'))
+const Agent = lazy(() => import('./pages/Agent'))
+const Agenda = lazy(() => import('./pages/Agenda'))
+const Clinica = lazy(() => import('./pages/Clinica'))
+const Atendimentos = lazy(() => import('./pages/Atendimentos'))
+const Customers = lazy(() => import('./pages/Customers'))
+const Prontuario = lazy(() => import('./pages/Prontuario'))
+const Finance = lazy(() => import('./pages/Finance'))
+const Tasks = lazy(() => import('./pages/Tasks'))
+const WhatsApp = lazy(() => import('./pages/WhatsApp'))
+const Approvals = lazy(() => import('./pages/Approvals'))
+const Notifications = lazy(() => import('./pages/Notifications'))
+const Settings = lazy(() => import('./pages/Settings'))
+
 
 /** Telas por papel: quem não tem acesso volta para o início (o banco também bloqueia os dados). */
 function So({ papeis, children }: { papeis: Papel[]; children: ReactNode }) {
@@ -76,6 +79,7 @@ export default function App() {
     <BrowserRouter>
       <AppProvider>
         <ConfirmarProvider>
+        <Suspense fallback={<CarregandoTela />}>
         <Routes>
           {/* Páginas públicas (abrem mesmo sem login) */}
           <Route path="/termos" element={<Legal kind="termos" />} />
@@ -84,6 +88,7 @@ export default function App() {
           <Route path="/reembolso" element={<Legal kind="reembolso" />} />
           <Route path="/*" element={<Gate />} />
         </Routes>
+        </Suspense>
         </ConfirmarProvider>
       </AppProvider>
     </BrowserRouter>

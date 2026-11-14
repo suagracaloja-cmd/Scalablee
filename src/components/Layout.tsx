@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { Suspense, useState, type FormEvent } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -21,8 +21,9 @@ import {
 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { supabase } from '../lib/supabase'
-import { Logo, Orb } from './ui'
+import { CarregandoTela, Logo, Orb } from './ui'
 import { CoralinePainel } from './CoralinePainel'
+import { useRolou } from '../hooks/useRolou'
 import { AGENT_NAME } from '../lib/areas'
 import type { Papel } from '../lib/types'
 import { LegalFooter } from './LegalFooter'
@@ -53,6 +54,7 @@ export default function Layout() {
   const [sheet, setSheet] = useState(false)
   const [painel, setPainel] = useState(false)
   const [q, setQ] = useState('')
+  const rolou = useRolou()
   const loc = useLocation()
   const nav = useNavigate()
   const isActive = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
@@ -133,7 +135,7 @@ export default function Layout() {
 
       <div className="min-w-0 flex-1">
         {/* Barra superior (computador) */}
-        <header className="sticky top-0 z-30 hidden items-center gap-3 px-8 py-5 backdrop-blur-md md:flex">
+        <header className={`sticky top-0 z-30 hidden items-center gap-3 px-8 py-5 transition-colors duration-200 md:flex ${rolou ? 'bg-[#eff4fc]/95 shadow-[0_1px_0_rgba(15,23,42,0.06)]' : 'bg-transparent'}`}>
           <form onSubmit={search} className="reveal relative w-full max-w-sm">
             <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
             <input className="glass h-11 w-full rounded-full pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar paciente…" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -166,7 +168,7 @@ export default function Layout() {
         </header>
 
         {/* Topo (celular): logo à esquerda e só o menu (três linhas) à direita */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-[#eef4fd]/85 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-[#eef4fd]/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] md:hidden">
           <NavLink to="/" className="flex min-w-0 items-center gap-2.5" aria-label="Scalable — início">
             <Logo size={38} word={false} />
             <div className="min-w-0 leading-tight">
@@ -188,7 +190,7 @@ export default function Layout() {
                 <Link to="/assinatura" className="font-semibold underline underline-offset-2">Ver assinatura</Link>
               </div>
             )}
-            {blocked ? <Navigate to="/assinatura" replace /> : <Outlet />}
+            {blocked ? <Navigate to="/assinatura" replace /> : <Suspense fallback={<CarregandoTela />}><Outlet /></Suspense>}
             {/* A conversa ocupa a tela inteira; nela os documentos ficam em Configurações */}
             {!loc.pathname.startsWith('/agente') && <LegalFooter className="mt-12" />}
           </div>

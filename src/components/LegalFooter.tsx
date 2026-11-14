@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CONTATOS, IDENTIFICACAO } from '../lib/legal'
+import { CONTATOS, IDENTIFICACAO } from '../lib/legal-dados'
 
 export const LEGAL_LINKS = [
   { to: '/termos', label: 'Termos de Uso' },

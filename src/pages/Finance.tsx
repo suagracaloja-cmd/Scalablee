@@ -35,6 +35,8 @@ export default function Finance() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'open' | 'paid'>('open')
   const [type, setType] = useState<'all' | 'expense' | 'income'>('all')
+  const [limite, setLimite] = useState(100)
+  useEffect(() => setLimite(100), [tab, type])
   const [form, setForm] = useState<ReturnType<typeof empty> | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -158,8 +160,9 @@ export default function Finance() {
           ) : shown.length === 0 ? (
             <Empty icon={<Wallet size={26} />} title="Nenhum lançamento" />
           ) : (
+            <>
             <ul className="divide-y divide-line">
-              {shown.map((x, i) => {
+              {shown.slice(0, limite).map((x, i) => {
                 const late = !x.paid_at && x.due_date < t
                 return (
                   <li key={x.id} className="reveal flex items-center gap-3 px-5 py-3.5" style={{ '--d': `${Math.min(i, 15) * 40 + 300}ms` } as React.CSSProperties}>
@@ -187,6 +190,14 @@ export default function Finance() {
                 )
               })}
             </ul>
+            {shown.length > limite && (
+              <div className="border-t border-line p-3 text-center">
+                <button className="btn-ghost h-10 px-5 text-sm" onClick={() => setLimite((l) => l + 100)}>
+                  Mostrar mais ({shown.length - limite} restantes)
+                </button>
+              </div>
+            )}
+            </>
           )}
         </Reveal>
         <Reveal i={6} className="card p-5 sm:p-6">

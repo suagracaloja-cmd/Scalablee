@@ -30,6 +30,8 @@ export default function Customers() {
   const veVendas = papel !== 'profissional'
   const veProntuario = papel === 'dono' || papel === 'profissional'
   const confirmar = useConfirmar()
+  const [limite, setLimite] = useState(60)
+  useEffect(() => setLimite(60), [q, etapa])
 
   /** Atendimentos pagos ligados a pacientes, todos (em páginas de 1000). */
   async function atendimentosPagos() {
@@ -234,6 +236,13 @@ export default function Customers() {
               </Reveal>
             )
           })}
+          {shown.length > limite && (
+            <div className="text-center sm:col-span-2 xl:col-span-3">
+              <button className="btn-ghost h-10 px-5 text-sm" onClick={() => setLimite((l) => l + 60)}>
+                Mostrar mais ({shown.length - limite} restantes)
+              </button>
+            </div>
+          )}
         </div>
       ) : shown.length === 0 ? (
         <Reveal i={3} className="card">
@@ -241,7 +250,7 @@ export default function Customers() {
         </Reveal>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((c, i) => {
+          {shown.slice(0, limite).map((c, i) => {
             const t = totals.get(c.id)
             const et = etapaInfo(c.etapa)
             const prox = proximas.get(c.id)

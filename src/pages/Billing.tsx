@@ -4,7 +4,7 @@ import { CreditCard, ExternalLink, Lock, Mail, Receipt, ShieldCheck } from 'luci
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { brl, fmtDate } from '../lib/format'
-import { LEGAL_VERSION, NOVIDADES_ACEITE } from '../lib/legal'
+import { LEGAL_VERSION, NOVIDADES_ACEITE } from '../lib/legal-dados'
 import { Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
 

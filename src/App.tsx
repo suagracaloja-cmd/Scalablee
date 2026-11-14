@@ -1,31 +1,50 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { lazy, Suspense, type ComponentType, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
 import { ConfirmarProvider } from './components/Confirmar'
 import type { Papel } from './lib/types'
 import Layout from './components/Layout'
-import { CarregandoTela, LogoIcon } from './components/ui'
+import { CarregandoTela, ErroTela, LogoIcon } from './components/ui'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 
-// Cada tela é baixada só quando é aberta (antes o site baixava e preparava todas de uma vez)
-const ResetPassword = lazy(() => import('./pages/ResetPassword'))
-const Legal = lazy(() => import('./pages/Legal'))
-const Billing = lazy(() => import('./pages/Billing'))
-const Onboarding = lazy(() => import('./pages/Onboarding'))
-const Agent = lazy(() => import('./pages/Agent'))
-const Agenda = lazy(() => import('./pages/Agenda'))
-const Clinica = lazy(() => import('./pages/Clinica'))
-const Atendimentos = lazy(() => import('./pages/Atendimentos'))
-const Customers = lazy(() => import('./pages/Customers'))
-const Prontuario = lazy(() => import('./pages/Prontuario'))
-const Finance = lazy(() => import('./pages/Finance'))
-const Tasks = lazy(() => import('./pages/Tasks'))
-const WhatsApp = lazy(() => import('./pages/WhatsApp'))
-const Approvals = lazy(() => import('./pages/Approvals'))
-const Notifications = lazy(() => import('./pages/Notifications'))
-const Settings = lazy(() => import('./pages/Settings'))
+/**
+ * Carrega a tela só quando ela é aberta. Se o site foi atualizado com a aba aberta, os arquivos
+ * antigos saem do ar: nesse caso a página recarrega uma vez (no máximo a cada 15 s) e pega a versão nova.
+ */
+function tela<T extends { default: ComponentType<any> }>(abrir: () => Promise<T>) {
+  return lazy(() =>
+    abrir().catch((erro) => {
+      const chave = 'scalable:recarregou-versao'
+      let ultima = 0
+      try { ultima = Number(sessionStorage.getItem(chave) || 0) } catch { /* sem armazenamento */ }
+      if (Date.now() - ultima > 15000) {
+        try { sessionStorage.setItem(chave, String(Date.now())) } catch { /* sem armazenamento */ }
+        window.location.reload()
+        return new Promise<T>(() => {})
+      }
+      throw erro
+    }),
+  )
+}
 
+// Cada tela é baixada só quando é aberta (antes o site baixava e preparava todas de uma vez)
+const ResetPassword = tela(() => import('./pages/ResetPassword'))
+const Legal = tela(() => import('./pages/Legal'))
+const Billing = tela(() => import('./pages/Billing'))
+const Onboarding = tela(() => import('./pages/Onboarding'))
+const Agent = tela(() => import('./pages/Agent'))
+const Agenda = tela(() => import('./pages/Agenda'))
+const Clinica = tela(() => import('./pages/Clinica'))
+const Atendimentos = tela(() => import('./pages/Atendimentos'))
+const Customers = tela(() => import('./pages/Customers'))
+const Prontuario = tela(() => import('./pages/Prontuario'))
+const Finance = tela(() => import('./pages/Finance'))
+const Tasks = tela(() => import('./pages/Tasks'))
+const WhatsApp = tela(() => import('./pages/WhatsApp'))
+const Approvals = tela(() => import('./pages/Approvals'))
+const Notifications = tela(() => import('./pages/Notifications'))
+const Settings = tela(() => import('./pages/Settings'))
 
 /** Telas por papel: quem não tem acesso volta para o início (o banco também bloqueia os dados). */
 function So({ papeis, children }: { papeis: Papel[]; children: ReactNode }) {
@@ -79,6 +98,7 @@ export default function App() {
     <BrowserRouter>
       <AppProvider>
         <ConfirmarProvider>
+        <ErroTela>
         <Suspense fallback={<CarregandoTela />}>
         <Routes>
           {/* Páginas públicas (abrem mesmo sem login) */}
@@ -89,6 +109,7 @@ export default function App() {
           <Route path="/*" element={<Gate />} />
         </Routes>
         </Suspense>
+        </ErroTela>
         </ConfirmarProvider>
       </AppProvider>
     </BrowserRouter>

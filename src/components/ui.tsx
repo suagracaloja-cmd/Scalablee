@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode, useId } from 'react'
+import { Component, useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode, useId } from 'react'
 import { ArrowDownRight, ArrowUpRight, X } from 'lucide-react'
 import { areaOf } from '../lib/areas'
 import { useCountUp } from '../hooks/useCountUp'
@@ -235,6 +235,26 @@ export function StatusCard({ i = 0, label, value, sub, tone }: { i?: number; lab
 }
 
 /** Enquanto uma tela é baixada (fração de segundo na maioria das vezes). */
+/** Se uma tela não conseguir abrir (ex.: internet caiu), mostra um aviso em vez de deixar a página em branco. */
+export class ErroTela extends Component<{ children: ReactNode }, { erro: boolean }> {
+  state = { erro: false }
+  static getDerivedStateFromError() {
+    return { erro: true }
+  }
+  render() {
+    if (!this.state.erro) return this.props.children
+    return (
+      <div role="alert" className="card mx-auto my-10 max-w-md p-6 text-center">
+        <p className="font-semibold">Não foi possível abrir esta tela.</p>
+        <p className="mt-1 text-sm text-muted">Confira a conexão com a internet e tente de novo.</p>
+        <button type="button" className="btn btn-primary mt-4" onClick={() => window.location.reload()}>
+          Recarregar
+        </button>
+      </div>
+    )
+  }
+}
+
 export function CarregandoTela() {
   return (
     <div className="flex min-h-[40vh] items-center justify-center" role="status" aria-label="Carregando">

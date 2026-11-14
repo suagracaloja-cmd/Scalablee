@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { supabase } from '../lib/supabase'
-import { CarregandoTela, Logo, Orb } from './ui'
+import { CarregandoTela, ErroTela, Logo, Orb } from './ui'
 import { CoralinePainel } from './CoralinePainel'
 import { useRolou } from '../hooks/useRolou'
 import { AGENT_NAME } from '../lib/areas'
@@ -190,7 +190,7 @@ export default function Layout() {
                 <Link to="/assinatura" className="font-semibold underline underline-offset-2">Ver assinatura</Link>
               </div>
             )}
-            {blocked ? <Navigate to="/assinatura" replace /> : <Suspense fallback={<CarregandoTela />}><Outlet /></Suspense>}
+            {blocked ? <Navigate to="/assinatura" replace /> : <ErroTela key={loc.pathname}><Suspense fallback={<CarregandoTela />}><Outlet /></Suspense></ErroTela>}
             {/* A conversa ocupa a tela inteira; nela os documentos ficam em Configurações */}
             {!loc.pathname.startsWith('/agente') && <LegalFooter className="mt-12" />}
           </div>

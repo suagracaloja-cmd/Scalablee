@@ -40,6 +40,7 @@ const Atendimentos = tela(() => import('./pages/Atendimentos'))
 const Customers = tela(() => import('./pages/Customers'))
 const Prontuario = tela(() => import('./pages/Prontuario'))
 const Finance = tela(() => import('./pages/Finance'))
+const Estoque = tela(() => import('./pages/Estoque'))
 const Tasks = tela(() => import('./pages/Tasks'))
 const WhatsApp = tela(() => import('./pages/WhatsApp'))
 const Approvals = tela(() => import('./pages/Approvals'))
@@ -82,6 +83,7 @@ function Gate() {
         <Route path="pacientes" element={<Customers />} />
         <Route path="pacientes/:id" element={<So papeis={['dono', 'profissional']}><Prontuario /></So>} />
         <Route path="financeiro" element={<So papeis={['dono']}><Finance /></So>} />
+        <Route path="estoque" element={<Estoque />} />
         <Route path="tarefas" element={<Tasks />} />
         <Route path="notificacoes" element={<Notifications />} />
         <Route path="clinica" element={<So papeis={['dono']}><Clinica /></So>} />

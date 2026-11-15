@@ -11,10 +11,11 @@ import {
   LogOut,
   Menu,
   MessageCircle,
+  Package,
   Search,
   Settings,
-  Stethoscope,
   Sparkles,
+  Stethoscope,
   Users,
   Wallet,
   X,
@@ -38,6 +39,7 @@ const NAV: NavItem[] = [
   { to: '/clientes', label: 'Pacientes', icon: Users },
   { to: '/atendimentos', label: 'Atendimentos', icon: Stethoscope, papeis: ['dono', 'recepcao'] },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, papeis: ['dono'] },
+  { to: '/estoque', label: 'Estoque', icon: Package },
   { to: '/tarefas', label: 'Tarefas', icon: ClipboardList },
 ]
 const EXTRAS: NavItem[] = [
@@ -108,13 +110,13 @@ export default function Layout() {
     <div className="min-h-screen overflow-x-clip md:flex">
       {/* Trilho lateral (computador). Em telas baixas (notebook) fica mais compacto e, se ainda faltar espaço, rola. */}
       <aside
-        className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center overflow-y-auto overflow-x-hidden py-6 [scrollbar-width:thin] md:flex baixa:py-4 curta:py-3"
+        className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center overflow-y-auto overflow-x-hidden py-6 [scrollbar-width:thin] md:flex baixa:py-4 curta:py-2"
         onScroll={() => alvoDica.current && mostrarDica(alvoDica.current.el, alvoDica.current.texto)}
       >
-        <NavLink to="/" className="reveal mb-8 shrink-0 baixa:mb-5 curta:mb-3" aria-label="Scalable — início" {...dicaDe('Início')}>
+        <NavLink to="/" className="reveal mb-8 shrink-0 baixa:mb-5 curta:mb-2" aria-label="Scalable — início" {...dicaDe('Início')}>
           <Logo size={46} word={false} />
         </NavLink>
-        <nav className="glass flex flex-1 flex-col items-center gap-2.5 rounded-full px-2.5 py-3 shadow-[0_10px_30px_-18px_rgba(40,90,180,0.35)] baixa:gap-1.5 baixa:py-2 curta:gap-1" aria-label="Menu principal">
+        <nav className="glass flex flex-1 flex-col items-center gap-2.5 rounded-full px-2.5 py-3 shadow-[0_10px_30px_-18px_rgba(40,90,180,0.35)] baixa:gap-1.5 baixa:py-2 curta:gap-0.5" aria-label="Menu principal">
           {navItems.map((n, i) => {
             const c = n.badge ? counts[n.badge] : 0
             const active = isActive(n.to)
@@ -133,7 +135,7 @@ export default function Layout() {
             )
           })}
         </nav>
-        <div className="mt-4 flex shrink-0 flex-col items-center gap-2.5 baixa:mt-3 baixa:gap-1.5 curta:mt-2 curta:gap-1">
+        <div className="mt-4 flex shrink-0 flex-col items-center gap-2.5 baixa:mt-3 baixa:gap-1.5 curta:mt-1.5 curta:gap-0.5">
           {papel === 'dono' && (
             <>
               <NavLink to="/clinica" className={navCls('/clinica')} aria-label="Clínica e equipe" {...dicaDe('Clínica e equipe')}>

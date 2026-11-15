@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronRight, Play, ShoppingBag, Sparkles, Users, Wallet } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronRight, Package, Play, ShoppingBag, Sparkles, Users, Wallet } from 'lucide-react'
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval, Customer, Insight, Sale, Task, Transaction } from '../lib/types'
@@ -9,6 +9,7 @@ import { AgentMark, Ajusta, AreaChip, LogoIcon, Count, Delta, Money, Reveal, Spi
 import { DONUT_COLORS, Donut, DualBars, LineChart } from '../components/LineChart'
 import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
 import { HojeNaAgenda } from '../components/HojeNaAgenda'
+import { normalizarItem, situacao, type ItemEstoque } from '../lib/estoque'
 
 type Range = 7 | 30 | 90
 
@@ -23,19 +24,21 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [insights, setInsights] = useState<Insight[]>([])
   const [approvals, setApprovals] = useState<Approval[]>([])
+  const [estoque, setEstoque] = useState<ItemEstoque[]>([])
   const [ready, setReady] = useState(false)
   const [range, setRange] = useState<Range>(30)
   const [running, setRunning] = useState(false)
 
   const load = useCallback(async () => {
     const since = addDays(today(), -150)
-    const [s, t, c, tk, i, a] = await Promise.all([
+    const [s, t, c, tk, i, a, es] = await Promise.all([
       supabase.from('sales').select('*').gte('sold_at', since).order('sold_at').limit(5000),
       supabase.from('transactions').select('*'),
       supabase.from('customers').select('*'),
       supabase.from('tasks').select('*').eq('done', false).order('due_date', { nullsFirst: false }).limit(50),
       supabase.from('insights').select('*').order('created_at', { ascending: false }).limit(20),
       supabase.from('approvals').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
+      supabase.from('estoque_itens').select('*').eq('ativo', true).limit(2000),
     ])
     setSales(((s.data ?? []) as Sale[]).map((x) => ({ ...x, amount: Number(x.amount) })))
     setTxs(((t.data ?? []) as Transaction[]).map((x) => ({ ...x, amount: Number(x.amount) })))
@@ -43,6 +46,7 @@ export default function Dashboard() {
     setTasks((tk.data ?? []) as Task[])
     setInsights((i.data ?? []) as Insight[])
     setApprovals((a.data ?? []) as Approval[])
+    setEstoque(((es.data ?? []) as ItemEstoque[]).map(normalizarItem))
     setReady(true)
   }, [])
 
@@ -156,9 +160,26 @@ export default function Dashboard() {
     const h = new Date().getHours()
     return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
   })()
-  const attention = [
+  // Estoque: um aviso para o que venceu e outro para o que está acabando
+  const avisosEstoque = (() => {
+    const t = today()
+    const lista = (f: (x: ReturnType<typeof situacao>) => boolean) => estoque.filter((i) => f(situacao(i, t))).map((i) => i.nome)
+    const resumo = (nomes: string[]) => (nomes.length <= 2 ? nomes.join(' e ') : `${nomes.slice(0, 2).join(', ')} e mais ${nomes.length - 2}`)
+    const vencidos = lista((x) => x.validade === 'vencido')
+    const acabando = lista((x) => x.nivel !== 'ok')
+    return [
+      ...(vencidos.length ? [{ key: 'estoque-vencido', icon: Package, text: `${vencidos.length} item(ns) vencido(s) no estoque`, sub: resumo(vencidos), to: '/estoque', tone: 'bg-rose-50 text-rose-600' }] : []),
+      ...(acabando.length ? [{ key: 'estoque-acabando', icon: Package, text: `${acabando.length} item(ns) acabando no estoque`, sub: resumo(acabando), to: '/estoque', tone: 'bg-amber-50 text-amber-600' }] : []),
+    ]
+  })()
+  const principais = [
     ...approvals.map((a) => ({ key: a.id, icon: CheckCircle2, text: a.title, sub: 'Aprovação pendente', to: '/aprovacoes', tone: 'bg-brand-soft text-brand' })),
     ...(dono ? m.overdue : []).map((x) => ({ key: x.id, icon: AlertTriangle, text: x.description, sub: `Venceu ${fmtDate(x.due_date)} · ${brl(x.amount)}`, to: '/financeiro', tone: 'bg-rose-50 text-rose-600' })),
+  ]
+  // Os avisos do estoque (no máximo 2) sempre aparecem, mesmo com muitas pendências
+  const attention = [
+    ...principais.slice(0, 5 - avisosEstoque.length),
+    ...avisosEstoque,
     ...insights
       .filter((i) => i.priority === 'high' && !i.read)
       .map((i) => ({ key: i.id, icon: Sparkles, text: i.title, sub: `Alerta · ${areaOf(i.agent_kind).label}`, to: '/notificacoes', tone: 'bg-amber-50 text-amber-600' })),

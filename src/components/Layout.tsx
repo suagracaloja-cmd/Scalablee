@@ -68,7 +68,7 @@ export default function Layout() {
   const bill = billing && billing.enabled ? billing : null
   const free = ['/assinatura', '/configuracoes'].some((p) => loc.pathname.startsWith(p))
   const blocked = !!bill && bill.enforced && !bill.allowed && !free
-  const banner = !bill || loc.pathname.startsWith('/assinatura')
+  const banner = !bill || bill.isento || loc.pathname.startsWith('/assinatura')
     ? null
     : !bill.allowed
       ? 'O acesso está pausado: a assinatura não está em dia.'

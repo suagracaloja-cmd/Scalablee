@@ -18,6 +18,8 @@ export type Billing = {
   next_due_date: string | null;
   last_payment_at: string | null;
   invoice_url: string | null;
+  /** Conta de demonstração/interna: sem cobrança e sem bloqueio (marcada só pelo administrador). */
+  isento?: boolean | null;
   updated_at: string;
 };
 
@@ -114,6 +116,7 @@ export type MpClient = ReturnType<typeof mpClient>;
 export function accessAllowed(b: Billing | null, cfg: BillingConfig, now = new Date()): boolean {
   if (!cfg.enabled || !cfg.enforced) return true;
   if (!b) return false;
+  if (b.isento) return true;
   const t = now.getTime();
   const due = b.next_due_date ? new Date(b.next_due_date + "T23:59:59-03:00").getTime() : 0;
   switch (b.status) {
@@ -156,6 +159,7 @@ export function billingView(b: Billing, cfg: BillingConfig, now = new Date()) {
     enabled: cfg.enabled,
     enforced: cfg.enforced,
     sandbox: cfg.sandbox,
+    isento: !!b.isento,
     plan: { name: cfg.planName, value: cfg.value, trialDays: cfg.trialDays },
     status: b.status,
     trialEndsAt: b.trial_ends_at,
@@ -190,6 +194,7 @@ export async function subscribe(
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, "Informe o e-mail da sua conta do Mercado Pago.");
 
   const b = await ensureBilling(admin, company, cfg);
+  if (b.isento) throw new HttpError(400, "Esta é uma conta de demonstração: não tem cobrança.");
   // Já existe assinatura em andamento: reaproveita (não cria outra cobrança)
   if (b.subscription_id && b.status !== "canceled" && b.provider_status !== "cancelled") {
     const pre = await mp.getPreapproval(b.subscription_id);

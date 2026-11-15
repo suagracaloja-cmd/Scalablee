@@ -140,8 +140,9 @@ function PlanoPago() {
   if (!billing || !billing.enabled) return null
 
   const b = billing
-  const chip =
-    b.status === 'active'
+  const chip = b.isento
+    ? { l: 'Demonstração · sem cobrança', c: 'bg-emerald-50 text-emerald-700' }
+    : b.status === 'active'
       ? { l: 'Ativa', c: 'bg-emerald-50 text-emerald-700' }
       : b.status === 'trial'
         ? { l: b.allowed ? `Teste grátis · ${b.daysLeft} dia(s) restante(s)` : 'Teste grátis encerrado', c: b.allowed ? 'bg-brand-soft text-ink' : 'bg-rose-50 text-rose-700' }
@@ -184,7 +185,7 @@ function PlanoPago() {
   }
 
   const payUrl = link ?? b.invoiceUrl
-  const canSubscribe = !b.hasSubscription
+  const canSubscribe = !b.hasSubscription && !b.isento
 
   return (
     <div>
@@ -208,8 +209,13 @@ function PlanoPago() {
             </div>
             <span className={`chip ${chip.c}`}>{chip.l}</span>
           </div>
+          {b.isento && (
+            <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              Esta é uma conta de demonstração da Scalable: não tem cobrança e não é bloqueada.
+            </p>
+          )}
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {b.status === 'trial' && b.trialEndsAt && <Info k="Teste grátis até" v={fmtDate(b.trialEndsAt)} />}
+            {!b.isento && b.status === 'trial' && b.trialEndsAt && <Info k="Teste grátis até" v={fmtDate(b.trialEndsAt)} />}
             {b.nextDueDate && b.status !== 'canceled' && <Info k="Próximo vencimento" v={fmtDate(b.nextDueDate)} />}
             {b.lastPaymentAt && <Info k="Último pagamento" v={fmtDate(b.lastPaymentAt)} />}
           </div>

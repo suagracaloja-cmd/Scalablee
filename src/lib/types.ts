@@ -165,6 +165,8 @@ export type BillingView =
       enabled: true
       enforced: boolean
       sandbox: boolean
+      /** Conta de demonstração/interna: sem cobrança e sem bloqueio */
+      isento: boolean
       plan: { name: string; value: number; trialDays: number }
       status: 'trial' | 'active' | 'overdue' | 'canceled'
       trialEndsAt: string | null

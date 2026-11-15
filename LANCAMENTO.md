@@ -103,6 +103,8 @@ Com `MERCADOPAGO_ACCESS_TOKEN` e `PLANO_VALOR` definidos, aparece o menu **Assin
 - **Assinar:** a pessoa informa o e-mail da conta do Mercado Pago e conclui a assinatura na página do Mercado Pago. A primeira cobrança acontece no fim do teste grátis.
 - **Acompanhar:** ver as cobranças e cancelar.
 
+**Contas isentas (demonstração ou uso interno):** nunca são cobradas nem bloqueadas. Hoje: Loja Bella Moda e Clínica Horizonte. Para isentar outra conta, no Supabase → SQL Editor: `update public.billing set isento = true where company_id = '<id da clínica>';` (a própria clínica não consegue se marcar como isenta).
+
 Os avisos do Mercado Pago atualizam a situação sozinhos: autorizada, cobrança aprovada, recusada, pausada ou cancelada. Excluir a conta cancela a assinatura no Mercado Pago antes.
 
 **Teste com credenciais de teste:** no Mercado Pago, a assinatura de teste precisa ser feita com um **usuário de teste** (Suas integrações → Contas de teste) — use o e-mail desse usuário comprador no formulário e um cartão de teste do Mercado Pago.

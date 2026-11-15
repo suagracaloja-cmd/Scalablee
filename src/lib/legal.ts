@@ -129,7 +129,7 @@ Se um paciente pedir algo sobre os dados dele, a clínica (controladora) pode co
 Conexões criptografadas (HTTPS), isolamento dos dados de cada clínica no banco de dados, acesso por papel (dono, recepção, profissional), credenciais guardadas criptografadas e só no servidor, verificação de autenticidade das mensagens do WhatsApp e aprovação obrigatória para ações relevantes, com registro de quem aprovou. Nenhum sistema é 100% seguro; em caso de incidente relevante, os afetados e a ANPD serão comunicados (art. 48).
 
 ### 10. Cookies e armazenamento local
-Usamos apenas o armazenamento do navegador necessário para manter você conectado. Não usamos cookies de publicidade, estatísticas de visitas ou rastreadores. Detalhes na [Política de Cookies](/cookies).
+Usamos apenas o armazenamento do navegador necessário para o funcionamento do site: manter você conectado, lembrar que você já entrou neste navegador (para a mensagem de boas-vindas) e recarregar a página quando sai uma versão nova. Não usamos cookies de publicidade, estatísticas de visitas ou rastreadores. Detalhes na [Política de Cookies](/cookies).
 
 ### 11. Menores de idade
 A plataforma não se destina a menores de 18 anos.
@@ -145,17 +145,33 @@ _Última atualização: ${dataVersao}_
 Esta Política explica o que a **${EMPRESA}** grava no seu navegador e quais serviços externos o site acessa. Ela complementa a [Política de Privacidade](/privacidade).
 
 ### 1. O que são cookies e armazenamento local
-Cookies são pequenos arquivos que um site grava no navegador. O **armazenamento local** (localStorage) é um recurso parecido, que guarda informações no próprio navegador.
+Cookies são pequenos arquivos que um site grava no navegador. O **armazenamento local** (localStorage) é um recurso parecido, que guarda informações no próprio navegador. O **armazenamento de sessão** (sessionStorage) funciona do mesmo jeito, mas é apagado quando a aba é fechada.
 
 ### 2. O que a ${EMPRESA} grava no seu navegador
-**Sessão de login** — o único item gravado:
+**Sessão de login**
 - **Nome:** \`sb-…-auth-token\`
 - **Tipo:** armazenamento local, **estritamente necessário**
 - **Para que serve:** manter você conectado depois de entrar na conta
 - **Quando é apagado:** quando você sai da conta ou limpa os dados do navegador
 
+**Lembrete de que você já entrou neste navegador**
+- **Nome:** \`scalable:ja-entrou\`
+- **Tipo:** armazenamento local
+- **O que guarda:** só o valor "1", sem nome, e-mail ou outro dado seu
+- **Para que serve:** a tela de entrada mostra "Bem-vindo de volta" para quem já entrou ou criou conta neste navegador, e "Bem-vindo" para quem chega pela primeira vez
+- **Quando é gravado:** quando você entra na conta ou cria uma
+- **Quando é apagado:** quando você exclui a conta pela plataforma ou limpa os dados do navegador
+
+**Recarga para a versão nova**
+- **Nome:** \`scalable:recarregou-versao\`
+- **Tipo:** armazenamento de sessão
+- **O que guarda:** só o horário da última recarga automática
+- **Para que serve:** se o site for atualizado enquanto a aba está aberta, a página recarrega uma vez sozinha para usar a versão nova; o horário evita que ela recarregue sem parar
+- **Quando é gravado:** só nesse caso
+- **Quando é apagado:** quando a aba é fechada
+
 Além disso:
-- Antes de você entrar na conta, **nada** é gravado.
+- Antes de você entrar ou criar uma conta, **nada** é gravado (a não ser a recarga para a versão nova, no caso descrito acima).
 - A ${EMPRESA} **não grava cookies próprios** e **não usa** cookies ou ferramentas de publicidade, de estatísticas de visitas (analytics), pixels de rastreamento, mapas ou vídeos incorporados.
 
 ### 3. Serviços externos acessados pelo site
@@ -166,10 +182,11 @@ Além disso:
 - Links para outros sites (por exemplo, Meta, para configurar o WhatsApp) abrem páginas com políticas próprias.
 
 ### 4. Consentimento
-O único armazenamento usado é **estritamente necessário** para o serviço que você pediu (entrar e continuar na sua conta). Por isso, não exibimos um aviso pedindo consentimento. Se um dia a ${EMPRESA} passar a usar cookies ou ferramentas que não sejam necessárias (estatísticas, publicidade, mapas ou vídeos incorporados), elas só serão ativadas **depois do seu consentimento**, e esta Política será atualizada.
+Os itens acima servem só para o funcionamento do site que você usa: manter você conectado, abrir a versão atual das telas e escolher a mensagem da tela de entrada. Além da sessão de login, eles não guardam dados seus, e nenhum deles é usado para publicidade, estatísticas ou rastreamento. Por isso, não exibimos um aviso pedindo consentimento. Se um dia a ${EMPRESA} passar a usar cookies ou ferramentas que não sejam necessárias (estatísticas, publicidade, mapas ou vídeos incorporados), elas só serão ativadas **depois do seu consentimento**, e esta Política será atualizada.
 
 ### 5. Como controlar
-- **Sair da conta** apaga a sessão guardada no navegador.
+- **Sair da conta** apaga a sessão guardada no navegador. O lembrete de que você já entrou continua, para a tela de entrada dizer "Bem-vindo de volta".
+- **Excluir a conta** pela plataforma apaga também esse lembrete.
 - Você pode apagar ou bloquear o armazenamento nas configurações do navegador. Se bloquear, não será possível continuar conectado.
 
 ### 6. Contato

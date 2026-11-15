@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { api, avisoConfirmacao, OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
+import { marcarQueEntrou } from './visitante'
 import type { BillingView, Company, Papel } from './types'
 
 type Counts = { insights: number; approvals: number; conversations: number }
@@ -69,12 +70,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       const confirmando = avisoConfirmacao.pendente && !!data.session
       setSession(confirmando ? null : data.session)
+      if (data.session) marcarQueEntrou()
       if (!data.session || confirmando) setLoading(false)
       if (confirmando) supabase.auth.signOut()
     })
     const { data: sub } = supabase.auth.onAuthStateChange((e, s) => {
       if (avisoConfirmacao.pendente && s && (e === 'SIGNED_IN' || e === 'INITIAL_SESSION')) return // a sessão da confirmação não entra no app
       if (e === 'PASSWORD_RECOVERY') setRecovery(true)
+      if (s) marcarQueEntrou()
       setSession(s)
       if (!s) {
         setRecovery(false)

@@ -7,6 +7,7 @@ import { Logo, Reveal, Spinner } from '../components/ui'
 import { LegalFooter } from '../components/LegalFooter'
 import { Captcha, CAPTCHA_ATIVO } from '../components/Captcha'
 import { SENHA_MIN, senhaFraca } from '../lib/senha'
+import { jaEntrouAntes, marcarQueEntrou } from '../lib/visitante'
 
 export default function Login() {
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
@@ -46,6 +47,7 @@ export default function Login() {
           options: { captchaToken, emailRedirectTo: `${window.location.origin}/?email=confirmado`, data: { terms_accepted_at: new Date().toISOString(), terms_version: LEGAL_VERSION } },
         })
         if (error) throw error
+        marcarQueEntrou() // a pessoa agora tem conta: na próxima vez, "Bem-vindo de volta"
         if (!data.session) setMsg({ t: 'ok', m: 'Conta criada! Confirme pelo link enviado ao seu e-mail e depois faça login.' })
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin, captchaToken })
@@ -115,7 +117,7 @@ export default function Login() {
             <Logo size={44} />
           </Reveal>
           <Reveal i={1}>
-            <h2 className="text-3xl font-bold tracking-tight">{mode === 'login' ? 'Bem-vindo de volta' : mode === 'signup' ? 'Crie sua conta' : 'Recuperar senha'}</h2>
+            <h2 className="text-3xl font-bold tracking-tight">{mode === 'login' ? (jaEntrouAntes() ? 'Bem-vindo de volta' : 'Bem-vindo') : mode === 'signup' ? 'Crie sua conta' : 'Recuperar senha'}</h2>
             <p className="mt-2 text-sm text-muted">{mode === 'signup' ? 'Comece a organizar sua clínica com IA em minutos.' : mode === 'login' ? 'Entre para ver como está sua clínica hoje.' : 'Enviaremos um link para o seu e-mail.'}</p>
           </Reveal>
           <Reveal i={2} className="mt-8 space-y-3">

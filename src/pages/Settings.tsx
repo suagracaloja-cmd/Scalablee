@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { CheckCircle2, Download, Globe, RefreshCw, ShieldCheck, Trash2, XCircle } from 'lucide-react'
 import { AGENT_NAME } from '../lib/areas'
 import { api, supabase } from '../lib/supabase'
+import { esquecerQueEntrou } from '../lib/visitante'
 import { useApp } from '../lib/store'
 import type { SiteAnalysis } from '../lib/types'
 import { fmtDate } from '../lib/format'
@@ -91,6 +92,7 @@ export default function Settings() {
     try {
       await api('conta', { action: 'excluir', confirmacao: delText })
       toast('Conta excluída')
+      esquecerQueEntrou()
       await supabase.auth.signOut()
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), 'err')

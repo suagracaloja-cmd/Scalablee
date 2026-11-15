@@ -3,7 +3,7 @@
 //
 // DADOS DO RESPONSÁVEL — preencha só com dados reais informados pelo dono (nada aqui deve ser inventado).
 // Enquanto um campo estiver vazio, as páginas omitem esse dado.
-export const LEGAL_VERSION = '2026-11-11'
+export const LEGAL_VERSION = '2026-11-15'
 export const EMPRESA = 'Scalable'
 /** Nome completo (pessoa física) ou razão social (empresa) de quem responde pela Scalable. */
 export const RESPONSAVEL = ''

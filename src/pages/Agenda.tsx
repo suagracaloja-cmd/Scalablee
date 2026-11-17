@@ -9,6 +9,7 @@ import { brl } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
 import { erroTelefone, lerTelefone } from '../lib/telefone'
+import { useTempoReal } from '../hooks/useTempoReal'
 
 type Pac = Pick<Customer, 'id' | 'name' | 'phone' | 'etapa'>
 type Form = {
@@ -66,16 +67,7 @@ export default function Agenda() {
   }, [load])
 
   // Atualiza sozinho quando alguém da equipe (ou a Coraline AI) mexe na agenda
-  useEffect(() => {
-    if (!company) return
-    const ch = supabase
-      .channel('agenda-' + company.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos', filter: `company_id=eq.${company.id}` }, () => load())
-      .subscribe()
-    return () => {
-      supabase.removeChannel(ch)
-    }
-  }, [company, load])
+  useTempoReal(company ? 'agenda-' + company.id : null, [{ tabela: 'agendamentos', filtro: `company_id=eq.${company?.id}` }], () => load())
 
   const profAtivos = profs.filter((p) => p.ativo)
   const servAtivos = servs.filter((s) => s.ativo)

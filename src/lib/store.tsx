@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { api, avisoConfirmacao, OPENED_FROM_RECOVERY_LINK, supabase } from './supabase'
 import { marcarQueEntrou } from './visitante'
 import type { BillingView, Company, Papel } from './types'
+import { useTempoReal } from '../hooks/useTempoReal'
 
 type Counts = { insights: number; approvals: number; conversations: number }
 
@@ -105,21 +106,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [reloadBilling])
 
   // Atualização em tempo real dos contadores
-  useEffect(() => {
-    if (!company) return
-    const ch = supabase
-      .channel('counts-' + company.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'insights', filter: `company_id=eq.${company.id}` }, () => reloadCounts())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals', filter: `company_id=eq.${company.id}` }, (p) => {
-        reloadCounts()
-        if (p.eventType === 'INSERT') toast('Nova aprovação aguardando você')
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations', filter: `company_id=eq.${company.id}` }, () => reloadCounts())
-      .subscribe()
-    return () => {
-      supabase.removeChannel(ch)
-    }
-  }, [company, reloadCounts, toast])
+  const filtroEmpresa = `company_id=eq.${company?.id}`
+  useTempoReal(
+    company ? 'counts-' + company.id : null,
+    [{ tabela: 'insights', filtro: filtroEmpresa }, { tabela: 'approvals', filtro: filtroEmpresa }, { tabela: 'conversations', filtro: filtroEmpresa }],
+    (eventos) => {
+      reloadCounts()
+      if (eventos.some((e) => e.table === 'approvals' && e.eventType === 'INSERT')) toast('Nova aprovação aguardando você')
+    },
+  )
 
   return (
     <AppCtx.Provider value={{ session, loading, company, papel, counts, reloadCompany, reloadCounts, toast, recovery, endRecovery: () => setRecovery(false), billing, reloadBilling }}>

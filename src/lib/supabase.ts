@@ -16,7 +16,9 @@ const veioDoEmail = typeof window !== 'undefined' && /[?&]email=confirmado\b/.te
 const veioComErro = veioDoEmail && /error/.test(window.location.hash + window.location.search)
 export const avisoConfirmacao = { pendente: veioDoEmail && !veioComErro, erro: veioComErro }
 
-export const supabase = createClient(url, key)
+// Tempo real: sem nenhum canal aberto (aba escondida há mais de 1 min), a conexão fecha em 10 s
+// (o padrão da biblioteca é 50 s) — cada aba conectada ocupa uma vaga do limite de conexões do plano.
+export const supabase = createClient(url, key, { realtime: { disconnectOnEmptyChannelsAfterMs: 10_000 } })
 
 /** Chama uma rota da Edge Function `api` com a sessão do usuário. */
 export async function api<T = unknown>(route: string, body: Record<string, unknown> = {}): Promise<T> {

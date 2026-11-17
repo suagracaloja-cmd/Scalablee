@@ -7,6 +7,7 @@ import { CATEGORIAS, DIAS_AVISO_VALIDADE, TIPO_MOV, UNIDADES, fmtQtd, lerNumero,
 import { useTelaLarga } from '../hooks/useTelaLarga'
 import { Count, Empty, Field, Modal, PageHeader, Reveal, Spinner, StatusCard } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
+import { useTempoReal } from '../hooks/useTempoReal'
 
 type Filtro = 'todos' | 'acabando' | 'vencendo' | 'vencidos' | 'arquivados'
 type FormItem = { nome: string; categoria: string; unidade: string; quantidade: string; minimo: string; validade: string; custo: string; fornecedor: string; observacoes: string }
@@ -78,16 +79,7 @@ export default function Estoque() {
   }, [load])
 
   // Tempo real: alguém da equipe registrou uma saída em outro computador
-  useEffect(() => {
-    if (!company) return
-    const ch = supabase
-      .channel('estoque-' + company.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'estoque_itens', filter: `company_id=eq.${company.id}` }, () => load())
-      .subscribe()
-    return () => {
-      supabase.removeChannel(ch)
-    }
-  }, [company, load])
+  useTempoReal(company ? 'estoque-' + company.id : null, [{ tabela: 'estoque_itens', filtro: `company_id=eq.${company?.id}` }], () => load())
 
   const ativos = useMemo(() => itens.filter((i) => i.ativo), [itens])
   const resumo = useMemo(() => {

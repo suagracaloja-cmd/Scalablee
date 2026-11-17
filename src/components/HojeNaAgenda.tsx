@@ -21,9 +21,11 @@ export function HojeNaAgenda({ i = 1 }: { i?: number }) {
     const ate = paraUtc(somaDias(hoje, 1), '00:00', cfg.fuso).toISOString()
     Promise.all([
       supabase.from('agendamentos').select('*').gte('inicio', de).lt('inicio', ate).neq('status', 'cancelado').order('inicio'),
-      supabase.from('customers').select('id,name'),
       supabase.from('profissionais').select('id,nome,cor'),
-    ]).then(([a, c, p]) => {
+    ]).then(async ([a, p]) => {
+      // Nomes só dos pacientes de hoje (antes baixava todos os pacientes da clínica)
+      const ids = [...new Set(((a.data ?? []) as Agendamento[]).map((x) => x.customer_id).filter(Boolean) as string[])]
+      const c = ids.length ? await supabase.from('customers').select('id,name').in('id', ids) : { data: [] }
       const pac = new Map((c.data ?? []).map((x) => [x.id as string, x.name as string]))
       const pro = new Map((p.data ?? []).map((x) => [x.id as string, { nome: x.nome as string, cor: x.cor as string }]))
       setLinhas(((a.data ?? []) as Agendamento[]).map((x) => ({ ...x, paciente: x.customer_id ? (pac.get(x.customer_id) ?? null) : null, prof: x.profissional_id ? (pro.get(x.profissional_id) ?? null) : null })))

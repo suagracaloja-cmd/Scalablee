@@ -40,6 +40,7 @@ export async function saveCredentials(
 /** Envia uma mensagem de texto pela WhatsApp Cloud API. */
 export async function sendText(cfg: WaConfig, to: string, body: string): Promise<{ id?: string; error?: string }> {
   const res = await fetch(`${GRAPH}/${cfg.phone_number_id}/messages`, {
+    signal: AbortSignal.timeout(15_000),
     method: "POST",
     headers: { Authorization: `Bearer ${cfg.access_token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ messaging_product: "whatsapp", to: to.replace(/\D/g, ""), type: "text", text: { body, preview_url: false } }),
@@ -52,6 +53,7 @@ export async function sendText(cfg: WaConfig, to: string, body: string): Promise
 /** Valida as credenciais e retorna o número formatado. */
 export async function checkPhone(cfg: Pick<WaConfig, "phone_number_id" | "access_token">) {
   const res = await fetch(`${GRAPH}/${cfg.phone_number_id}?fields=display_phone_number,verified_name`, {
+    signal: AbortSignal.timeout(15_000),
     headers: { Authorization: `Bearer ${cfg.access_token}` },
   });
   const data = await res.json().catch(() => ({}));

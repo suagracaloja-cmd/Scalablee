@@ -11,6 +11,7 @@
 //   GET|POST /api/wa-webhook → webhook da WhatsApp Cloud API (Meta)
 //   POST /api/equipe        → remover alguém da equipe (convites e lista: direto no banco, com RLS)
 //   POST /api/push          → notificações no celular (chave pública e aviso de teste)
+//   GET  /api/saude         → verificação de saúde para monitoramento (sem login, sem dados)
 import agente from "./agente.ts";
 import aprovacoes from "./aprovacoes.ts";
 import assinatura from "./assinatura.ts";
@@ -23,6 +24,7 @@ import waSend from "./wa-send.ts";
 import waWebhook from "./wa-webhook.ts";
 import equipe from "./equipe.ts";
 import push from "./push.ts";
+import saude from "./saude.ts";
 import { admin, clientIp, HttpError, json, rateLimit, securityHeaders } from "./lib/common.ts";
 
 const routes: Record<string, (req: Request) => Promise<Response> | Response> = {
@@ -39,10 +41,11 @@ const routes: Record<string, (req: Request) => Promise<Response> | Response> = {
   "wa-webhook": waWebhook,
   equipe,
   push,
+  saude,
 };
 
 // Limites gerais por IP (pedidos por minuto), antes de qualquer outra coisa
-const LIMITE_IP: Record<string, number> = { "wa-webhook": 600, "mp-webhook": 120 };
+const LIMITE_IP: Record<string, number> = { "wa-webhook": 600, "mp-webhook": 120, saude: 30 };
 const LIMITE_IP_PADRAO = 240;
 const TAMANHO_MAXIMO = 1_000_000; // 1 MB por pedido
 

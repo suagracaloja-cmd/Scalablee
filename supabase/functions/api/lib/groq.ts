@@ -166,11 +166,18 @@ async function callModel(model: string, key: string, req: ModelRequest, budget: 
     max_completion_tokens: maxOut,
     ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: req.effort ?? "low" } : {}),
   };
-  const res = await fetchFn(URL_CHAT, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetchFn(URL_CHAT, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(45_000), // a IA não pode prender a função para sempre
+    });
+  } catch (e) {
+    const tempo = e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
+    throw new GroqError(503, tempo ? "timeout" : "network", tempo ? "A IA demorou demais para responder" : "Falha de conexão com a IA");
+  }
   logLimits(model, res.headers);
   const data = (await res.json().catch(() => ({}))) as Json;
   if (!res.ok) {
@@ -223,6 +230,7 @@ export async function groqCreate(req: ModelRequest, opts: { fetchFn?: FetchFn; k
           break; // o outro modelo gratuito costuma acertar a chamada
         }
         if (e.status === 404 || (msg.includes("model") && (msg.includes("not found") || msg.includes("decommissioned") || msg.includes("does not exist")))) break;
+        if (e.code === "timeout") break; // demorou demais: tenta o próximo modelo em vez de esperar de novo
         if (e.status >= 500 && attempt === 0) continue;
         throw e;
       }

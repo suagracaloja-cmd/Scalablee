@@ -85,11 +85,25 @@ export class PaymentProviderError extends Error {
 export function mpClient(cfg: BillingConfig, fetchFn: FetchFn = (u, i) => fetch(u, i)) {
   async function call<T = Json>(method: string, path: string, body?: Json): Promise<T> {
     if (!cfg.token) throw new PaymentProviderError(503, "Cobrança não configurada (falta MERCADOPAGO_ACCESS_TOKEN).");
-    const res = await fetchFn(cfg.baseUrl + path, {
-      method,
-      headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
+    // Consultas (GET) podem ser repetidas sem risco: até 3 tentativas com espera crescente (0,5 s, 1 s).
+    // Criar ou alterar assinatura NÃO repete sozinho, para nunca duplicar uma cobrança.
+    const tentativas = method === "GET" ? 3 : 1;
+    let res: Response | null = null;
+    for (let t = 0; t < tentativas; t++) {
+      try {
+        res = await fetchFn(cfg.baseUrl + path, {
+          method,
+          headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
+          ...(body ? { body: JSON.stringify(body) } : {}),
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (res.status < 500 && res.status !== 429) break;
+      } catch (e) {
+        if (t === tentativas - 1) throw new PaymentProviderError(503, "O Mercado Pago não respondeu a tempo. Tente de novo em instantes.");
+      }
+      if (t < tentativas - 1) await new Promise((r) => setTimeout(r, 500 * 2 ** t));
+    }
+    if (!res) throw new PaymentProviderError(503, "O Mercado Pago não respondeu a tempo. Tente de novo em instantes.");
     const data = (await res.json().catch(() => ({}))) as Json;
     if (!res.ok) {
       if (res.status === 401) throw new PaymentProviderError(401, "O Mercado Pago recusou o Access Token (confira MERCADOPAGO_ACCESS_TOKEN).");

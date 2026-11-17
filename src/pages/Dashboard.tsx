@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronRight, Package, Play, ShoppingBag, Sparkles, Users, Wallet } from 'lucide-react'
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import type { Approval, Customer, Insight, Sale, Task, Transaction } from '../lib/types'
+import type { Approval, Insight, Sale, Task, Transaction } from '../lib/types'
 import { addDays, brl, brlShort, fmtDate, relativeDay, timeAgo, toISO, today } from '../lib/format'
 import { AgentMark, Ajusta, AreaChip, LogoIcon, Count, Delta, Money, Reveal, Spinner, STATUS_CHIP, STATUS_DOT, STATUS_LABEL } from '../components/ui'
 import { DONUT_COLORS, Donut, DualBars, LineChart } from '../components/LineChart'
 import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
 import { HojeNaAgenda } from '../components/HojeNaAgenda'
 import { normalizarItem, situacao, type ItemEstoque } from '../lib/estoque'
+import { useTempoReal } from '../hooks/useTempoReal'
 
 type Range = 7 | 30 | 90
 
@@ -18,9 +19,14 @@ export default function Dashboard() {
   const dono = papel === 'dono'
   const [ask, setAsk] = useState('')
   const navigate = useNavigate()
-  const [sales, setSales] = useState<Sale[]>([])
+  // Atendimentos já somados no banco: totais por dia e situação, mais vendidos (30 dias) e os 6 mais recentes
+  type Dia = { dia: string; status: Sale['status']; total: number; qtd: number }
+  type Recente = Sale & { paciente: string | null }
+  const [painel, setPainel] = useState<{ dias: Dia[]; produtos: { descricao: string; total: number }[]; recentes: Recente[] }>({ dias: [], produtos: [], recentes: [] })
   const [txs, setTxs] = useState<Transaction[]>([])
-  const [customers, setCustomers] = useState<Customer[]>([])
+  // Pacientes: só as contagens e os nomes que aparecem na tela (antes baixava a lista inteira)
+  const [clientes, setClientes] = useState<{ total: number; novosMes: number }>({ total: 0, novosMes: 0 })
+  const [names, setNames] = useState<Map<string, string>>(new Map())
   const [tasks, setTasks] = useState<Task[]>([])
   const [insights, setInsights] = useState<Insight[]>([])
   const [approvals, setApprovals] = useState<Approval[]>([])
@@ -31,18 +37,30 @@ export default function Dashboard() {
 
   const load = useCallback(async () => {
     const since = addDays(today(), -150)
-    const [s, t, c, tk, i, a, es] = await Promise.all([
-      supabase.from('sales').select('*').gte('sold_at', since).order('sold_at').limit(5000),
-      supabase.from('transactions').select('*'),
-      supabase.from('customers').select('*'),
+    const d = new Date()
+    const mesAtual = today().slice(0, 8) + '01'
+    // Lançamentos: os em aberto e os dos últimos 4 meses (é o que os cartões e o gráfico usam)
+    const desde4Meses = toISO(new Date(d.getFullYear(), d.getMonth() - 3, 1))
+    const [s, t, c, cNovos, tk, i, a, es] = await Promise.all([
+      supabase.rpc('painel_atendimentos', { p_desde: since, p_produtos_desde: addDays(today(), -30) }),
+      supabase.from('transactions').select('id,type,description,amount,due_date,paid_at').or(`paid_at.is.null,due_date.gte.${desde4Meses},paid_at.gte.${desde4Meses}`),
+      supabase.from('customers').select('id', { count: 'exact', head: true }),
+      supabase.from('customers').select('id', { count: 'exact', head: true }).gte('created_at', mesAtual),
       supabase.from('tasks').select('*').eq('done', false).order('due_date', { nullsFirst: false }).limit(50),
       supabase.from('insights').select('*').order('created_at', { ascending: false }).limit(20),
       supabase.from('approvals').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
       supabase.from('estoque_itens').select('*').eq('ativo', true).limit(2000),
     ])
-    setSales(((s.data ?? []) as Sale[]).map((x) => ({ ...x, amount: Number(x.amount) })))
+    const pa = (s.data ?? { dias: [], produtos: [], recentes: [] }) as { dias: Dia[]; produtos: { descricao: string; total: number }[]; recentes: Recente[] }
+    setPainel({
+      dias: (pa.dias ?? []).map((x) => ({ ...x, total: Number(x.total), qtd: Number(x.qtd) })),
+      produtos: (pa.produtos ?? []).map((x) => ({ ...x, total: Number(x.total) })),
+      recentes: (pa.recentes ?? []).map((x) => ({ ...x, amount: Number(x.amount) })),
+    })
     setTxs(((t.data ?? []) as Transaction[]).map((x) => ({ ...x, amount: Number(x.amount) })))
-    setCustomers((c.data ?? []) as Customer[])
+    setClientes({ total: c.count ?? 0, novosMes: cNovos.count ?? 0 })
+    // Nomes dos atendimentos recentes (já vêm junto, do banco)
+    setNames(new Map((pa.recentes ?? []).filter((x) => x.customer_id && x.paciente).map((x) => [x.customer_id as string, x.paciente as string])))
     setTasks((tk.data ?? []) as Task[])
     setInsights((i.data ?? []) as Insight[])
     setApprovals((a.data ?? []) as Approval[])
@@ -54,19 +72,9 @@ export default function Dashboard() {
     load()
   }, [load])
 
-  // Tempo real: nova venda/insight atualiza os números e redesenha a linha
-  useEffect(() => {
-    if (!company) return
-    const ch = supabase
-      .channel('dash-' + company.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `company_id=eq.${company.id}` }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'insights', filter: `company_id=eq.${company.id}` }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals', filter: `company_id=eq.${company.id}` }, () => load())
-      .subscribe()
-    return () => {
-      supabase.removeChannel(ch)
-    }
-  }, [company, load])
+  // Tempo real: nova venda/insight atualiza os números e redesenha a linha (eventos seguidos = uma recarga)
+  const filtro = `company_id=eq.${company?.id}`
+  useTempoReal(company ? 'dash-' + company.id : null, [{ tabela: 'sales', filtro }, { tabela: 'insights', filtro }, { tabela: 'approvals', filtro }, { tabela: 'estoque_itens', filtro }], () => load())
 
   const m = useMemo(() => {
     const t = today()
@@ -74,19 +82,22 @@ export default function Dashboard() {
     const d = new Date()
     const prevStart = toISO(new Date(d.getFullYear(), d.getMonth() - 1, 1))
     const prevSame = toISO(new Date(d.getFullYear(), d.getMonth() - 1, d.getDate()))
-    const valid = sales.filter((s) => s.status !== 'cancelled')
-    const sum = (a: { amount: number }[]) => a.reduce((x, y) => x + y.amount, 0)
-    const month = valid.filter((s) => s.sold_at >= monthStart)
-    const prev = valid.filter((s) => s.sold_at >= prevStart && s.sold_at <= prevSame)
+    // Mesmas contas de antes, agora sobre os totais por dia (cada linha = um dia e uma situação)
+    const valid = painel.dias.filter((s) => s.status !== 'cancelled')
+    const sum = (a: { total: number }[]) => a.reduce((x, y) => x + y.total, 0)
+    const qtd = (a: { qtd: number }[]) => a.reduce((x, y) => x + y.qtd, 0)
+    const sumTx = (a: { amount: number }[]) => a.reduce((x, y) => x + y.amount, 0)
+    const month = valid.filter((s) => s.dia >= monthStart)
+    const prev = valid.filter((s) => s.dia >= prevStart && s.dia <= prevSame)
     const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null)
     const revenue = sum(month)
-    const ticket = month.length ? revenue / month.length : 0
-    const prevTicket = prev.length ? sum(prev) / prev.length : 0
+    const ticket = qtd(month) ? revenue / qtd(month) : 0
+    const prevTicket = qtd(prev) ? sum(prev) / qtd(prev) : 0
 
     const series: { label: string; value: number }[] = []
     for (let i = range - 1; i >= 0; i--) {
       const day = addDays(t, -i)
-      series.push({ label: fmtDate(day).slice(0, 5), value: sum(valid.filter((s) => s.sold_at === day)) })
+      series.push({ label: fmtDate(day).slice(0, 5), value: sum(valid.filter((s) => s.dia === day)) })
     }
     const half = Math.floor(series.length / 2)
     const growth = pct(
@@ -98,9 +109,7 @@ export default function Dashboard() {
     const payables = open.filter((x) => x.type === 'expense')
     const overdue = payables.filter((x) => x.due_date < t)
 
-    const products = new Map<string, number>()
-    for (const s of valid.filter((s) => s.sold_at >= addDays(t, -30))) products.set(s.description, (products.get(s.description) ?? 0) + s.amount)
-    const prodSorted = [...products].sort((a, b) => b[1] - a[1])
+    const prodSorted = painel.produtos.map((p) => [p.descricao, p.total] as [string, number]).sort((a, b) => b[1] - a[1])
     const top = prodSorted.slice(0, 4).map(([label, value]) => ({ label, value }))
     const rest = prodSorted.slice(4).reduce((a, b) => a + b[1], 0)
     if (rest > 0) top.push({ label: 'Outros', value: rest })
@@ -112,34 +121,33 @@ export default function Dashboard() {
       const last = new Date(d.getFullYear(), d.getMonth() - k + 1, 0)
       const f = toISO(first)
       const l = toISO(last)
-      const ins = sum(valid.filter((s) => s.sold_at >= f && s.sold_at <= l && s.status === 'paid')) + sum(txs.filter((x) => x.type === 'income' && x.paid_at && x.paid_at >= f && x.paid_at <= l))
-      const outs = sum(txs.filter((x) => x.type === 'expense' && x.due_date >= f && x.due_date <= l))
+      const ins = sum(valid.filter((s) => s.dia >= f && s.dia <= l && s.status === 'paid')) + sumTx(txs.filter((x) => x.type === 'income' && x.paid_at && x.paid_at >= f && x.paid_at <= l))
+      const outs = sumTx(txs.filter((x) => x.type === 'expense' && x.due_date >= f && x.due_date <= l))
       months.push({ label: first.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''), a: ins, b: outs })
     }
 
-    const newCustomers = customers.filter((c) => c.created_at.slice(0, 10) >= monthStart).length
-    const prevCustomers = customers.filter((c) => c.created_at.slice(0, 10) < monthStart).length
+    const newCustomers = clientes.novosMes
+    const prevCustomers = clientes.total - clientes.novosMes
     return {
       revenue,
       revenueDelta: pct(revenue, sum(prev)),
-      count: month.length,
+      count: qtd(month),
       ticket,
       ticketDelta: pct(ticket, prevTicket),
       series,
       seriesTotal: series.reduce((a, b) => a + b.value, 0),
       growth,
-      payablesTotal: sum(payables),
+      payablesTotal: sumTx(payables),
       overdue,
       top,
       months,
       newCustomers,
       customersDelta: prevCustomers ? (newCustomers / prevCustomers) * 100 : null,
       tasksSoon: tasks.filter((x) => x.due_date && x.due_date <= addDays(t, 2)).slice(0, 5),
-      recent: [...valid].sort((a, b) => (b.sold_at + b.created_at).localeCompare(a.sold_at + a.created_at)).slice(0, 6),
+      recent: painel.recentes,
     }
-  }, [sales, txs, customers, tasks, range])
+  }, [painel, txs, clientes, tasks, range])
 
-  const names = useMemo(() => new Map(customers.map((c) => [c.id, c.name])), [customers])
 
   async function runAgents() {
     setRunning(true)
@@ -237,7 +245,7 @@ export default function Dashboard() {
           </div>
         </Reveal>
         <Kpi i={2} icon={<Wallet size={17} />} label="Ticket médio" to="/atendimentos" ready={ready} value={<Money value={m.ticket} delay={350} />} delta={<Delta value={m.ticketDelta} />} sub={<><Count value={m.count} delay={350} /> atendimentos</>} />
-        <Kpi i={3} icon={<Users size={17} />} label="Pacientes" to="/clientes" ready={ready} value={<Count value={customers.length} delay={450} />} delta={<Delta value={m.customersDelta} />} sub={`+${m.newCustomers} novos`} />
+        <Kpi i={3} icon={<Users size={17} />} label="Pacientes" to="/clientes" ready={ready} value={<Count value={clientes.total} delay={450} />} delta={<Delta value={m.customersDelta} />} sub={`+${m.newCustomers} novos`} />
         {dono && <Kpi
           wide
           i={4}
@@ -283,7 +291,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          {ready && sales.length === 0 && (
+          {ready && painel.dias.length === 0 && (
             <p className="mt-2 text-center text-sm text-muted">
               Nenhum atendimento ainda.{' '}
               <Link to="/atendimentos" className="font-semibold text-brand">

@@ -6,6 +6,7 @@ import type { Approval } from '../lib/types'
 import { AREA_FILTERS, AGENT_NAME, areaOf } from '../lib/areas'
 import { Empty, PageHeader, Reveal, Spinner } from '../components/ui'
 import ApprovalCard from '../components/ApprovalCard'
+import { useTempoReal } from '../hooks/useTempoReal'
 
 export default function Approvals() {
   const { company } = useApp()
@@ -24,16 +25,7 @@ export default function Approvals() {
   useEffect(() => {
     load()
   }, [load])
-  useEffect(() => {
-    if (!company) return
-    const ch = supabase
-      .channel('appr-' + company.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals', filter: `company_id=eq.${company.id}` }, () => load())
-      .subscribe()
-    return () => {
-      supabase.removeChannel(ch)
-    }
-  }, [company, load])
+  useTempoReal(company ? 'appr-' + company.id : null, [{ tabela: 'approvals', filtro: `company_id=eq.${company?.id}` }], () => load())
 
   const norm = (k: string) => (k === 'management' ? 'crm' : k)
   const shown = items.filter((a) => area === 'all' || norm(a.agent_kind) === area)

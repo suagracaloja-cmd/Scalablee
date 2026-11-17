@@ -39,7 +39,8 @@ export function aiProviders() {
 
 let client: Anthropic | null = null;
 function getClient() {
-  if (!client) client = new Anthropic({ apiKey: apiKey() ?? undefined });
+  // Limite de 60 s por chamada (o padrão do SDK é 10 min): uma IA travada não prende a função
+  if (!client) client = new Anthropic({ apiKey: apiKey() ?? undefined, timeout: 60_000, maxRetries: 1 });
   return client;
 }
 

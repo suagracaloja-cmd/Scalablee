@@ -1,0 +1,7 @@
+{
+  "name": "scalable-testes-carga",
+  "private": true,
+  "type": "module",
+  "description": "Testes de carga do banco (Postgres local com o mesmo esquema e RLS da produção). Veja README.md.",
+  "dependencies": { "pg": "^8.13.0" }
+}

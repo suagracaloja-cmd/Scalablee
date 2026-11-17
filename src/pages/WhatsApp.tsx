@@ -7,6 +7,7 @@ import type { Approval, Conversation, Message } from '../lib/types'
 import { fmtTime, timeAgo } from '../lib/format'
 import { AgentMark, Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
+import { useTempoReal } from '../hooks/useTempoReal'
 
 type Status = { phone_number_id: string; display_phone: string | null; verify_token: string; connected: boolean } | null
 
@@ -55,20 +56,17 @@ export default function WhatsApp() {
   }, [msgs])
 
   // Tempo real
-  useEffect(() => {
-    if (!company) return
-    const ch = supabase
-      .channel('wa-' + company.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `company_id=eq.${company.id}` }, (p) => {
-        const m = p.new as Message
-        if (active && m.conversation_id === active.id) loadMsgs(active.id)
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations', filter: `company_id=eq.${company.id}` }, () => loadConvs())
-      .subscribe()
-    return () => {
-      supabase.removeChannel(ch)
-    }
-  }, [company, active, loadMsgs, loadConvs])
+  useTempoReal(
+    company ? 'wa-' + company.id : null,
+    [{ tabela: 'messages', filtro: `company_id=eq.${company?.id}` }, { tabela: 'conversations', filtro: `company_id=eq.${company?.id}` }],
+    (eventos) => {
+      // vazio = reconectou: atualiza tudo
+      const daConversaAberta = eventos.some((e) => e.table === 'messages' && (e.new as Partial<Message>)?.conversation_id === active?.id)
+      if (active && (eventos.length === 0 || daConversaAberta)) loadMsgs(active.id)
+      if (eventos.length === 0 || eventos.some((e) => e.table === 'conversations')) loadConvs()
+    },
+    300,
+  )
 
   async function send(e: FormEvent) {
     e.preventDefault()

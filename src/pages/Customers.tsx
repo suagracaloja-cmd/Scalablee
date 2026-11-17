@@ -33,31 +33,21 @@ export default function Customers() {
   const [limite, setLimite] = useState(60)
   useEffect(() => setLimite(60), [q, etapa])
 
-  /** Atendimentos pagos ligados a pacientes, todos (em páginas de 1000). */
-  async function atendimentosPagos() {
-    const linhas: { customer_id: string | null; amount: number; sold_at: string }[] = []
-    for (let de = 0; ; de += 1000) {
-      const { data, error } = await supabase.from('sales').select('customer_id,amount,sold_at').eq('status', 'paid').not('customer_id', 'is', null).order('id').range(de, de + 999)
-      if (error) break
-      linhas.push(...((data ?? []) as typeof linhas))
-      if (!data || data.length < 1000) break
-    }
-    return { data: linhas }
+  /** Total pago e último atendimento de cada paciente, somados no próprio banco (antes: todos os atendimentos em páginas de 1000). */
+  async function totaisPorPaciente() {
+    const { data } = await supabase.rpc('atendimentos_por_paciente')
+    return { data: ((data ?? []) as { customer_id: string; total: number | string; ultimo: string }[]).map((x) => ({ customer_id: x.customer_id, total: Number(x.total), ultimo: x.ultimo })) }
   }
 
   const load = async () => {
     const [c, s, a] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
-      veVendas ? atendimentosPagos() : Promise.resolve({ data: [] as { customer_id: string | null; amount: number; sold_at: string }[] }),
+      veVendas ? totaisPorPaciente() : Promise.resolve({ data: [] as { customer_id: string; total: number; ultimo: string }[] }),
       supabase.from('agendamentos').select('customer_id,inicio').gte('inicio', new Date().toISOString()).in('status', ['agendado', 'confirmado']).order('inicio'),
     ])
     setItems((c.data ?? []) as Customer[])
     const m = new Map<string, { total: number; last: string }>()
-    for (const x of s.data ?? []) {
-      if (!x.customer_id) continue
-      const cur = m.get(x.customer_id) ?? { total: 0, last: '' }
-      m.set(x.customer_id, { total: cur.total + Number(x.amount), last: x.sold_at > cur.last ? x.sold_at : cur.last })
-    }
+    for (const x of s.data ?? []) m.set(x.customer_id, { total: x.total, last: x.ultimo })
     setTotals(m)
     const p = new Map<string, string>()
     for (const x of a.data ?? []) if (x.customer_id && !p.has(x.customer_id)) p.set(x.customer_id, x.inicio)

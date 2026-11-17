@@ -8,20 +8,12 @@ import { Bars } from '../components/LineChart'
 import { Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, StatusCard } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
 
-/** Soma os atendimentos (tabela sales) com o filtro dado, buscando todas as páginas (o banco entrega 1000 por vez). */
+/** Soma os atendimentos (tabela sales) com o filtro dado, no próprio banco (antes: baixava todos e somava aqui). */
 async function somarAtendimentos(status: 'paid' | 'pending', desde?: string) {
-  let total = 0
-  let n = 0
-  for (let de = 0; ; de += 1000) {
-    let q = supabase.from('sales').select('amount').eq('status', status).order('id').range(de, de + 999)
-    if (desde) q = q.gte('sold_at', desde)
-    const { data, error } = await q
-    if (error) throw new Error(error.message)
-    for (const x of data ?? []) total += Number(x.amount)
-    n += data?.length ?? 0
-    if (!data || data.length < 1000) break
-  }
-  return { total, n }
+  const { data, error } = await supabase.rpc('atendimentos_soma', { p_status: status, p_desde: desde ?? null })
+  if (error) throw new Error(error.message)
+  const r = ((data ?? []) as { total: number | string; quantidade: number | string }[])[0]
+  return { total: Number(r?.total ?? 0), n: Number(r?.quantidade ?? 0) }
 }
 
 const CATS = { expense: ['Fornecedores', 'Aluguel', 'Salários', 'Impostos', 'Marketing', 'Energia/Água/Internet', 'Outros'], income: ['Atendimentos', 'Outros'] }

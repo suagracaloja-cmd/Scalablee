@@ -10,6 +10,7 @@
 //   POST /api/wa-send       → conectar WhatsApp e enviar mensagens
 //   GET|POST /api/wa-webhook → webhook da WhatsApp Cloud API (Meta)
 //   POST /api/equipe        → remover alguém da equipe (convites e lista: direto no banco, com RLS)
+//   POST /api/push          → notificações no celular (chave pública e aviso de teste)
 import agente from "./agente.ts";
 import aprovacoes from "./aprovacoes.ts";
 import assinatura from "./assinatura.ts";
@@ -21,6 +22,7 @@ import site from "./site.ts";
 import waSend from "./wa-send.ts";
 import waWebhook from "./wa-webhook.ts";
 import equipe from "./equipe.ts";
+import push from "./push.ts";
 import { admin, clientIp, HttpError, json, rateLimit, securityHeaders } from "./lib/common.ts";
 
 const routes: Record<string, (req: Request) => Promise<Response> | Response> = {
@@ -36,6 +38,7 @@ const routes: Record<string, (req: Request) => Promise<Response> | Response> = {
   "wa-send": waSend,
   "wa-webhook": waWebhook,
   equipe,
+  push,
 };
 
 // Limites gerais por IP (pedidos por minuto), antes de qualquer outra coisa

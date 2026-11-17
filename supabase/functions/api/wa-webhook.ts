@@ -6,6 +6,7 @@ import { agentWhatsAppReply, AGENT_NAME } from "./lib/agent.ts";
 import { checkSignature, getConfigsByPhone, sendAndLog, type WaConfig, type WebhookPayload } from "./lib/whatsapp.ts";
 import { accessAllowed, billingConfig, ensureBilling } from "./lib/billing.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
+import { avisarWhatsApp } from "./lib/push.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 
@@ -102,19 +103,31 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
   if (dup) return; // mensagem repetida (Meta reenviou)
   await db.from("conversations").update({ unread: (conv.unread ?? 0) + 1 }).eq("id", conv.id);
 
+  let aprovacao: string | null = null;
+  try {
+    aprovacao = await responder(db, cfg, conv, customer!.id, waId, name, text);
+  } finally {
+    // Aviso no celular do dono e da recepção (um só por mensagem, sem o conteúdo da conversa)
+    await avisarWhatsApp(db, companyId, { nome: name, conversaId: conv.id, aprovacao }).catch((e) => console.error("[push]", e instanceof Error ? e.message : e));
+  }
+}
+
+/** Resposta da Coraline AI. Devolve o título da aprovação criada quando a resposta precisa do dono. */
+async function responder(db: SupabaseClient, cfg: WaConfig, conv: { id: string; ai_paused?: boolean | null }, customerId: string, waId: string, name: string, text: string): Promise<string | null> {
+  const companyId = cfg.company_id;
   // Configuração da Coraline AI para o WhatsApp (por empresa)
   const { data: co } = await db
     .from("companies")
     .select("name,segment,description,website,instagram,site_analysis,agent_whatsapp,agent_auto_reply,agent_instructions")
     .eq("id", companyId)
     .single();
-  if (!co || co.agent_whatsapp === false || conv.ai_paused) return;
+  if (!co || co.agent_whatsapp === false || conv.ai_paused) return null;
   // Cobrança ativada e assinatura fora do prazo: a mensagem fica registrada, mas a IA não responde
   const bcfg = billingConfig();
-  if (bcfg.enabled && bcfg.enforced && !accessAllowed(await ensureBilling(db, { id: companyId }, bcfg), bcfg)) return;
+  if (bcfg.enabled && bcfg.enforced && !accessAllowed(await ensureBilling(db, { id: companyId }, bcfg), bcfg)) return null;
 
   const decision = await decideReply(db, companyId, co, conv.id, text);
-  if (!decision) return;
+  if (!decision) return null;
 
   if (decision.needs_approval || !co.agent_auto_reply) {
     const { data: draft } = await db
@@ -127,7 +140,7 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
       agent_kind: "support",
       kind: "whatsapp_reply",
       conversation_id: conv.id,
-      customer_id: customer!.id,
+      customer_id: customerId,
       message_id: draft!.id,
       title: `Resposta para ${name}`,
       reason: decision.reason || (co.agent_auto_reply ? "A Coraline AI pediu sua aprovação" : "Resposta automática desligada"),
@@ -141,10 +154,11 @@ async function handleIncoming(db: SupabaseClient, cfg: WaConfig, waId: string, n
       title: `Aprovação necessária: ${name}`,
       body: `Cliente: "${text.slice(0, 200)}"\nMotivo: ${decision.reason || "confirmação do dono"}`,
     });
-    return;
+    return `Resposta para ${name}`;
   }
 
   await sendAndLog(db, cfg, { companyId, waId, body: decision.reply, author: "agent", conversationId: conv.id });
+  return null;
 }
 
 type Decision = { reply: string; needs_approval: boolean; reason?: string };

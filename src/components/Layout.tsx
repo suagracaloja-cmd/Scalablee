@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState, type FormEvent } from 'react'
+import { Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -14,6 +14,7 @@ import {
   Package,
   Search,
   Settings,
+  Smartphone,
   Sparkles,
   Stethoscope,
   Users,
@@ -21,10 +22,10 @@ import {
   X,
 } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { supabase } from '../lib/supabase'
 import { CarregandoTela, ErroTela, Logo, Orb } from './ui'
 import { CoralinePainel } from './CoralinePainel'
 import { useRolou } from '../hooks/useRolou'
+import { instalado, sair } from '../lib/app'
 import { AGENT_NAME } from '../lib/areas'
 import type { Papel } from '../lib/types'
 import { LegalFooter } from './LegalFooter'
@@ -61,6 +62,16 @@ export default function Layout() {
   const alvoDica = useRef<{ el: HTMLElement; texto: string } | null>(null)
   const loc = useLocation()
   const nav = useNavigate()
+  // Toque na notificação com o app aberto: o service worker pede para abrir a tela certa
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const abrir = (e: MessageEvent) => {
+      const url = e.data?.tipo === 'abrir' && typeof e.data.url === 'string' ? e.data.url : null
+      if (url && url.startsWith('/')) nav(url)
+    }
+    navigator.serviceWorker.addEventListener('message', abrir)
+    return () => navigator.serviceWorker.removeEventListener('message', abrir)
+  }, [nav])
   const isActive = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
   const now = new Date()
   const wd = now.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
@@ -149,7 +160,7 @@ export default function Layout() {
           <NavLink to="/configuracoes" className={navCls('/configuracoes')} aria-label="Configurações" {...dicaDe('Configurações')}>
             <Settings size={19} />
           </NavLink>
-          <button onClick={() => supabase.auth.signOut()} className="glass flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-500 hover:text-rose-600 baixa:h-10 baixa:w-10 curta:h-9 curta:w-9" aria-label="Sair" {...dicaDe('Sair')}>
+          <button onClick={() => sair()} className="glass flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-500 hover:text-rose-600 baixa:h-10 baixa:w-10 curta:h-9 curta:w-9" aria-label="Sair" {...dicaDe('Sair')}>
             <LogOut size={18} />
           </button>
         </div>
@@ -257,7 +268,12 @@ export default function Layout() {
                 )
               })}
             </ul>
-            <button onClick={() => supabase.auth.signOut()} className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50">
+            {!instalado() && (
+              <Link to="/configuracoes#app" onClick={() => setSheet(false)} className="mt-2 flex items-center gap-3 rounded-2xl bg-panel-2 px-3 py-2.5 text-sm font-semibold text-ink">
+                <Smartphone size={18} /> Instalar o app no celular
+              </Link>
+            )}
+            <button onClick={() => sair()} className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50">
               <LogOut size={18} /> Sair da conta
             </button>
           </nav>

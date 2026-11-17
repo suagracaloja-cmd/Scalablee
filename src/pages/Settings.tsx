@@ -9,6 +9,7 @@ import type { SiteAnalysis } from '../lib/types'
 import { fmtDate } from '../lib/format'
 import { AgentMark, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 import { LEGAL_LINKS } from '../components/LegalFooter'
+import { AppCelular } from '../components/AppCelular'
 
 const LABELS: Record<string, string> = {
   https: 'Site seguro (HTTPS)',
@@ -304,7 +305,8 @@ export default function Settings() {
           )}
         </Reveal>
         </>)}
-        <Reveal i={4} className="card p-5 lg:col-span-2">
+        <AppCelular i={4} />
+        <Reveal i={5} className="card p-5 lg:col-span-2">
           <h2 className="flex items-center gap-2 font-semibold">
             <ShieldCheck size={18} /> Privacidade e dados
           </h2>

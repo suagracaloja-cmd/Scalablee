@@ -1,0 +1,60 @@
+# Monitoramento grátis: de hora em hora confere se o site e a API (com o banco) estão respondendo.
+#
+#  - Site:    https://scalablee.vercel.app  (precisa responder 200 com a página da Scalable)
+#  - API:     /functions/v1/api/saude      (precisa responder {"ok": true}; ela consulta o banco)
+#  - Falhou 3 vezes seguidas (com 20 s entre elas) → abre UM aviso na aba Issues (o GitHub manda e-mail).
+#  - Voltou → fecha o aviso com o horário da volta (outro e-mail).
+#  - De quebra, a consulta de hora em hora mantém o projeto do Supabase ativo
+#    (no plano grátis, projeto parado por 7 dias sem uso é pausado).
+#
+# Não usa segredos e não altera nada: só faz duas consultas de leitura.
+# Para trocar os endereços, crie as variáveis SITE_URL e/ou SAUDE_URL em Settings → Secrets and variables → Actions → Variables.
+
+name: Monitor do site e da API
+
+on:
+  schedule:
+    - cron: "41 * * * *" # de hora em hora, aos 41 minutos (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: monitor
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ vars.SITE_URL || 'https://scalablee.vercel.app' }}
+      SAUDE_URL: ${{ vars.SAUDE_URL || 'https://tmaywgdxfveczoxxrpur.supabase.co/functions/v1/api/saude' }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Verificar site e API
+        id: v
+        run: .github/scripts/verificar.sh
+
+      - name: Fora do ar — abrir aviso
+        if: steps.v.outputs.ok == 'nao'
+        env:
+          DETALHE: ${{ steps.v.outputs.detalhe }}
+        run: |
+          .github/scripts/alerta.sh abrir "Alerta: Scalable fora do ar" \
+            "Detectado em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (Brasília): $DETALHE. Execução: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: No ar — fechar aviso (se houver)
+        if: steps.v.outputs.ok == 'sim'
+        env:
+          DETALHE: ${{ steps.v.outputs.detalhe }}
+        run: |
+          .github/scripts/alerta.sh fechar "Alerta: Scalable fora do ar" \
+            "Voltou ao ar em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (Brasília): $DETALHE"

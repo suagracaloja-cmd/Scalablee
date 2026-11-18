@@ -30,6 +30,8 @@ abrir conexão direta — nesse caso, usar o pooler em modo _transaction_ (porta
    - Banco: **500 MB**. Medido: ~**5,2 MB por clínica** após 1–2 anos de uso intenso → cabem ~90 clínicas assim.
    - Tráfego de saída: **5 GB/mês**. Medido: o Início baixava **1,5 MB** a cada abertura.
    - **Pausa automática** do projeto após 7 dias de pouca atividade e **sem backups automáticos** no Free.
+     Solução gratuita preparada: backup diário criptografado + monitor de hora em hora no GitHub Actions
+     (`docs/BACKUP-E-MONITORAMENTO.md`).
 2. **Telas baixando tabelas inteiras**: o Início baixava todos os pacientes (2×) e todos os lançamentos; Pacientes
    baixava todos os atendimentos pagos em páginas de 1000; Financeiro idem. Isso gera CPU no banco e tráfego pago.
 3. **Saturação medida**: com 1 núcleo de banco, **1.000 usuários ativos** já davam P50 de 6,8 s e 3% de erros.
@@ -167,5 +169,5 @@ conexões e tráfego). Começar no Micro e subir conforme o relatório de CPU. N
 1. Teste de carga num **projeto de staging** igual à produção (exige criar um projeto — gratuito no Free, até 2 projetos).
 2. Paginar Pacientes no servidor (maior resposta restante).
 3. Cache de tela no navegador (sem custo).
-4. Sentry + monitor de disponibilidade no `/api/saude`.
+4. Monitor de disponibilidade no `/api/saude`: preparado no GitHub Actions (`docs/BACKUP-E-MONITORAMENTO.md`); Sentry fica opcional.
 5. Se passar de ~1.000 abas abertas ao mesmo tempo: Realtime por _Broadcast_ e plano com mais conexões.

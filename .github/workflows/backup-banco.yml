@@ -1,0 +1,153 @@
+# Backup diário do banco de dados (Supabase) — grátis, fora do Supabase, criptografado.
+#
+# O que faz, todo dia de madrugada:
+#   1. copia o banco inteiro com a ferramenta oficial do Supabase (papéis, estrutura e dados, incluindo os logins);
+#   2. criptografa a cópia com AES-256 usando a sua frase secreta (sem ela, ninguém abre o arquivo — nem o GitHub);
+#   3. guarda o arquivo criptografado aqui no GitHub por 30 dias (aba Actions → execução → "Artifacts");
+#   4. mede o tamanho do banco e avisa (aba Issues + e-mail) se passar de 400 MB (o plano grátis do Supabase vai até 500 MB);
+#   5. se algo falhar, abre um aviso na aba Issues; quando voltar a funcionar, fecha o aviso sozinho.
+#
+# Só LÊ o banco: não altera nem apaga nada lá. Configuração e restauração: docs/BACKUP-E-MONITORAMENTO.md
+# Segredos necessários (Settings → Secrets and variables → Actions): SUPABASE_DB_URL e BACKUP_PASSPHRASE.
+
+name: Backup diário do banco
+
+on:
+  schedule:
+    - cron: "23 6 * * *" # 06:23 UTC = 03:23 em Brasília (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch: # botão "Run workflow" para testar ou fazer uma cópia na hora
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: backup-banco
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      ALERTA_BANCO_MB: ${{ vars.ALERTA_BANCO_MB || '400' }}
+      DIAS_GUARDADOS: ${{ vars.BACKUP_DIAS || '30' }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Conferir configuração
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Faltam os segredos SUPABASE_DB_URL e/ou BACKUP_PASSPHRASE. Veja docs/BACKUP-E-MONITORAMENTO.md."
+            exit 1
+          fi
+          if [ ${#BACKUP_PASSPHRASE} -lt 20 ]; then
+            echo "::error::A frase secreta (BACKUP_PASSPHRASE) precisa ter pelo menos 20 caracteres."
+            exit 1
+          fi
+          # Esconde a senha do banco nos registros, mesmo que alguma ferramenta a imprima sozinha
+          senha=$(python3 -c 'import os,urllib.parse as u; print(u.urlsplit(os.environ["SUPABASE_DB_URL"]).password or "")')
+          if [ -n "$senha" ]; then
+            echo "::add-mask::$senha"
+            echo "::add-mask::$(python3 -c 'import sys,urllib.parse as u; print(u.unquote(sys.argv[1]))' "$senha")"
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+
+      - name: Copiar o banco (papéis, estrutura e dados)
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/copia"
+          cd "$RUNNER_TEMP/copia"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f data.sql --data-only --use-copy
+          # Confere que a cópia não veio vazia nem pela metade
+          for f in roles.sql schema.sql data.sql; do test -s "$f" || { echo "::error::$f veio vazio"; exit 1; }; done
+          grep -q 'CREATE TABLE IF NOT EXISTS "public"."companies"' schema.sql || { echo "::error::estrutura incompleta"; exit 1; }
+          grep -q '^COPY "public"."companies"' data.sql || { echo "::error::dados incompletos"; exit 1; }
+          grep -q '^COPY "auth"."users"' data.sql || { echo "::error::faltaram os logins (auth.users)"; exit 1; }
+          echo "Tabelas copiadas: $(grep -c '^COPY ' data.sql)"
+
+      - name: Criptografar (AES-256) e conferir que abre
+        run: |
+          set -euo pipefail
+          umask 077
+          cd "$RUNNER_TEMP"
+          arquivo="scalable-banco-$(date -u +%Y-%m-%d).tar.gz.gpg"
+          printf '%s' "$BACKUP_PASSPHRASE" > frase
+          tar -C copia -czf - . | gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 \
+            --passphrase-file frase -o "$arquivo"
+          # Prova de que a cópia abre com a frase: descriptografa e lista o conteúdo
+          gpg --batch --quiet --pinentry-mode loopback --passphrase-file frase -d "$arquivo" | tar -tzf - | sort
+          shred -u frase
+          rm -rf copia
+          tamanho=$(stat -c %s "$arquivo")
+          echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
+          echo "TAMANHO_BACKUP=$tamanho" >> "$GITHUB_ENV"
+          echo "### Backup criptografado: $arquivo ($(( tamanho / 1024 )) KB), guardado por $DIAS_GUARDADOS dias" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARQUIVO }}
+          path: ${{ runner.temp }}/${{ env.ARQUIVO }}
+          retention-days: ${{ env.DIAS_GUARDADOS }}
+          compression-level: 0 # já está compactado e criptografado
+          if-no-files-found: error
+
+      - name: Medir o banco e o espaço dos backups
+        id: medida
+        run: |
+          set -euo pipefail
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          linha=$(psql "$SUPABASE_DB_URL" -At -v ON_ERROR_STOP=1 -c \
+            "select pg_database_size(current_database()), (select count(*) from pg_stat_activity where datname = current_database())")
+          bytes=${linha%%|*}
+          conexoes=${linha##*|}
+          mb=$(( bytes / 1024 / 1024 ))
+          # Espaço que os backups guardados vão ocupar no GitHub (o plano grátis inclui 500 MB para arquivos das rotinas)
+          backups_mb=$(( TAMANHO_BACKUP * DIAS_GUARDADOS / 1024 / 1024 ))
+          echo "mb=$mb" >> "$GITHUB_OUTPUT"
+          echo "backups_mb=$backups_mb" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Banco: ${mb} MB (limite do plano grátis do Supabase: 500 MB; aviso a partir de ${ALERTA_BANCO_MB} MB)"
+            echo "Conexões abertas agora: ${conexoes} (limite do plano grátis: 60 diretas)"
+            echo "Espaço estimado dos backups guardados no GitHub: ~${backups_mb} MB de 500 MB"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Aviso — banco perto do limite do plano grátis
+        if: steps.medida.outputs.mb && fromJSON(steps.medida.outputs.mb) >= fromJSON(env.ALERTA_BANCO_MB)
+        run: |
+          .github/scripts/alerta.sh abrir "Alerta: banco perto do limite do plano grátis" \
+            "O banco está com ${{ steps.medida.outputs.mb }} MB. O plano grátis do Supabase vai até 500 MB; acima disso o banco passa a aceitar só leitura. Hora de decidir sobre o plano Pro (veja docs/ESCALABILIDADE.md). Execução: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Aviso — backups vão ocupar o espaço grátis do GitHub
+        if: steps.medida.outputs.backups_mb && fromJSON(steps.medida.outputs.backups_mb) >= 400
+        run: |
+          .github/scripts/alerta.sh abrir "Alerta: backups perto do espaço grátis do GitHub" \
+            "Os backups guardados devem ocupar ~${{ steps.medida.outputs.backups_mb }} MB (o plano grátis inclui 500 MB). Diminua os dias guardados criando a variável BACKUP_DIAS (ex.: 14) em Settings → Secrets and variables → Actions → Variables. Execução: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Tudo certo — fechar aviso de falha (se houver)
+        if: success()
+        run: |
+          .github/scripts/alerta.sh fechar "Alerta: o backup diário do banco falhou" \
+            "O backup voltou a funcionar: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Falhou — abrir aviso
+        if: failure()
+        run: |
+          .github/scripts/alerta.sh abrir "Alerta: o backup diário do banco falhou" \
+            "O backup de hoje não foi concluído. Veja o que aconteceu: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} — as cópias dos dias anteriores continuam guardadas."
+
+      - name: Limpar arquivos temporários
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/copia" "$RUNNER_TEMP/frase" "$RUNNER_TEMP"/scalable-banco-*.gpg

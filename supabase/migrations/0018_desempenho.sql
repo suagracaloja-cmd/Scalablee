@@ -112,22 +112,3 @@ revoke execute on function public.atendimentos_por_paciente() from public, anon;
 revoke execute on function public.atendimentos_soma(text, date) from public, anon;
 grant execute on function public.atendimentos_por_paciente() to authenticated;
 grant execute on function public.atendimentos_soma(text, date) to authenticated;
-
--- 5) Limite de tentativas: a tabela crescia para sempre (uma linha por rota e pessoa).
---    De vez em quando (≈1 a cada 200 chamadas) apaga as janelas vencidas há mais de 1 dia.
-create or replace function public.limite_registrar(p_chave text, p_limite integer, p_janela_segundos integer)
-returns boolean language plpgsql security definer set search_path = '' as $$
-declare v integer;
-begin
-  insert into public.limites_uso as l (chave, janela_inicio, contagem) values (p_chave, now(), 1)
-  on conflict (chave) do update set
-    contagem = case when l.janela_inicio < now() - make_interval(secs => p_janela_segundos) then 1 else l.contagem + 1 end,
-    janela_inicio = case when l.janela_inicio < now() - make_interval(secs => p_janela_segundos) then now() else l.janela_inicio end
-  returning contagem into v;
-  if random() < 0.005 then
-    delete from public.limites_uso where janela_inicio < now() - interval '1 day';
-  end if;
-  return v <= p_limite;
-end $$;
-revoke execute on function public.limite_registrar(text, integer, integer) from public, anon, authenticated;
-grant execute on function public.limite_registrar(text, integer, integer) to service_role;

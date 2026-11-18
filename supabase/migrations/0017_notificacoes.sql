@@ -55,10 +55,6 @@ begin
   insert into public.push_inscricoes (user_id, company_id, endpoint, p256dh, auth, whatsapp, aprovacoes, aparelho)
   values (auth.uid(), v_company, p_endpoint, p_p256dh, p_auth, coalesce(p_whatsapp, true), coalesce(p_aprovacoes, true), left(p_aparelho, 200))
   returning id into v_id;
-  -- No máximo 10 aparelhos por pessoa: os mais antigos saem
-  delete from public.push_inscricoes where id in (
-    select id from public.push_inscricoes where user_id = auth.uid() order by criado_em desc offset 10
-  );
   return v_id;
 end $$;
 revoke execute on function public.push_inscrever(text, text, text, boolean, boolean, text) from public, anon;

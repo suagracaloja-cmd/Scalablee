@@ -36,7 +36,7 @@ export function ConfirmarProvider({ children }: { children: ReactNode }) {
         {estado && (
           <div>
             {estado.texto && (
-              <div className={`flex items-start gap-2.5 rounded-2xl p-3 text-sm leading-relaxed ${estado.perigo === false ? 'bg-panel-2 text-ink' : 'bg-rose-50 text-rose-900'}`}>
+              <div className={`flex items-start gap-2.5 rounded-ctl p-3 text-sm leading-relaxed ${estado.perigo === false ? 'bg-panel-2 text-ink' : 'bg-rose-50 text-rose-900'}`}>
                 {estado.perigo !== false && <AlertTriangle size={17} className="mt-0.5 shrink-0" />}
                 <div className="min-w-0">{estado.texto}</div>
               </div>

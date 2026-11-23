@@ -251,7 +251,7 @@ export default function Atendimentos() {
         }
       />
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatusCard i={1} tone="blue" label="Faturado no período" value={<Money value={sum(validos)} delay={200} />} sub={<><Count value={n} /> atendimento(s)</>} />
+        <StatusCard i={1} tone="blue" label="Faturado no período" value={<Money value={sum(validos)} delay={200} />} sub={<><Count value={n} /> {n === 1 ? 'atendimento' : 'atendimentos'}</>} />
         <StatusCard i={2} tone="green" label="Recebido" value={<Money value={sum(byStatus('paid'))} delay={300} />} sub={`${byStatus('paid').length} pago(s)`} />
         <StatusCard i={3} tone="amber" label="A receber" value={<Money value={sum(byStatus('pending'))} delay={400} />} sub={`${byStatus('pending').length} aguardando`} />
         <StatusCard i={4} tone="slate" label="Ticket médio" value={<Money value={n ? sum(validos) / n : 0} delay={500} />} sub={`${byStatus('cancelled').length} cancelado(s)`} />
@@ -260,18 +260,18 @@ export default function Atendimentos() {
       <Reveal i={5} className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 lg:max-w-sm">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-          <input maxLength={100} className="h-11 w-full rounded-full bg-panel pl-11 pr-4 text-sm outline-none focus:ring-4 focus:ring-brand/10" placeholder="Buscar paciente, CPF ou procedimento…" aria-label="Buscar atendimento" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input maxLength={100} className="input h-11 w-full pl-11 pr-4 focus:ring-3 focus:ring-brand/10" placeholder="Buscar paciente, CPF ou procedimento…" aria-label="Buscar atendimento" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {(['all', 'paid', 'pending', 'cancelled'] as const).map((st) => (
-            <button key={st} onClick={() => setStatus(st)} aria-pressed={status === st} className={`h-10 shrink-0 rounded-full px-4 text-xs font-semibold ${status === st ? 'bg-ink text-white' : 'bg-panel text-ink'}`}>
+            <button key={st} onClick={() => setStatus(st)} aria-pressed={status === st} className={`h-10 shrink-0 rounded-ctl px-4 text-xs font-medium ${status === st ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'bg-panel text-ink'}`}>
               {st === 'all' ? 'Todos' : SITUACAO[st]}
             </button>
           ))}
         </div>
-        <div className="flex gap-1 rounded-full bg-panel p-1 lg:ml-auto">
+        <div className="flex gap-1 rounded-ctl border border-line bg-panel p-0.5 lg:ml-auto">
           {PERIODS.map((p) => (
-            <button key={p.v} onClick={() => setPeriod(p.v)} aria-pressed={period === p.v} className={`h-8 flex-1 whitespace-nowrap rounded-full px-2 text-xs font-semibold min-[380px]:px-3 ${period === p.v ? 'bg-ink text-white' : 'text-muted'}`}>
+            <button key={p.v} onClick={() => setPeriod(p.v)} aria-pressed={period === p.v} className={`h-8 flex-1 whitespace-nowrap rounded-ctl px-2 text-xs font-medium min-[380px]:px-3 ${period === p.v ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'text-muted'}`}>
               {p.l}
             </button>
           ))}
@@ -294,7 +294,7 @@ export default function Atendimentos() {
                 return (
                   <li key={s.id}>
                     <button className="flex w-full items-center gap-3 px-4 py-3.5 text-left" onClick={() => editar(s)}>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-dark">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-ink">
                         <Stethoscope size={16} />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -309,7 +309,7 @@ export default function Atendimentos() {
                         </span>
                       </span>
                       <span className="shrink-0 text-right">
-                        <span className="block text-sm font-bold tabular-nums">{brl(s.amount)}</span>
+                        <span className="block text-sm font-semibold tabular-nums">{brl(s.amount)}</span>
                         <span className={`chip mt-0.5 ${STATUS_CHIP[s.status]}`}>{SITUACAO[s.status]}</span>
                       </span>
                     </button>
@@ -347,7 +347,7 @@ export default function Atendimentos() {
                       </td>
                       <td className="px-4 py-3.5 text-muted">{fmtDate(s.sold_at)}</td>
                       <td className="px-4 py-3.5 text-muted">{s.forma_pagamento ? FORMAS_PAGAMENTO[s.forma_pagamento as FormaPagamento] : '—'}</td>
-                      <td className="px-4 py-3.5 text-right font-bold tabular-nums">{brl(s.amount)}</td>
+                      <td className="px-4 py-3.5 text-right font-semibold tabular-nums">{brl(s.amount)}</td>
                       <td className="px-4 py-3.5">
                         <span className={`chip ${STATUS_CHIP[s.status]}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[s.status]}`} />
@@ -383,16 +383,16 @@ export default function Atendimentos() {
           <form onSubmit={salvar} className="space-y-5">
             {/* Paciente */}
             <fieldset className="space-y-3">
-              <legend className="mb-2 flex w-full items-center justify-between gap-2 text-sm font-bold">
+              <legend className="mb-2 flex w-full items-center justify-between gap-2 text-sm font-semibold">
                 Paciente
                 {form.customer_id && (
-                  <button type="button" onClick={trocarPaciente} className="text-xs font-semibold text-brand-dark underline underline-offset-2">
+                  <button type="button" onClick={trocarPaciente} className="text-xs font-semibold text-brand-ink underline underline-offset-2">
                     Trocar paciente
                   </button>
                 )}
               </legend>
               {aviso && (
-                <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800" role="status">
+                <p className="flex items-center gap-2 rounded-ctl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800" role="status">
                   <UserRoundCheck size={15} className="shrink-0" /> {aviso}
                 </p>
               )}
@@ -409,7 +409,7 @@ export default function Atendimentos() {
                   />
                 </Field>
                 {sugestoes.length > 0 && (
-                  <ul className="mt-1.5 overflow-hidden rounded-2xl border border-line bg-panel shadow-lg" aria-label="Pacientes já cadastrados">
+                  <ul className="mt-1.5 overflow-hidden rounded-ctl border border-line bg-panel shadow-[0_8px_24px_rgba(16,24,40,0.08)]" aria-label="Pacientes já cadastrados">
                     {sugestoes.map((c) => (
                       <li key={c.id}>
                         <button type="button" onClick={() => escolherPaciente(c)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm hover:bg-panel-2">
@@ -455,13 +455,13 @@ export default function Atendimentos() {
             {/* Atendimento */}
             <fieldset className="space-y-3 border-t border-line pt-4">
               <legend className="sr-only">Atendimento</legend>
-              <p className="text-sm font-bold" aria-hidden="true">
+              <p className="text-sm font-semibold" aria-hidden="true">
                 Atendimento
               </p>
               <Field label="Tipo">
                 <div className="flex flex-wrap gap-2">
                   {TIPOS_ATENDIMENTO.map((t) => (
-                    <button type="button" key={t.id} aria-pressed={form.tipo === t.id} onClick={() => setForm({ ...form, tipo: t.id })} className={`h-9 rounded-full px-3.5 text-xs font-semibold ${form.tipo === t.id ? 'bg-ink text-white' : 'bg-panel-2'}`}>
+                    <button type="button" key={t.id} aria-pressed={form.tipo === t.id} onClick={() => setForm({ ...form, tipo: t.id })} className={`h-9 rounded-ctl px-3.5 text-xs font-medium ${form.tipo === t.id ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'bg-panel-2'}`}>
                       {t.label}
                     </button>
                   ))}

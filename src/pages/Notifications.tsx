@@ -54,7 +54,7 @@ export default function Notifications() {
       />
       <Reveal i={1} className="mb-4 flex gap-2 overflow-x-auto pb-1">
         {['all', ...AREA_FILTERS, 'assistant'].map((k) => (
-          <button key={k} onClick={() => setFilter(k)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs ${filter === k ? 'border-ink bg-ink text-white' : 'border-line text-muted'}`}>
+          <button key={k} onClick={() => setFilter(k)} className={`shrink-0 rounded-ctl border px-3 py-1.5 text-xs ${filter === k ? 'border-brand/40 bg-brand-soft text-brand-ink' : 'border-line text-muted'}`}>
             {k === 'all' ? 'Todas' : areaOf(k).label}
           </button>
         ))}
@@ -83,14 +83,14 @@ export default function Notifications() {
                   {n.sources && n.sources.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {n.sources.slice(0, 4).map((s) => (
-                        <a key={s.url} href={s.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex max-w-[220px] items-center gap-1 truncate rounded-full bg-panel-2 px-2 py-1 text-[11px] text-sky-600">
+                        <a key={s.url} href={s.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex max-w-[220px] items-center gap-1 truncate rounded-ctl bg-panel-2 px-2 py-1 text-[11px] text-sky-600">
                           <ExternalLink size={10} /> {s.title || new URL(s.url).hostname}
                         </a>
                       ))}
                     </div>
                   )}
                 </div>
-                <button onClick={(e) => (e.stopPropagation(), remove(n))} className="self-start rounded-full p-1.5 text-muted hover:bg-panel-2" aria-label="Excluir">
+                <button onClick={(e) => (e.stopPropagation(), remove(n))} className="self-start rounded-md p-1.5 text-muted hover:bg-panel-2" aria-label="Excluir">
                   <Trash2 size={14} />
                 </button>
               </div>

@@ -84,11 +84,11 @@ function Novidades() {
     <Reveal className="card mb-4 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-ink">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl bg-brand-soft text-ink">
             <Mail size={20} />
           </span>
           <div>
-            <h2 className="text-lg font-bold">Novidades da Scalable</h2>
+            <h2 className="text-lg font-semibold">Novidades da Scalable</h2>
             <p className="mt-0.5 text-sm text-muted">Receba por e-mail as novidades e atualizações da plataforma.</p>
           </div>
         </div>
@@ -190,7 +190,7 @@ function PlanoPago() {
   return (
     <div>
       {!b.allowed && (
-        <Reveal className="mb-4 flex items-start gap-3 rounded-3xl bg-rose-50 p-4 text-sm text-rose-800">
+        <Reveal className="mb-4 flex items-start gap-3 rounded-card bg-rose-50 p-4 text-sm text-rose-800">
           <Lock size={18} className="mt-0.5 shrink-0" />
           <span>
             O acesso está pausado porque a assinatura não está em dia. Assine ou pague a fatura para voltar a usar tudo. Seus dados continuam guardados e você pode exportá-los em Configurações.
@@ -201,8 +201,8 @@ function PlanoPago() {
         <Reveal i={1} className="card p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted">Plano</div>
-              <div className="mt-1 text-2xl font-bold">{b.plan.name}</div>
+              <div className="text-xs font-semibold text-muted">Plano</div>
+              <div className="mt-1 text-2xl font-semibold">{b.plan.name}</div>
               <div className="mt-1 text-sm text-muted">
                 <b className="text-ink">{brl(b.plan.value)}</b> por mês · cobrança automática pelo Mercado Pago
               </div>
@@ -210,7 +210,7 @@ function PlanoPago() {
             <span className={`chip ${chip.c}`}>{chip.l}</span>
           </div>
           {b.isento && (
-            <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <p className="mt-4 rounded-ctl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               Esta é uma conta de demonstração da Scalable: não tem cobrança e não é bloqueada.
             </p>
           )}
@@ -308,7 +308,7 @@ function PlanoPago() {
 
 function Info({ k, v }: { k: string; v: string }) {
   return (
-    <div className="rounded-2xl bg-panel-2 p-3">
+    <div className="rounded-ctl bg-panel-2 p-3">
       <div className="text-[11px] text-muted">{k}</div>
       <div className="font-semibold">{v}</div>
     </div>

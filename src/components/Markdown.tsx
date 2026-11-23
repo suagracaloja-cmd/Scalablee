@@ -23,7 +23,7 @@ function blocks(src: string): ReactNode[] {
       while (i < lines.length && !lines[i].trim().startsWith('```')) buf.push(lines[i++])
       i++
       out.push(
-        <pre key={key++} className="overflow-x-auto rounded-2xl bg-graphite p-4 text-[13px] leading-6 text-white">
+        <pre key={key++} className="overflow-x-auto rounded-ctl bg-graphite p-4 text-[13px] leading-6 text-white">
           <code>{buf.join('\n')}</code>
         </pre>,
       )
@@ -33,7 +33,7 @@ function blocks(src: string): ReactNode[] {
     const h = line.match(/^(#{1,4})\s+(.*)$/)
     if (h) {
       const level = h[1].length
-      const cls = level <= 2 ? 'text-lg font-bold' : level === 3 ? 'text-base font-bold' : 'text-[15px] font-semibold'
+      const cls = level <= 2 ? 'text-lg font-semibold' : level === 3 ? 'text-base font-semibold' : 'text-[15px] font-semibold'
       out.push(
         <div key={key++} className={`${cls} pt-1`}>
           {inline(h[2])}
@@ -155,7 +155,7 @@ function inline(text: string): ReactNode[] {
     else if (t.startsWith('[')) {
       const label = t.slice(1, t.indexOf(']'))
       out.push(
-        <a key={k++} href={m[2]} {...(m[2].startsWith('/') ? {} : { target: '_blank', rel: 'noreferrer' })} className="font-medium text-brand-dark underline underline-offset-2">
+        <a key={k++} href={m[2]} {...(m[2].startsWith('/') ? {} : { target: '_blank', rel: 'noreferrer' })} className="font-medium text-brand-ink underline underline-offset-2">
           {label}
         </a>,
       )

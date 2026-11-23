@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock, MessageCircle, Pencil, Plus, Sparkles, Trash2, UserX, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock, MessageCircle, Pencil, Plus, Trash2, UserX, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { cfgDe, dataLonga, DIAS_CURTO, maiuscula, erroAgenda, horariosLivres, hojeLocal, inicioSemana, linkWhatsApp, local, paraUtc, somaDias } from '../lib/agenda'
 import { STATUS_AGENDA, TIPO_AGENDA, type Agendamento, type Customer, type Profissional, type Servico, type StatusAgenda } from '../lib/types'
-import { brl } from '../lib/format'
+import { brl, plural } from '../lib/format'
 import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
 import { erroTelefone, lerTelefone } from '../lib/telefone'
@@ -219,7 +219,7 @@ export default function Agenda() {
       />
 
       {semCadastro && (
-        <Reveal className="mb-4 flex flex-col gap-2 rounded-3xl bg-brand-soft p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <Reveal className="mb-4 flex flex-col gap-2 rounded-card border border-line bg-panel p-4 text-sm text-secondary sm:flex-row sm:items-center sm:justify-between">
           <span>Cadastre os profissionais, os serviços (com duração e preço) e o horário de atendimento para a agenda e a Coraline AI sugerirem os horários livres.</span>
           {papel === 'dono' ? (
             <Link to="/clinica" className="btn-ghost shrink-0">Configurar a clínica</Link>
@@ -245,18 +245,18 @@ export default function Agenda() {
         </div>
         {/* Celular: o dia e o resumo ganham uma linha só deles */}
         <div className="min-w-0 lg:ml-1 lg:flex-1">
-          <div className="truncate font-bold">{modo === 'dia' ? maiuscula(dataLonga(data)) : `Semana de ${dataLonga(deData).split(', ')[1]}`}</div>
+          <div className="truncate font-semibold">{modo === 'dia' ? maiuscula(dataLonga(data)) : `Semana de ${dataLonga(deData).split(', ')[1]}`}</div>
           {modo === 'dia' && (
             <div className="text-xs text-muted">
-              {resumo.total} consulta(s) · {resumo.aConfirmar} a confirmar · {resumo.confirmadas} confirmada(s)
+              {plural(resumo.total, 'consulta', 'consultas')} · {resumo.aConfirmar} a confirmar · {plural(resumo.confirmadas, 'confirmada', 'confirmadas')}
             </div>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input type="date" className="input hidden h-10 w-auto lg:block" value={data} onChange={(e) => e.target.value && setData(e.target.value)} aria-label="Escolher data" />
-          <div className="flex rounded-full bg-panel-2 p-1" role="tablist" aria-label="Visualização">
+          <div className="flex rounded-ctl border border-line bg-panel-2 p-0.5" role="tablist" aria-label="Visualização">
             {(['dia', 'semana'] as const).map((m) => (
-              <button key={m} role="tab" aria-selected={modo === m} onClick={() => setModo(m)} className={`rounded-full px-4 py-1.5 text-sm font-semibold capitalize ${modo === m ? 'bg-ink text-white' : 'text-muted'}`}>
+              <button key={m} role="tab" aria-selected={modo === m} onClick={() => setModo(m)} className={`rounded-ctl px-4 py-1.5 text-sm font-medium capitalize ${modo === m ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'text-muted'}`}>
                 {m}
               </button>
             ))}
@@ -266,11 +266,11 @@ export default function Agenda() {
 
       {profAtivos.length > 1 && (
         <Reveal i={2} className="mb-4 flex gap-2 overflow-x-auto pb-1">
-          <button onClick={() => setFiltroProf('todos')} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold ${filtroProf === 'todos' ? 'border-ink bg-ink text-white' : 'border-line text-muted'}`}>
+          <button onClick={() => setFiltroProf('todos')} className={`shrink-0 rounded-ctl border px-3.5 py-2 text-xs font-medium ${filtroProf === 'todos' ? 'border-brand/40 bg-brand-soft text-brand-ink' : 'border-line text-muted'}`}>
             Todos os profissionais
           </button>
           {profAtivos.map((p) => (
-            <button key={p.id} onClick={() => setFiltroProf(p.id)} className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold ${filtroProf === p.id ? 'border-ink bg-ink text-white' : 'border-line text-muted'}`}>
+            <button key={p.id} onClick={() => setFiltroProf(p.id)} className={`flex shrink-0 items-center gap-2 rounded-ctl border px-3.5 py-2 text-xs font-medium ${filtroProf === p.id ? 'border-brand/40 bg-brand-soft text-brand-ink' : 'border-line text-muted'}`}>
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: p.cor }} />
               {p.nome}
             </button>
@@ -302,8 +302,8 @@ export default function Agenda() {
             return (
               <Reveal key={d} i={i + 3} step={40} className={`card min-h-28 p-3 ${hoje ? 'ring-2 ring-brand' : ''}`}>
                 <button className="mb-2 flex w-full items-baseline justify-between text-left" onClick={() => (setData(d), setModo('dia'))} aria-label={`Ver ${dataLonga(d)}`}>
-                  <span className="text-xs font-semibold uppercase text-muted">{DIAS_CURTO[new Date(d + 'T12:00:00Z').getUTCDay()]}</span>
-                  <span className={`text-lg font-bold ${hoje ? 'text-brand-dark' : ''}`}>{Number(d.slice(8))}</span>
+                  <span className="text-xs font-medium text-muted">{DIAS_CURTO[new Date(d + 'T12:00:00Z').getUTCDay()]}</span>
+                  <span className={`text-lg font-semibold ${hoje ? 'text-brand-ink' : ''}`}>{Number(d.slice(8))}</span>
                 </button>
                 {l.length === 0 ? (
                   <p className="text-xs text-muted">—</p>
@@ -400,7 +400,7 @@ export default function Agenda() {
               ) : (
                 <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
                   {(form.hora && !livres.includes(form.hora) ? [form.hora, ...livres] : livres).map((h) => (
-                    <button type="button" key={h} onClick={() => setForm({ ...form, hora: h })} aria-pressed={form.hora === h} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${form.hora === h ? 'border-ink bg-ink text-white' : 'border-line hover:border-ink'}`}>
+                    <button type="button" key={h} onClick={() => setForm({ ...form, hora: h })} aria-pressed={form.hora === h} className={`rounded-ctl border px-3 py-1.5 text-xs font-medium ${form.hora === h ? 'border-brand/40 bg-brand-soft text-brand-ink' : 'border-line hover:border-ink'}`}>
                       {h}
                     </button>
                   ))}
@@ -456,8 +456,8 @@ function CartaoConsulta({
   const ativo = a.status === 'agendado' || a.status === 'confirmado'
   const msg = `Olá, ${pac?.name.split(' ')[0] ?? ''}! Aqui é da ${clinica}. Confirmando sua ${TIPO_AGENDA[a.tipo].toLowerCase()} ${dataLonga(ini.data)} às ${ini.hora}${prof ? ` com ${prof.nome}` : ''}. Podemos confirmar?`
   return (
-    <li className={`flex flex-col gap-3 rounded-2xl border border-line p-3 sm:flex-row sm:items-center ${a.status === 'cancelado' ? 'opacity-60' : ''}`} style={{ borderLeft: `4px solid ${prof?.cor ?? '#94a3b8'}` }}>
-      <div className="flex w-20 shrink-0 items-center gap-1.5 font-bold sm:flex-col sm:items-start sm:gap-0">
+    <li className={`flex flex-col gap-3 rounded-ctl border border-line p-3 sm:flex-row sm:items-center ${a.status === 'cancelado' ? 'opacity-60' : ''}`} style={{ borderLeft: `4px solid ${prof?.cor ?? '#94a3b8'}` }}>
+      <div className="flex w-20 shrink-0 items-center gap-1.5 font-semibold sm:flex-col sm:items-start sm:gap-0">
         <span className="text-lg leading-tight">{ini.hora}</span>
         <span className="text-xs font-medium text-muted">até {local(a.fim, fuso).hora}</span>
       </div>
@@ -467,7 +467,7 @@ function CartaoConsulta({
           <span className={`chip ${st.cls}`}>{st.label}</span>
           {a.origem !== 'manual' && (
             <span className="chip bg-brand-soft text-ink" title={a.origem === 'ia' ? 'Marcada pela Coraline AI' : 'Marcada pelo WhatsApp'}>
-              <Sparkles size={11} /> {a.origem === 'ia' ? 'Coraline AI' : 'WhatsApp'}
+              {a.origem === 'ia' ? 'Coraline AI' : 'WhatsApp'}
             </span>
           )}
         </div>

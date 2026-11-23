@@ -45,14 +45,14 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f2f4f7] to-[#e3efff] p-4 sm:p-6">
+    <div className="flex min-h-screen items-center justify-center bg-bg p-4 sm:p-6">
       <form onSubmit={submit} className="card w-full max-w-xl p-6 sm:p-10">
         <Reveal>
           <Logo size={42} />
         </Reveal>
         <Reveal i={1} className="mt-8">
           {convite && (
-            <div className="mb-6 rounded-3xl bg-brand-soft p-4">
+            <div className="mb-6 rounded-card border border-line bg-panel-2 p-4">
               <p className="text-sm">
                 Você foi convidado para a equipe da <b>{convite.clinica}</b> como <b>{convite.papel === 'recepcao' ? 'recepção' : 'profissional de saúde'}</b>.
               </p>
@@ -62,7 +62,7 @@ export default function Onboarding() {
               <p className="mt-2 text-center text-xs text-muted">Ou crie a sua própria clínica abaixo.</p>
             </div>
           )}
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight">Vamos conhecer sua clínica</h1>
+          <h1 className="text-[28px] font-semibold leading-tight">Vamos conhecer sua clínica</h1>
           <p className="mt-2 text-sm text-muted">A Coraline AI usa essas informações para atender seus pacientes no WhatsApp e ajudar na agenda, no funil, no marketing e na gestão. Se tiver site, ele também é avaliado.</p>
         </Reveal>
         <div className="mt-8 space-y-4">

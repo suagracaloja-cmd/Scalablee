@@ -34,16 +34,16 @@ export default function Approvals() {
     <div>
       <PageHeader title="Central de Aprovações" subtitle={`A ${AGENT_NAME} prepara envios, campanhas, lançamentos e exclusões — nada acontece sem a sua decisão. Cada decisão fica registrada.`} />
       <Reveal i={1} className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex rounded-full bg-panel p-1 text-sm">
+        <div className="inline-flex rounded-ctl border border-line bg-panel p-0.5 text-sm">
           {(['pending', 'done'] as const).map((t) => (
-            <button key={t} onClick={() => (setLoading(true), setTab(t))} className={`h-9 rounded-full px-5 font-semibold ${tab === t ? 'bg-ink text-white' : 'text-muted'}`}>
+            <button key={t} onClick={() => (setLoading(true), setTab(t))} className={`h-9 rounded-ctl px-5 font-medium ${tab === t ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'text-muted'}`}>
               {t === 'pending' ? 'Pendentes' : 'Histórico'}
             </button>
           ))}
         </div>
         <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
           {['all', ...AREA_FILTERS].map((k) => (
-            <button key={k} onClick={() => setArea(k)} className={`h-9 shrink-0 rounded-full px-3.5 text-xs font-semibold ${area === k ? 'bg-ink text-white' : 'bg-panel text-ink'}`}>
+            <button key={k} onClick={() => setArea(k)} className={`h-9 shrink-0 rounded-ctl px-3.5 text-xs font-medium ${area === k ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'bg-panel text-ink'}`}>
               {k === 'all' ? 'Todas as áreas' : areaOf(k).label}
             </button>
           ))}

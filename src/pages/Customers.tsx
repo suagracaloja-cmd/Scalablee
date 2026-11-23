@@ -114,7 +114,7 @@ export default function Customers() {
       texto: (
         <>
           O cadastro é apagado e não dá para desfazer.
-          {n > 0 && ` As ${n} consulta(s) dele também saem da agenda.`}
+          {n > 0 && (n === 1 ? ' A consulta dele também sai da agenda.' : ` As ${n} consultas dele também saem da agenda.`)}
           {veVendas && ' Os atendimentos pagos continuam no histórico financeiro, sem o nome.'}
         </>
       ),
@@ -160,15 +160,15 @@ export default function Customers() {
         }
       />
       <Reveal i={1} className="mb-3 flex flex-col gap-2 sm:flex-row">
-        <div className="card flex flex-1 items-center gap-2 px-3 py-2">
-          <Search size={16} className="text-muted" />
-          <input maxLength={100} className="w-full bg-transparent text-sm outline-none" placeholder="Buscar por nome, CPF, telefone ou e-mail" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="transicao flex h-10 flex-1 items-center gap-2 rounded-ctl border border-line bg-panel px-3 focus-within:border-brand focus-within:ring-3 focus-within:ring-brand/15">
+          <Search size={16} strokeWidth={1.5} className="text-muted" />
+          <input maxLength={100} className="w-full bg-transparent text-sm outline-none" placeholder="Nome, CPF, telefone ou e-mail" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <div className="flex rounded-full bg-panel p-1" role="tablist" aria-label="Visualização">
-          <button role="tab" aria-selected={modo === 'lista'} onClick={() => setModo('lista')} className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${modo === 'lista' ? 'bg-ink text-white' : 'text-muted'}`}>
+        <div className="flex rounded-ctl border border-line bg-panel p-0.5" role="tablist" aria-label="Visualização">
+          <button role="tab" aria-selected={modo === 'lista'} onClick={() => setModo('lista')} className={`flex items-center gap-1.5 rounded-ctl px-4 py-2 text-sm font-medium ${modo === 'lista' ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'text-muted'}`}>
             <List size={15} /> Lista
           </button>
-          <button role="tab" aria-selected={modo === 'funil'} onClick={() => setModo('funil')} className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${modo === 'funil' ? 'bg-ink text-white' : 'text-muted'}`}>
+          <button role="tab" aria-selected={modo === 'funil'} onClick={() => setModo('funil')} className={`flex items-center gap-1.5 rounded-ctl px-4 py-2 text-sm font-medium ${modo === 'funil' ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'text-muted'}`}>
             <Columns3 size={15} /> Funil
           </button>
         </div>
@@ -205,7 +205,7 @@ export default function Customers() {
                 </div>
                 <ul className="space-y-2">
                   {col.slice(0, 60).map((c) => (
-                    <li key={c.id} className="rounded-2xl bg-panel-2 p-2.5">
+                    <li key={c.id} className="rounded-ctl bg-panel-2 p-2.5">
                       <button className="block w-full truncate text-left text-sm font-semibold hover:underline" onClick={() => abrir(c)}>
                         {c.name}
                       </button>
@@ -247,7 +247,7 @@ export default function Customers() {
             return (
               <Reveal key={c.id} i={Math.min(i, 12) + 3} step={50} className="card p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand/40 to-brand-2/30 font-bold" aria-hidden="true">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-ink font-semibold" aria-hidden="true">
                     {c.name[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -260,24 +260,24 @@ export default function Customers() {
                   <span className={`chip ${et.cls}`}>{et.label}</span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <div className="rounded-2xl bg-panel-2 p-3">
+                  <div className="rounded-ctl bg-panel-2 p-3">
                     <div className="text-muted">Próxima consulta</div>
                     <div className="font-semibold">{prox ? fmtDate(prox) : '—'}</div>
                   </div>
                   {veVendas ? (
-                    <div className="rounded-2xl bg-panel-2 p-3">
+                    <div className="rounded-ctl bg-panel-2 p-3">
                       <div className="text-muted">Total pago</div>
                       <div className="font-semibold">{brl(t?.total ?? 0)}</div>
                     </div>
                   ) : (
-                    <div className="rounded-2xl bg-panel-2 p-3">
+                    <div className="rounded-ctl bg-panel-2 p-3">
                       <div className="text-muted">Paciente desde</div>
                       <div className="font-semibold">{fmtDate(c.created_at)}</div>
                     </div>
                   )}
                 </div>
                 {followUp(c) && (
-                  <p className="mt-2 flex items-center gap-1.5 rounded-xl bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-900">
+                  <p className="mt-2 flex items-center gap-1.5 rounded-ctl bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-900">
                     <BellRing size={13} /> Follow-up {c.proximo_contato! < hoje() ? `atrasado (${fmtDate(c.proximo_contato!)})` : 'hoje'}
                   </p>
                 )}
@@ -286,20 +286,20 @@ export default function Customers() {
                   <span>{c.last_contact_at ? `Contato ${timeAgo(c.last_contact_at)}` : 'Sem contato registrado'}</span>
                   <div className="flex gap-1">
                     {veProntuario && (
-                      <Link to={`/pacientes/${c.id}`} className="rounded-full p-1.5 text-brand-dark hover:bg-panel-2" title="Abrir o prontuário" aria-label={`Abrir o prontuário de ${c.name}`}>
+                      <Link to={`/pacientes/${c.id}`} className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-ink" title="Abrir o prontuário" aria-label={`Abrir o prontuário de ${c.name}`}>
                         <HeartPulse size={15} />
                       </Link>
                     )}
                     {c.phone && (
-                      <a href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer" onClick={() => touch(c)} className="rounded-full p-1.5 text-emerald-600 hover:bg-panel-2" title="Abrir no WhatsApp" aria-label={`Abrir conversa com ${c.name} no WhatsApp`}>
+                      <a href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer" onClick={() => touch(c)} className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-ink" title="Abrir no WhatsApp" aria-label={`Abrir conversa com ${c.name} no WhatsApp`}>
                         <MessageCircle size={15} />
                       </a>
                     )}
-                    <button className="rounded-full p-1.5 hover:bg-panel-2" onClick={() => abrir(c)} aria-label={`Editar ${c.name}`} title="Editar">
+                    <button className="rounded-md p-1.5 hover:bg-panel-2" onClick={() => abrir(c)} aria-label={`Editar ${c.name}`} title="Editar">
                       <Pencil size={14} />
                     </button>
                     {papel !== 'profissional' && (
-                      <button className="rounded-full p-1.5 hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(c)} aria-label={`Excluir ${c.name}`} title="Excluir">
+                      <button className="rounded-md p-1.5 hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(c)} aria-label={`Excluir ${c.name}`} title="Excluir">
                         <Trash2 size={14} />
                       </button>
                     )}
@@ -386,7 +386,7 @@ export default function Customers() {
 
 function Filtro({ on, onClick, alerta, children }: { on: boolean; onClick: () => void; alerta?: boolean; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} aria-pressed={on} className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold ${on ? 'border-ink bg-ink text-white' : alerta ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-line text-muted'}`}>
+    <button onClick={onClick} aria-pressed={on} className={`flex shrink-0 items-center gap-1.5 rounded-ctl border px-3.5 py-2 text-xs font-medium ${on ? 'border-brand/40 bg-brand-soft text-brand-ink' : alerta ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-line text-muted'}`}>
       {children}
     </button>
   )

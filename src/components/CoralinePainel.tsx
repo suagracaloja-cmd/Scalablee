@@ -80,13 +80,13 @@ export function CoralinePainel({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <div className="fixed inset-0 z-[60] md:inset-auto md:bottom-4 md:right-4 md:top-4" role="dialog" aria-modal="true" aria-label={AGENT_NAME}>
-      <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px] md:hidden" onClick={onClose} />
-      <section className="reveal-up relative flex h-full w-full flex-col overflow-hidden border border-white bg-white shadow-[0_30px_80px_-30px_rgba(30,60,140,0.45)] md:w-[440px] md:rounded-[28px]">
+      <div className="absolute inset-0 bg-slate-900/30 md:hidden" onClick={onClose} />
+      <section className="reveal-up relative flex h-full w-full flex-col overflow-hidden border border-line bg-panel shadow-[0_8px_24px_rgba(16,24,40,0.12)] md:w-[440px] md:rounded-panel">
         <header className="flex items-center gap-2.5 border-b border-line/70 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]">
           <Orb size={30} />
           <div className="min-w-0 flex-1 leading-tight">
-            <div className="text-sm font-bold">{AGENT_NAME}</div>
-            <div className="truncate text-[11px] text-muted">{clinica}</div>
+            <div className="text-sm font-semibold">{AGENT_NAME}</div>
+            <div className="truncate text-xs text-muted">{clinica}</div>
           </div>
           <button className="icon-btn h-9 w-9 border-0 bg-transparent" onClick={nova} title="Nova conversa" aria-label="Nova conversa">
             <SquarePen size={16} />
@@ -103,16 +103,16 @@ export function CoralinePainel({ open, onClose }: { open: boolean; onClose: () =
           {msgs.length === 0 ? (
             <div className="flex min-h-full flex-col">
               <div className="flex flex-col items-center pt-4 text-center">
-                <Orb size={72} className="orb-viva" />
-                <h2 className="mt-5 text-xl font-bold leading-snug">O que você quer saber da clínica?</h2>
-                <p className="mt-2 max-w-xs text-xs leading-relaxed text-muted">
+                <Orb size={56} />
+                <h2 className="mt-4 text-lg font-semibold leading-snug">O que você quer saber da clínica?</h2>
+                <p className="mt-2 max-w-xs text-sm leading-relaxed text-secondary">
                   Pergunte sobre {ASSUNTOS[papel]}. Respondo só com os dados da {clinica}.
                 </p>
               </div>
               <div className="mt-6 grid grid-cols-2 gap-2.5">
                 {sugestoes.map((s) => (
-                  <button key={s.texto} onClick={() => enviar(s.texto)} className="group flex flex-col items-start gap-2 rounded-2xl border border-line/80 bg-white/80 p-3 text-left text-xs font-medium leading-snug transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-[0_10px_24px_-14px_rgba(47,111,230,0.5)]">
-                    <s.icone size={15} className="text-brand-dark" />
+                  <button key={s.texto} onClick={() => enviar(s.texto)} className="transicao flex flex-col items-start gap-2 rounded-ctl border border-line bg-panel p-3 text-left text-sm leading-snug hover:bg-panel-2">
+                    <s.icone size={16} strokeWidth={1.5} className="text-muted" />
                     {s.texto}
                   </button>
                 ))}
@@ -122,7 +122,7 @@ export function CoralinePainel({ open, onClose }: { open: boolean; onClose: () =
             <ul className="space-y-4">
               {msgs.map((m) =>
                 m.role === 'user' ? (
-                  <li key={m.id} className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-ink px-3.5 py-2.5 text-sm text-white">
+                  <li key={m.id} className="ml-auto w-fit max-w-[85%] rounded-card rounded-br-md bg-ink px-3.5 py-2.5 text-sm text-white">
                     {m.content}
                   </li>
                 ) : (
@@ -132,7 +132,7 @@ export function CoralinePainel({ open, onClose }: { open: boolean; onClose: () =
                       {!!m.meta?.steps?.length && (
                         <div className="mb-1.5 flex flex-wrap gap-1">
                           {[...new Set(m.meta.steps.map((s) => s.label))].map((l) => (
-                            <span key={l} className="chip bg-brand-soft text-ink">
+                            <span key={l} className="chip border border-line bg-panel-2 text-secondary">
                               {l}
                             </span>
                           ))}
@@ -142,7 +142,7 @@ export function CoralinePainel({ open, onClose }: { open: boolean; onClose: () =
                         <Markdown text={m.content} />
                       </div>
                       {!!m.meta?.approvals?.length && (
-                        <Link to="/aprovacoes" onClick={onClose} className="mt-2 inline-flex text-xs font-semibold text-brand-dark underline underline-offset-2">
+                        <Link to="/aprovacoes" onClick={onClose} className="mt-2 inline-flex text-xs font-semibold text-brand-ink underline underline-offset-2">
                           Ver na Central de Aprovações
                         </Link>
                       )}
@@ -161,7 +161,7 @@ export function CoralinePainel({ open, onClose }: { open: boolean; onClose: () =
         </div>
 
         <form onSubmit={submit} className="border-t border-line/70 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
-          <div className="flex items-end gap-2 rounded-2xl border border-line bg-white px-3 py-2 focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/10">
+          <div className="transicao flex items-end gap-2 rounded-card border border-line bg-panel px-3 py-2 focus-within:border-brand focus-within:ring-3 focus-within:ring-brand/15">
             <textarea
               ref={campo}
               rows={1}
@@ -178,11 +178,11 @@ export function CoralinePainel({ open, onClose }: { open: boolean; onClose: () =
               aria-label={`Mensagem para a ${AGENT_NAME}`}
               className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent py-1.5 text-sm outline-none placeholder:text-muted"
             />
-            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5aaeff] to-[#2f6fe6] text-white disabled:opacity-40" disabled={busy || !texto.trim()} aria-label="Enviar">
+            <button className="transicao flex h-9 w-9 shrink-0 items-center justify-center rounded-ctl bg-ink text-white hover:bg-graphite disabled:opacity-40" disabled={busy || !texto.trim()} aria-label="Enviar">
               {busy ? <Spinner size={14} /> : <ArrowUp size={17} />}
             </button>
           </div>
-          <p className="mt-2 text-center text-[10px] text-muted">A {AGENT_NAME} pode cometer erros. Confira informações importantes.</p>
+          <p className="mt-2 text-center text-xs text-muted">A {AGENT_NAME} pode cometer erros. Confira informações importantes.</p>
         </form>
       </section>
     </div>

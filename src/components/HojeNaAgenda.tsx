@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, CalendarDays } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { cfgDe, hojeLocal, local, paraUtc, somaDias } from '../lib/agenda'
@@ -33,42 +33,55 @@ export function HojeNaAgenda({ i = 1 }: { i?: number }) {
   }, [cfg.fuso])
 
   const n = (s: string) => (linhas ?? []).filter((x) => x.status === s).length
+  const plural = (q: number, um: string, varios: string) => `${q} ${q === 1 ? um : varios}`
+  const resumo =
+    linhas === null
+      ? 'Carregando…'
+      : linhas.length === 0
+        ? 'Nenhuma consulta hoje'
+        : `${plural(linhas.length, 'consulta', 'consultas')} · ${n('agendado')} a confirmar · ${plural(n('confirmado'), 'confirmada', 'confirmadas')}`
+  // Assinatura da agenda: uma linha azul fina marca "agora" entre as consultas que já passaram e as próximas
+  const agoraMs = Date.now()
+  const lista = (linhas ?? []).slice(0, 6)
+  const posAgora = lista.findIndex((a) => new Date(a.inicio).getTime() > agoraMs)
+  const horaAgora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: cfg.fuso })
+  const linhaAgora = (
+    <li key="agora" aria-label={`Agora, ${horaAgora}`} className="col-span-full flex items-center gap-2 py-0.5 text-xs font-medium tabular-nums text-brand-ink">
+      <span>{horaAgora}</span>
+      <span className="h-px flex-1 bg-brand" />
+    </li>
+  )
   return (
     <Reveal i={i} className="card mb-4 p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand-dark">
-            <CalendarDays size={17} />
-          </span>
-          <div>
-            <h2 className="text-lg font-bold leading-tight">Hoje na agenda</h2>
-            <p className="text-xs text-muted">{linhas === null ? 'Carregando…' : `${linhas.length} consulta(s) · ${n('agendado')} a confirmar · ${n('confirmado')} confirmada(s)`}</p>
-          </div>
-        </div>
-        <Link to="/agenda" className="icon-btn" aria-label="Abrir a agenda">
-          <ArrowUpRight size={17} />
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold">Hoje na agenda</h2>
+        <Link to="/agenda" className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-brand-ink hover:underline">
+          Abrir agenda <ChevronRight size={16} strokeWidth={1.5} />
         </Link>
       </div>
-      {linhas && linhas.length > 0 && (
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {linhas.slice(0, 6).map((a) => (
-            <li key={a.id} className="flex min-w-0 items-center gap-3 rounded-2xl bg-panel-2 px-3 py-2.5" style={{ borderLeft: `4px solid ${a.prof?.cor ?? '#94a3b8'}` }}>
-              <span className="w-12 shrink-0 text-sm font-bold">{local(a.inicio, cfg.fuso).hora}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">{a.paciente ?? 'Sem paciente'}</span>
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate text-[11px] text-muted">{a.prof?.nome ?? 'Agenda geral'}</span>
-                  {/* No celular o status fica embaixo do nome, para o nome aparecer inteiro */}
-                  <span className={`chip px-2 py-0.5 text-[10px] min-[420px]:hidden ${STATUS_AGENDA[a.status].cls}`}>{STATUS_AGENDA[a.status].label}</span>
+      <p className="text-sm text-muted">{resumo}</p>
+      {lista.length > 0 && (
+        <ul className="mt-4 grid gap-x-4 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
+          {lista.flatMap((a, k) => {
+            const item = (
+              <li key={a.id} className={`flex min-w-0 items-center gap-3 rounded-ctl px-2 py-2 ${new Date(a.inicio).getTime() <= agoraMs ? 'opacity-60' : ''}`}>
+                <span className="w-11 shrink-0 text-sm font-medium tabular-nums">{local(a.inicio, cfg.fuso).hora}</span>
+                <span className="h-8 w-0.5 shrink-0 rounded-full" style={{ background: a.prof?.cor ?? '#c3c7cf' }} aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{a.paciente ?? 'Sem paciente'}</span>
+                  <span className="block truncate text-xs text-muted">
+                    {a.prof?.nome ?? 'Agenda geral'} · {STATUS_AGENDA[a.status].label}
+                  </span>
                 </span>
-              </span>
-              <span className={`chip max-[419px]:hidden ${STATUS_AGENDA[a.status].cls}`}>{STATUS_AGENDA[a.status].label}</span>
-            </li>
-          ))}
+              </li>
+            )
+            return k === posAgora && posAgora > 0 ? [linhaAgora, item] : [item]
+          })}
+          {posAgora === -1 && lista.length > 0 && linhaAgora}
         </ul>
       )}
       {linhas && linhas.length > 6 && (
-        <Link to="/agenda" className="mt-3 inline-block text-sm font-semibold text-brand-dark hover:underline">
+        <Link to="/agenda" className="mt-3 inline-block text-sm font-medium text-brand-ink hover:underline">
           Ver as outras {linhas.length - 6} na agenda
         </Link>
       )}

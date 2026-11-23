@@ -31,3 +31,6 @@ export function relativeDay(iso: string | null) {
   if (iso === addDays(t, 2)) return 'Depois de amanhã'
   return fmtDate(iso)
 }
+
+/** "1 consulta", "3 consultas" (sem o "(s)" no texto). */
+export const plural = (n: number, um: string, varios: string) => `${n.toLocaleString('pt-BR')} ${n === 1 ? um : varios}`

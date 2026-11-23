@@ -147,7 +147,7 @@ export default function WhatsApp() {
           {/* Lista */}
           <div className={`min-h-0 overflow-y-auto border-r border-line ${active ? 'hidden md:block' : ''}`}>
             {!status.connected && (
-              <div className="m-3 rounded-2xl bg-amber-50 p-3 text-xs text-amber-600">Finalize a configuração do webhook na Meta para começar a receber mensagens.</div>
+              <div className="m-3 rounded-ctl bg-amber-50 p-3 text-xs text-amber-600">Finalize a configuração do webhook na Meta para começar a receber mensagens.</div>
             )}
             {convs.length === 0 && <Empty icon={<MessageCircle size={22} />} title="Nenhuma conversa ainda" text="Quando um paciente mandar mensagem, ela aparece aqui." />}
             {convs.map((c) => (
@@ -156,13 +156,13 @@ export default function WhatsApp() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-semibold">{c.contact_name ?? c.wa_id}</span>
-                    <span className="shrink-0 text-[10px] text-muted">{timeAgo(c.last_message_at)}</span>
+                    <span className="shrink-0 text-xs text-muted">{timeAgo(c.last_message_at)}</span>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted">
                     +{c.wa_id} {c.ai_paused && <span className="chip bg-amber-50 text-amber-600">IA pausada</span>}
                   </div>
                 </div>
-                {c.unread > 0 && <span className="rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-black">{c.unread}</span>}
+                {c.unread > 0 && <span className="rounded-md bg-emerald-500 px-1.5 text-xs font-medium text-black">{c.unread}</span>}
               </button>
             ))}
           </div>
@@ -189,7 +189,7 @@ export default function WhatsApp() {
                   {msgs.map((m) => (
                     <div key={m.id} className={`flex ${m.direction === 'out' ? 'justify-end' : ''}`}>
                       <div
-                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
+                        className={`max-w-[80%] rounded-ctl px-3.5 py-2 text-sm ${
                           m.direction === 'in'
                             ? 'rounded-bl-md bg-panel-2'
                             : m.status === 'pending_approval'
@@ -200,7 +200,7 @@ export default function WhatsApp() {
                         }`}
                       >
                         {m.direction === 'out' && (
-                          <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
+                          <div className="mb-0.5 flex items-center gap-1 text-xs font-semibold text-emerald-600">
                             {m.author === 'agent' ? (
                               <>
                                 <AgentMark size={14} rounded="rounded" /> {AGENT_NAME}
@@ -211,7 +211,7 @@ export default function WhatsApp() {
                           </div>
                         )}
                         <div className="whitespace-pre-wrap">{m.body}</div>
-                        <div className="mt-0.5 text-right text-[10px] text-muted">
+                        <div className="mt-0.5 text-right text-xs text-muted">
                           {fmtTime(m.created_at)} {m.status === 'pending_approval' && '· aguardando aprovação'} {m.status === 'failed' && <span className="text-rose-600">· falhou: {m.error}</span>}
                         </div>
                       </div>
@@ -257,8 +257,8 @@ function InlineApproval({ a, onDecide }: { a: Approval; onDecide: (a: Approval, 
     setBusy(false)
   }
   return (
-    <div className="ml-auto max-w-[90%] rounded-2xl border border-amber-400/40 bg-amber-50 p-3">
-      <div className="mb-2 text-xs font-semibold text-amber-600">⚠️ Aprovação: {a.reason}</div>
+    <div className="ml-auto max-w-[90%] rounded-ctl border border-amber-400/40 bg-amber-50 p-3">
+      <div className="mb-2 text-xs font-medium text-amber-800">Aprovação: {a.reason}</div>
       <textarea maxLength={4096} className="input min-h-16 text-sm" value={text} onChange={(e) => setText(e.target.value)} />
       <div className="mt-2 flex justify-end gap-2">
         <button className="btn-danger px-3 py-1.5 text-xs" disabled={busy} onClick={() => go('reject')}>
@@ -342,8 +342,8 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
         {hasSecret !== null && (
           <p className={`rounded-xl px-3 py-2 text-xs ${hasSecret ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
             {hasSecret
-              ? '✓ Verificação de autenticidade ligada: só mensagens assinadas pela Meta são aceitas.'
-              : '⚠️ A chave secreta do app é obrigatória: sem ela a Scalable não consegue confirmar que as mensagens recebidas vieram mesmo da Meta, e elas são recusadas.'}
+              ? 'Verificação de autenticidade ligada: só mensagens assinadas pela Meta são aceitas.'
+              : 'A chave secreta do app é obrigatória: sem ela a Scalable não consegue confirmar que as mensagens recebidas vieram mesmo da Meta, e elas são recusadas.'}
           </p>
         )}
         <button className="btn-primary w-full" disabled={busy}>
@@ -351,7 +351,7 @@ function Setup({ status, onClose, onSaved }: { status: Status; onClose: () => vo
         </button>
       </form>
       {saved && (
-        <div className="mt-5 space-y-3 rounded-2xl border border-line bg-panel-2 p-4">
+        <div className="mt-5 space-y-3 rounded-ctl border border-line bg-panel-2 p-4">
           <div className="text-sm font-semibold">Configuração do webhook na Meta</div>
           {[
             { l: 'URL de callback', v: WEBHOOK_URL },

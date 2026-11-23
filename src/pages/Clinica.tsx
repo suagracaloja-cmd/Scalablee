@@ -28,7 +28,7 @@ export default function Clinica() {
       <Reveal className="mb-4">
         <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Seções">
         {ABAS.map((a) => (
-          <button key={a.id} role="tab" aria-selected={aba === a.id} onClick={() => setAba(a.id)} className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${aba === a.id ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:text-ink'}`}>
+          <button key={a.id} role="tab" aria-selected={aba === a.id} onClick={() => setAba(a.id)} className={`flex shrink-0 items-center gap-2 rounded-ctl border px-4 py-2 text-sm font-medium ${aba === a.id ? 'border-brand/40 bg-brand-soft text-brand-ink' : 'border-line text-muted hover:text-ink'}`}>
             <a.icon size={15} /> {a.label}
           </button>
         ))}
@@ -142,7 +142,7 @@ function Equipe() {
             <h3 className="mt-5 text-sm font-semibold">Convites aguardando</h3>
             <ul className="mt-2 space-y-2">
               {convites.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 rounded-2xl bg-panel-2 px-3 py-2.5 text-sm">
+                <li key={c.id} className="flex items-center gap-3 rounded-ctl bg-panel-2 px-3 py-2.5 text-sm">
                   <Mail size={16} className="shrink-0 text-muted" />
                   <span className="min-w-0 flex-1 truncate">
                     {c.nome ? `${c.nome} · ` : ''}
@@ -185,7 +185,7 @@ function Equipe() {
 }
 
 function Avatar({ texto }: { texto: string }) {
-  return <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold">{texto[0]?.toUpperCase()}</span>
+  return <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold">{texto[0]?.toUpperCase()}</span>
 }
 
 // ---------------- Profissionais ----------------
@@ -423,7 +423,7 @@ function Horarios() {
             {[1, 2, 3, 4, 5, 6, 0].map((d) => {
               const on = cfg.dias.includes(d)
               return (
-                <button type="button" key={d} aria-pressed={on} onClick={() => setCfg({ ...cfg, dias: on ? cfg.dias.filter((x) => x !== d) : [...cfg.dias, d].sort() })} className={`rounded-full border px-3.5 py-2 text-sm font-semibold capitalize ${on ? 'border-ink bg-ink text-white' : 'border-line text-muted'}`}>
+                <button type="button" key={d} aria-pressed={on} onClick={() => setCfg({ ...cfg, dias: on ? cfg.dias.filter((x) => x !== d) : [...cfg.dias, d].sort() })} className={`rounded-ctl border px-3.5 py-2 text-sm font-medium capitalize ${on ? 'border-brand/40 bg-brand-soft text-brand-ink' : 'border-line text-muted'}`}>
                   {DIAS_LONGO[d]}
                 </button>
               )

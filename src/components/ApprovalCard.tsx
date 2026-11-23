@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { CalendarDays, Check, CheckCircle2, Mail, Megaphone, MessageCircle, Send, ShoppingBag, Trash2, UserPlus, Wallet, X } from 'lucide-react'
+import { CalendarDays, Check, CheckCircle2, Mail, Megaphone, MessageCircle, Send, ShoppingBag, Trash2, UserPlus, Wallet, X, AlertTriangle } from 'lucide-react'
 import { api } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Approval, ApprovalKind } from '../lib/types'
@@ -197,9 +197,9 @@ export default function ApprovalCard({ a, onChange, compact = false }: { a: Appr
     )
 
   return (
-    <div className={`rounded-3xl border border-line bg-panel ${compact ? 'p-4' : 'p-5'}`}>
+    <div className={`rounded-card border border-line bg-panel ${compact ? 'p-4' : 'p-5'}`}>
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-panel-2 text-ink">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ctl bg-panel-2 text-ink">
           <info.icon size={18} />
         </span>
         <div className="min-w-0 flex-1">
@@ -210,7 +210,9 @@ export default function ApprovalCard({ a, onChange, compact = false }: { a: Appr
           <div className="mt-0.5 font-semibold leading-snug">{a.title}</div>
           {a.reason && !resumoTecnico(a) &&
             (a.reason.startsWith('⚠️') ? (
-              <div className="mt-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">{a.reason}</div>
+              <div className="mt-1.5 flex items-start gap-2 rounded-ctl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                <AlertTriangle size={14} strokeWidth={1.75} className="mt-px shrink-0" /> {a.reason.replace(/^⚠️\s*/, '')}
+              </div>
             ) : (
               <div className="mt-0.5 text-sm text-muted">{a.reason}</div>
             ))}
@@ -219,13 +221,13 @@ export default function ApprovalCard({ a, onChange, compact = false }: { a: Appr
       </div>
 
       {!compact && hasDetails(a) && (
-        <div className="mt-4 space-y-1.5 rounded-2xl bg-panel-2 p-4">
+        <div className="mt-4 space-y-1.5 rounded-ctl bg-panel-2 p-4">
           <Details a={a} />
         </div>
       )}
       {!compact && !hasDetails(a) && !a.draft && <p className="mt-4 text-sm text-muted">Sem dados adicionais.</p>}
       {compact && hasDetails(a) && a.kind !== 'whatsapp_reply' && a.kind !== 'whatsapp_outreach' && (
-        <div className="mt-3 space-y-1 rounded-2xl bg-panel-2 p-3">
+        <div className="mt-3 space-y-1 rounded-ctl bg-panel-2 p-3">
           <Details a={a} />
         </div>
       )}
@@ -237,11 +239,11 @@ export default function ApprovalCard({ a, onChange, compact = false }: { a: Appr
             <textarea className="input min-h-24 text-sm" value={text} onChange={(e) => setText(e.target.value)} />
           </div>
         ) : (
-          <p className="mt-3 whitespace-pre-wrap rounded-2xl bg-panel-2 p-3 text-sm">{a.draft}</p>
+          <p className="mt-3 whitespace-pre-wrap rounded-ctl bg-panel-2 p-3 text-sm">{a.draft}</p>
         ))}
 
       {info.manual && a.status === 'pending' && (
-        <p className="mt-3 rounded-2xl bg-sky-50 px-3 py-2 text-xs text-sky-800">
+        <p className="mt-3 rounded-ctl bg-sky-50 px-3 py-2 text-xs text-sky-800">
           Integração ainda não configurada: aprovar apenas registra a decisão. O envio/publicação deve ser feito manualmente.
         </p>
       )}

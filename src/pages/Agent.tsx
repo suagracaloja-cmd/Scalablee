@@ -121,36 +121,36 @@ export default function Agent() {
   const basic = lastAssistant?.meta && lastAssistant.meta.ai === false
 
   const sidebar = (
-    <div className="flex h-full flex-col bg-graphite text-white">
+    <div className="flex h-full flex-col border-r border-line bg-panel-2 text-ink">
       <div className="flex items-center gap-2.5 px-4 pb-3 pt-4">
         <AgentMark size={34} rounded="rounded-xl" />
         <div className="min-w-0 flex-1 leading-tight">
-          <div className="truncate text-sm font-bold">{AGENT_NAME}</div>
-          <div className="truncate text-[11px] text-white/50">{company?.name}</div>
+          <div className="truncate text-sm font-semibold">{AGENT_NAME}</div>
+          <div className="truncate text-xs text-muted">{company?.name}</div>
         </div>
-        <button onClick={() => setDrawer(false)} className="rounded-full p-1.5 text-white/60 hover:bg-white/10 lg:hidden" aria-label="Fechar">
-          <X size={18} />
+        <button onClick={() => setDrawer(false)} className="icon-btn h-8 w-8 lg:hidden" aria-label="Fechar">
+          <X size={16} strokeWidth={1.5} />
         </button>
       </div>
       <div className="px-3">
-        <Link to="/agente" className="flex h-10 items-center gap-2 rounded-xl bg-white/10 px-3 text-sm font-semibold hover:bg-white/15">
-          <MessageSquarePlus size={16} /> Nova conversa
+        <Link to="/agente" className="btn-ghost h-9 w-full justify-start px-3">
+          <MessageSquarePlus size={16} strokeWidth={1.5} className="text-muted" /> Nova conversa
         </Link>
       </div>
-      <div className="mt-4 px-4 text-[11px] font-semibold uppercase tracking-wide text-white/40">Conversas</div>
-      <nav className="mt-1.5 min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
-        {threads.length === 0 && <p className="px-2 py-3 text-xs text-white/40">Suas conversas aparecem aqui.</p>}
+      <div className="mb-2 mt-6 px-4 text-xs text-muted">Conversas</div>
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
+        {threads.length === 0 && <p className="px-2 py-2 text-sm text-muted">Suas conversas aparecem aqui</p>}
         {threads.map((t) => (
-          <div key={t.id} className={`group flex items-center rounded-xl ${t.id === threadId ? 'bg-white/10' : 'hover:bg-white/5'}`}>
+          <div key={t.id} className={`group flex items-center rounded-ctl ${t.id === threadId ? 'nav-ativo' : 'hover:bg-panel'}`}>
             <Link to={`/agente/${t.id}`} className="min-w-0 flex-1 px-3 py-2">
-              <div className={`truncate text-sm ${t.id === threadId ? 'font-semibold text-white' : 'text-white/75'}`}>{t.title}</div>
-              <div className="text-[10px] text-white/35">{timeAgo(t.updated_at)}</div>
+              <div className={`truncate text-sm ${t.id === threadId ? 'font-medium text-ink' : 'text-secondary'}`}>{t.title}</div>
+              <div className="text-xs text-muted">{timeAgo(t.updated_at)}</div>
             </Link>
             <div className="mr-1 hidden gap-0.5 group-hover:flex">
-              <button onClick={() => rename(t)} className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white" title="Renomear">
+              <button onClick={() => rename(t)} className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-ink" title="Renomear" aria-label="Renomear">
                 <Pencil size={13} />
               </button>
-              <button onClick={() => remove(t)} className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-rose-300" title="Apagar">
+              <button onClick={() => remove(t)} className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-rose-700" title="Apagar" aria-label="Apagar">
                 <Trash2 size={13} />
               </button>
             </div>
@@ -181,7 +181,7 @@ export default function Agent() {
           </button>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{current?.title ?? (threadId ? '…' : 'Nova conversa')}</div>
-            <div className="flex items-center gap-1.5 text-[11px] text-muted">
+            <div className="flex items-center gap-1.5 text-xs text-muted">
               <span className={`h-1.5 w-1.5 rounded-full ${basic ? 'bg-amber-500' : 'bg-emerald-500'}`} />
               {AGENT_NAME} · {basic ? 'modo básico' : 'online'}
             </div>
@@ -198,9 +198,9 @@ export default function Agent() {
           {empty ? (
             <div className="mx-auto flex h-full max-w-3xl flex-col justify-center px-4 py-8">
               <div className="reveal-up flex flex-col items-center text-center">
-                <AgentMark size={56} rounded="rounded-[20px]" />
-                <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-[28px]">Como posso ajudar {company?.name ? `a ${company.name}` : ''} hoje?</h1>
-                <p className="mt-1.5 max-w-md text-sm text-muted">Sou a {AGENT_NAME}: agenda, pacientes, atendimentos, WhatsApp, marketing, financeiro e gestão em uma única conversa, com os dados reais da sua clínica.</p>
+                <AgentMark size={56} rounded="rounded-card" />
+                <h1 className="mt-4 text-2xl font-semibold sm:text-[28px]">Como posso ajudar {company?.name ? `a ${company.name}` : ''} hoje?</h1>
+                <p className="mt-2 max-w-md text-sm text-secondary">Sou a {AGENT_NAME}: agenda, pacientes, atendimentos, WhatsApp, marketing, financeiro e gestão em uma única conversa, com os dados reais da sua clínica.</p>
               </div>
               <div className="reveal-up mt-7" style={{ '--d': '80ms' } as React.CSSProperties}>
                 <Composer onSend={send} busy={busy} autoFocus big />
@@ -212,12 +212,10 @@ export default function Agent() {
                     <button
                       key={s.text}
                       onClick={() => send(s.text)}
-                      className="reveal-up flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3 text-left text-sm transition hover:border-brand hover:bg-brand-soft/40"
+                      className="reveal-up flex items-center gap-3 rounded-ctl border border-line bg-panel px-3.5 py-3 text-left text-sm transicao hover:bg-panel-2"
                       style={{ '--d': `${140 + i * 50}ms` } as React.CSSProperties}
                     >
-                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${a.cls}`}>
-                        <a.icon size={15} />
-                      </span>
+                      <a.icon size={16} strokeWidth={1.5} className="shrink-0 text-muted" />
                       <span className="font-medium">{s.text}</span>
                     </button>
                   )
@@ -234,7 +232,7 @@ export default function Agent() {
               {msgs.map((m) =>
                 m.role === 'user' ? (
                   <div key={m.id} className="reveal-up flex justify-end">
-                    <div className="max-w-[85%] whitespace-pre-wrap rounded-3xl rounded-br-lg bg-ink px-4 py-3 text-[15px] leading-6 text-white">{m.content}</div>
+                    <div className="max-w-[85%] whitespace-pre-wrap rounded-card rounded-br-md bg-ink px-4 py-3 text-[15px] leading-6 text-white">{m.content}</div>
                   </div>
                 ) : (
                   <AssistantMessage key={m.id} m={m} approvals={approvals.filter((a) => m.meta?.approvals?.includes(a.id))} onApprovalChange={() => threadId && loadThread(threadId)} />
@@ -246,7 +244,7 @@ export default function Agent() {
                   <div className="pt-1">
                     <div className="typing flex items-center gap-1">
                       {[0, 1, 2].map((i) => (
-                        <span key={i} className="h-2 w-2 rounded-full bg-brand" style={{ animationDelay: `${i * 150}ms` }} />
+                        <span key={i} className="h-1.5 w-1.5 rounded-full bg-muted" style={{ animationDelay: `${i * 150}ms` }} />
                       ))}
                     </div>
                     <div className="mt-1.5 text-xs text-muted">{THINKING[thinking]}</div>
@@ -263,7 +261,7 @@ export default function Agent() {
           <div className="border-t border-line bg-panel px-3 pb-3 pt-3 sm:px-6">
             <div className="mx-auto max-w-3xl">
               <Composer onSend={send} busy={busy} />
-              <p className="mt-1.5 text-center text-[10px] text-muted">A {AGENT_NAME} usa os dados da clínica. Envios, lançamentos e exclusões só acontecem após a sua aprovação.</p>
+              <p className="mt-2 text-center text-xs text-muted">A {AGENT_NAME} usa os dados da clínica. Envios, lançamentos e exclusões só acontecem após a sua aprovação.</p>
             </div>
           </div>
         )}
@@ -281,13 +279,13 @@ function AssistantMessage({ m, approvals, onApprovalChange }: { m: AgentMessage;
       <AgentMark size={30} rounded="rounded-xl" className="mt-0.5" />
       <div className="min-w-0 flex-1">
         <div className="mb-1.5 flex items-center gap-2 text-xs">
-          <span className="font-bold">{AGENT_NAME}</span>
+          <span className="font-semibold">{AGENT_NAME}</span>
           <span className="text-muted">{new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         {uniq.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-1.5">
             {uniq.map((s) => (
-              <span key={s.tool} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${s.ok ? 'border-line text-slate-600' : 'border-rose-200 text-rose-600'}`}>
+              <span key={s.tool} className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs ${s.ok ? 'border-line text-secondary' : 'border-rose-200 text-rose-700'}`}>
                 {s.ok ? <Check size={11} className="text-emerald-600" /> : <X size={11} />}
                 {s.label}
                 {s.area && <span className="text-muted">· {areaOf(s.area === 'management' ? 'crm' : s.area).label}</span>}
@@ -301,20 +299,20 @@ function AssistantMessage({ m, approvals, onApprovalChange }: { m: AgentMessage;
             {approvals.map((a) => (
               <ApprovalCard key={a.id} a={a} compact onChange={onApprovalChange} />
             ))}
-            <Link to="/aprovacoes" className="inline-block text-xs font-semibold text-brand-dark">
+            <Link to="/aprovacoes" className="inline-block text-xs font-semibold text-brand-ink">
               Ver na Central de Aprovações →
             </Link>
           </div>
         )}
         {m.meta?.ai === false && (
-          <p className="mt-3 inline-flex rounded-xl bg-amber-50 px-3 py-1.5 text-[11px] text-amber-800">
+          <p className="mt-3 inline-flex rounded-ctl bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
             Modo básico{m.meta.aiError ? `: ${m.meta.aiError}` : ': chave da IA não configurada'} — resposta montada com os seus dados, sem a IA completa.
           </p>
         )}
         <div className="mt-2 flex items-center gap-2">
           <button
             onClick={() => navigator.clipboard.writeText(m.content).then(() => (setCopied(true), setTimeout(() => setCopied(false), 1500)))}
-            className="rounded-lg p-1.5 text-muted hover:bg-panel-2 hover:text-ink"
+            className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-ink"
             title="Copiar resposta"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -344,14 +342,14 @@ function Composer({ onSend, busy, autoFocus = false, big = false }: { onSend: (q
     setText('')
   }
   return (
-    <form onSubmit={submit} className={`flex items-end gap-2 rounded-[26px] border border-line bg-panel p-2 pl-4 shadow-[0_6px_24px_-12px_rgba(11,13,18,0.18)] focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/15 ${big ? 'py-2.5' : ''}`}>
+    <form onSubmit={submit} className={`flex items-end gap-2 rounded-card border border-line bg-panel p-2 pl-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transicao focus-within:border-brand focus-within:ring-3 focus-within:ring-brand/15 ${big ? 'py-2.5' : ''}`}>
       <textarea
         ref={ref}
         rows={1}
         autoFocus={autoFocus}
         maxLength={8000}
         className={`max-h-56 min-h-[40px] flex-1 resize-none bg-transparent py-2 text-[15px] outline-none placeholder:text-muted ${big ? 'min-h-[52px]' : ''}`}
-        placeholder={`Pergunte ou peça algo à ${AGENT_NAME}…`}
+        placeholder={`Pergunte ou peça algo à ${AGENT_NAME}`}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
@@ -361,7 +359,7 @@ function Composer({ onSend, busy, autoFocus = false, big = false }: { onSend: (q
           }
         }}
       />
-      <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-ink transition hover:bg-brand-dark disabled:opacity-40" disabled={busy || !text.trim()} aria-label="Enviar">
+      <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ctl bg-ink text-white transicao hover:bg-graphite disabled:opacity-40" disabled={busy || !text.trim()} aria-label="Enviar">
         {busy ? <Spinner size={16} /> : <ArrowUp size={19} strokeWidth={2.6} />}
       </button>
     </form>

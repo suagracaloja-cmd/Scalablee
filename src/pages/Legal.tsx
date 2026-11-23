@@ -37,7 +37,7 @@ export default function Legal({ kind }: { kind: LegalKind }) {
             <ArrowLeft size={16} /> Voltar
           </Link>
         </div>
-        <article className="rounded-3xl border border-line bg-panel p-6 sm:p-10">
+        <article className="rounded-card border border-line bg-panel p-6 sm:p-10">
           <Markdown text={page.text} />
         </article>
         <LegalFooter className="mt-6" />

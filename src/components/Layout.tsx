@@ -15,14 +15,14 @@ import {
   Search,
   Settings,
   Smartphone,
-  Sparkles,
+  MessageSquareText,
   Stethoscope,
   Users,
   Wallet,
   X,
 } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { CarregandoTela, ErroTela, Logo, Orb } from './ui'
+import { CarregandoTela, ErroTela, Logo, LogoIcon, Orb } from './ui'
 import { CoralinePainel } from './CoralinePainel'
 import { useRolou } from '../hooks/useRolou'
 import { instalado, sair } from '../lib/app'
@@ -33,7 +33,7 @@ import { LegalFooter } from './LegalFooter'
 type NavItem = { to: string; label: string; icon: typeof LayoutGrid; badge?: 'approvals' | 'conversations' | 'insights'; papeis?: Papel[] }
 const NAV: NavItem[] = [
   { to: '/', label: 'Início', icon: LayoutGrid },
-  { to: '/agente', label: 'Coraline AI', icon: Sparkles },
+  { to: '/agente', label: 'Coraline AI', icon: MessageSquareText },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
   { to: '/aprovacoes', label: 'Aprovações', icon: CheckCircle2, badge: 'approvals', papeis: ['dono', 'recepcao'] },
   { to: '/whatsapp', label: 'WhatsApp', icon: MessageCircle, badge: 'conversations', papeis: ['dono', 'recepcao'] },
@@ -73,9 +73,6 @@ export default function Layout() {
     return () => navigator.serviceWorker.removeEventListener('message', abrir)
   }, [nav])
   const isActive = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
-  const now = new Date()
-  const wd = now.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
-  const today = `${wd.charAt(0).toUpperCase()}${wd.slice(1)}, ${now.getDate()} de ${now.toLocaleDateString('pt-BR', { month: 'long' })}`
 
   // Cobrança: aviso de teste acabando/pagamento pendente e bloqueio (só quando COBRANCA_ATIVA=on)
   const bill = billing && billing.enabled ? billing : null
@@ -98,13 +95,16 @@ export default function Layout() {
 
   const todos = [...navItems, ...EXTRAS.filter((n) => pode(n, papel))]
   const pendencias = counts.approvals + counts.insights + (papel === 'profissional' ? 0 : counts.conversations)
-  const navCls = (to: string) => `flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition baixa:h-10 baixa:w-10 curta:h-9 curta:w-9 ${isActive(to) ? 'nav-ativo' : 'glass text-slate-500 hover:text-ink'}`
+  // Linha do menu lateral: ícone + nome a partir de 1024 px; abaixo disso só o ícone (o nome aparece ao passar o mouse)
+  const linhaCls = (ativo: boolean) =>
+    `transicao relative flex h-9 shrink-0 items-center justify-center gap-2.5 rounded-ctl px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-brand lg:justify-start curta:h-8 ${ativo ? 'nav-ativo font-medium' : 'text-secondary hover:bg-panel hover:text-ink'}`
 
   // Nome da opção ao passar o mouse no menu lateral. Fica fora do menu, por cima da página, para nunca ser coberto.
   const mostrarDica = (el: HTMLElement, texto: string) => {
+    if (window.matchMedia('(min-width: 1024px)').matches) return // com o nome visível, a dica sobra
     alvoDica.current = { el, texto }
     const r = el.getBoundingClientRect()
-    setDica({ texto, x: r.right + 12, y: r.top + r.height / 2 })
+    setDica({ texto, x: r.right + 8, y: r.top + r.height / 2 })
   }
   const esconderDica = () => {
     alvoDica.current = null
@@ -119,108 +119,107 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen overflow-x-clip md:flex">
-      {/* Trilho lateral (computador). Em telas baixas (notebook) fica mais compacto e, se ainda faltar espaço, rola. */}
+      {/* Menu lateral (computador): ícone + nome; em telas estreitas, só o ícone. Em telas baixas fica mais compacto e, se faltar espaço, rola. */}
       <aside
-        className="sticky top-0 hidden h-screen w-[92px] shrink-0 flex-col items-center overflow-y-auto overflow-x-hidden py-6 [scrollbar-width:thin] md:flex baixa:py-4 curta:py-2"
+        className="sticky top-0 hidden h-screen w-[68px] shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-line bg-panel-2/70 px-3 py-5 [scrollbar-width:thin] md:flex lg:w-60 baixa:py-4 curta:py-3"
         onScroll={() => alvoDica.current && mostrarDica(alvoDica.current.el, alvoDica.current.texto)}
       >
-        <NavLink to="/" className="reveal mb-8 shrink-0 baixa:mb-5 curta:mb-2" aria-label="Scalable — início" {...dicaDe('Início')}>
-          <Logo size={46} word={false} />
+        <NavLink to="/" className="mb-6 flex h-9 shrink-0 items-center justify-center gap-2.5 rounded-ctl px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-brand lg:justify-start baixa:mb-4 curta:mb-3" aria-label="Scalable — início" {...dicaDe('Início')}>
+          <LogoIcon size={28} />
+          <img src="/logo-word.png" alt="" aria-hidden="true" className="hidden h-[15px] w-auto lg:block" />
         </NavLink>
-        <nav className="glass flex flex-1 flex-col items-center gap-2.5 rounded-full px-2.5 py-3 shadow-[0_10px_30px_-18px_rgba(40,90,180,0.35)] baixa:gap-1.5 baixa:py-2 curta:gap-0.5" aria-label="Menu principal">
-          {navItems.map((n, i) => {
+        <nav className="flex flex-col gap-0.5" aria-label="Menu principal">
+          {navItems.map((n) => {
             const c = n.badge ? counts[n.badge] : 0
-            const active = isActive(n.to)
+            const ativo = isActive(n.to)
             return (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                aria-label={n.label}
-                className={`reveal relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition baixa:h-10 baixa:w-10 curta:h-9 curta:w-9 ${active ? 'nav-ativo' : 'text-slate-500 hover:bg-white hover:text-ink'}`}
-                style={{ '--d': `${i * 45}ms` } as React.CSSProperties}
-                {...dicaDe(n.label)}
-              >
-                <n.icon size={20} strokeWidth={active ? 2.2 : 1.9} />
-                {c > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">{c}</span>}
+              <NavLink key={n.to} to={n.to} aria-label={n.label} className={linhaCls(ativo)} {...dicaDe(n.label)}>
+                <n.icon size={18} strokeWidth={1.5} className={`shrink-0 ${ativo ? 'text-brand-ink' : 'text-muted'}`} />
+                <span className="hidden min-w-0 flex-1 truncate lg:block">{n.label}</span>
+                {c > 0 && (
+                  <>
+                    <span className="hidden rounded-md bg-rose-50 px-1.5 text-xs font-medium tabular-nums text-rose-700 lg:inline">{c}</span>
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 lg:hidden" aria-hidden="true" />
+                  </>
+                )}
               </NavLink>
             )
           })}
         </nav>
-        <div className="mt-4 flex shrink-0 flex-col items-center gap-2.5 baixa:mt-3 baixa:gap-1.5 curta:mt-1.5 curta:gap-0.5">
+        <div className="mb-2 mt-6 hidden px-2.5 text-xs text-muted lg:block baixa:mt-4">Clínica</div>
+        <div className="mx-2 my-4 h-px shrink-0 bg-line lg:hidden" aria-hidden="true" />
+        <div className="flex flex-col gap-0.5">
           {papel === 'dono' && (
             <>
-              <NavLink to="/clinica" className={navCls('/clinica')} aria-label="Clínica e equipe" {...dicaDe('Clínica e equipe')}>
-                <Building2 size={19} />
+              <NavLink to="/clinica" className={linhaCls(isActive('/clinica'))} aria-label="Clínica e equipe" {...dicaDe('Clínica e equipe')}>
+                <Building2 size={18} strokeWidth={1.5} className={`shrink-0 ${isActive('/clinica') ? 'text-brand-ink' : 'text-muted'}`} />
+                <span className="hidden truncate lg:block">Clínica e equipe</span>
               </NavLink>
-              <NavLink to="/assinatura" className={navCls('/assinatura')} aria-label="Assinatura" {...dicaDe('Assinatura')}>
-                <CreditCard size={19} />
+              <NavLink to="/assinatura" className={linhaCls(isActive('/assinatura'))} aria-label="Assinatura" {...dicaDe('Assinatura')}>
+                <CreditCard size={18} strokeWidth={1.5} className={`shrink-0 ${isActive('/assinatura') ? 'text-brand-ink' : 'text-muted'}`} />
+                <span className="hidden truncate lg:block">Assinatura</span>
               </NavLink>
             </>
           )}
-          <NavLink to="/configuracoes" className={navCls('/configuracoes')} aria-label="Configurações" {...dicaDe('Configurações')}>
-            <Settings size={19} />
+          <NavLink to="/configuracoes" className={linhaCls(isActive('/configuracoes'))} aria-label="Configurações" {...dicaDe('Configurações')}>
+            <Settings size={18} strokeWidth={1.5} className={`shrink-0 ${isActive('/configuracoes') ? 'text-brand-ink' : 'text-muted'}`} />
+            <span className="hidden truncate lg:block">Configurações</span>
           </NavLink>
-          <button onClick={() => sair()} className="glass flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-500 hover:text-rose-600 baixa:h-10 baixa:w-10 curta:h-9 curta:w-9" aria-label="Sair" {...dicaDe('Sair')}>
-            <LogOut size={18} />
-          </button>
         </div>
+        <button onClick={() => sair()} className="transicao mt-auto flex h-9 shrink-0 items-center justify-center gap-2.5 rounded-ctl px-2.5 text-sm text-secondary outline-none hover:bg-panel hover:text-rose-700 focus-visible:ring-2 focus-visible:ring-brand lg:justify-start curta:h-8" aria-label="Sair" {...dicaDe('Sair')}>
+          <LogOut size={18} strokeWidth={1.5} className="shrink-0" />
+          <span className="hidden lg:block">Sair</span>
+        </button>
       </aside>
 
       <div className="min-w-0 flex-1">
         {/* Barra superior (computador) */}
-        <header className={`sticky top-0 z-30 hidden items-center gap-3 px-8 py-5 transition-colors duration-200 md:flex ${rolou ? 'bg-[#eff4fc]/95 shadow-[0_1px_0_rgba(15,23,42,0.06)]' : 'bg-transparent'}`}>
-          <form onSubmit={search} className="reveal relative w-full max-w-sm">
-            <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-            <input className="glass h-11 w-full rounded-full pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar paciente…" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
+        <header className={`transicao sticky top-0 z-30 hidden h-16 items-center gap-3 border-b px-8 md:flex ${rolou ? 'border-line bg-bg/95' : 'border-transparent bg-bg'}`}>
+          <form onSubmit={search} className="relative w-full max-w-sm">
+            <Search size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input className="input h-9 pl-9" placeholder="Buscar paciente" aria-label="Buscar paciente" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
-          <span className="glass reveal hidden rounded-full px-4 py-2.5 text-sm font-semibold lg:inline" style={{ '--d': '60ms' } as React.CSSProperties}>
-            {today}
-          </span>
-          <div className="ml-auto flex items-center gap-2.5">
-            <button onClick={() => setPainel(true)} className="glass flex h-11 items-center gap-2 rounded-full pl-1.5 pr-4 text-sm font-semibold transition hover:shadow-[0_10px_24px_-14px_rgba(47,111,230,0.6)]" aria-label={`Perguntar à ${AGENT_NAME}`}>
-              <Orb size={32} /> {AGENT_NAME}
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={() => setPainel(true)} className="btn-ghost h-9 gap-2 pl-1.5 pr-3" aria-label={`Perguntar à ${AGENT_NAME}`}>
+              <Orb size={24} /> {AGENT_NAME}
             </button>
             {papel !== 'profissional' && (
-              <NavLink to="/aprovacoes" className="glass relative flex h-11 w-11 items-center justify-center rounded-full text-ink" title="Aprovações" aria-label="Aprovações">
-                <CheckCircle2 size={19} />
-                {counts.approvals > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
+              <NavLink to="/aprovacoes" className="icon-btn relative h-9 w-9" title="Aprovações" aria-label="Aprovações">
+                <CheckCircle2 size={18} strokeWidth={1.5} />
+                {counts.approvals > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />}
               </NavLink>
             )}
-            <NavLink to="/notificacoes" className="glass relative flex h-11 w-11 items-center justify-center rounded-full text-ink" title="Notificações" aria-label="Notificações">
-              <Bell size={19} />
-              {counts.insights > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />}
+            <NavLink to="/notificacoes" className="icon-btn relative h-9 w-9" title="Notificações" aria-label="Notificações">
+              <Bell size={18} strokeWidth={1.5} />
+              {counts.insights > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />}
             </NavLink>
-            <NavLink to="/configuracoes" className="glass flex items-center gap-3 rounded-full py-1.5 pl-1.5 pr-4">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-sm font-bold text-white">{company?.name?.[0]?.toUpperCase()}</span>
+            <NavLink to="/configuracoes" className="transicao ml-1 flex items-center gap-2.5 rounded-ctl py-1 pl-1 pr-2.5 outline-none hover:bg-panel focus-visible:ring-2 focus-visible:ring-brand">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-graphite text-xs font-medium text-white">{company?.name?.[0]?.toUpperCase()}</span>
               <span className="max-w-[160px] leading-tight">
-                <span className="block truncate text-sm font-bold">{company?.name}</span>
-                <span className="block truncate text-[11px] text-muted">{company?.segment ?? 'Minha clínica'}</span>
+                <span className="block truncate text-sm font-medium">{company?.name}</span>
+                <span className="block truncate text-xs text-muted">{company?.segment ?? 'Minha clínica'}</span>
               </span>
             </NavLink>
           </div>
         </header>
 
         {/* Topo (celular): logo à esquerda e só o menu (três linhas) à direita */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-[#eef4fd]/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] md:hidden">
-          <NavLink to="/" className="flex min-w-0 items-center gap-2.5" aria-label="Scalable — início">
-            <Logo size={38} word={false} />
-            <div className="min-w-0 leading-tight">
-              <div className="text-[11px] text-muted">Olá</div>
-              <div className="truncate text-[15px] font-bold">{company?.name}</div>
-            </div>
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-bg/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] md:hidden">
+          <NavLink to="/" className="flex min-w-0 items-center" aria-label="Scalable — início">
+            <Logo size={30} />
           </NavLink>
-          <button onClick={() => setSheet(true)} className="glass relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink" aria-label="Abrir menu" aria-expanded={sheet}>
-            <Menu size={20} />
-            {pendencias > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white" />}
+          <button onClick={() => setSheet(true)} className="icon-btn relative h-11 w-11 text-ink" aria-label="Abrir menu" aria-expanded={sheet}>
+            <Menu size={20} strokeWidth={1.5} />
+            {pendencias > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />}
           </button>
         </header>
 
-        <main key={loc.pathname} className="px-4 pb-10 pt-2 sm:px-6 md:px-8 md:pt-1">
-          <div className="mx-auto max-w-[1400px]">
+        <main key={loc.pathname} className="px-4 pb-10 pt-5 sm:px-6 md:px-8 md:pt-4">
+          <div className="mx-auto max-w-[1440px]">
             {banner && (
-              <div className="mb-4 flex flex-col gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-4 flex flex-col gap-2 rounded-ctl border border-amber-200/70 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
                 <span>{banner}</span>
-                <Link to="/assinatura" className="font-semibold underline underline-offset-2">Ver assinatura</Link>
+                <Link to="/assinatura" className="font-medium underline underline-offset-2">Ver assinatura</Link>
               </div>
             )}
             {blocked ? <Navigate to="/assinatura" replace /> : <ErroTela key={loc.pathname}><Suspense fallback={<CarregandoTela />}><Outlet /></Suspense></ErroTela>}
@@ -232,25 +231,25 @@ export default function Layout() {
 
       {/* Menu do celular: abre pelo botão de três linhas, no canto superior direito */}
       {sheet && (
-        <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm md:hidden" onClick={() => setSheet(false)}>
+        <div className="fixed inset-0 z-50 bg-slate-900/30 md:hidden" onClick={() => setSheet(false)}>
           <nav
-            className="reveal-up absolute right-3 top-[max(12px,env(safe-area-inset-top))] flex max-h-[calc(100dvh-24px)] w-[min(320px,calc(100vw-24px))] flex-col overflow-y-auto rounded-[28px] bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
+            className="reveal-up absolute right-3 top-[max(12px,env(safe-area-inset-top))] flex max-h-[calc(100dvh-24px)] w-[min(320px,calc(100vw-24px))] flex-col overflow-y-auto rounded-panel border border-line bg-panel p-3 shadow-[0_8px_24px_rgba(16,24,40,0.12)]"
             onClick={(e) => e.stopPropagation()}
             aria-label="Menu"
           >
-            <div className="mb-2 flex items-center justify-between px-2 pt-1">
-              <Logo size={30} />
+            <div className="mb-3 flex shrink-0 items-center justify-between px-1 pt-1">
+              <Logo size={28} />
               <button onClick={() => setSheet(false)} className="icon-btn h-9 w-9" aria-label="Fechar menu">
-                <X size={17} />
+                <X size={16} strokeWidth={1.5} />
               </button>
             </div>
             <button
               onClick={() => (setSheet(false), setPainel(true))}
-              className="mb-1 flex items-center gap-3 rounded-2xl bg-brand-soft px-3 py-2.5 text-left text-sm font-semibold"
+              className="mb-2 flex h-11 shrink-0 items-center gap-3 rounded-ctl border border-line bg-panel-2 px-2.5 text-left text-sm font-medium"
             >
-              <Orb size={28} /> Perguntar à {AGENT_NAME}
+              <Orb size={24} /> Perguntar à {AGENT_NAME}
             </button>
-            <ul className="flex flex-col">
+            <ul className="flex shrink-0 flex-col">
               {todos.map((n) => {
                 const c = n.badge ? counts[n.badge] : 0
                 return (
@@ -258,23 +257,23 @@ export default function Layout() {
                     <NavLink
                       to={n.to}
                       onClick={() => setSheet(false)}
-                      className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold ${isActive(n.to) ? 'nav-ativo' : 'text-ink hover:bg-panel-2'}`}
+                      className={`transicao flex h-11 items-center gap-3 rounded-ctl px-3 text-[15px] ${isActive(n.to) ? 'bg-panel-2 font-medium text-ink' : 'text-secondary hover:bg-panel-2'}`}
                     >
-                      <n.icon size={19} />
+                      <n.icon size={18} strokeWidth={1.5} className={isActive(n.to) ? 'text-brand-ink' : 'text-muted'} />
                       <span className="flex-1">{n.label}</span>
-                      {c > 0 && <span className="rounded-full bg-rose-500 px-2 text-[11px] font-bold text-white">{c}</span>}
+                      {c > 0 && <span className="rounded-md bg-rose-50 px-1.5 text-xs font-medium tabular-nums text-rose-700">{c}</span>}
                     </NavLink>
                   </li>
                 )
               })}
             </ul>
             {!instalado() && (
-              <Link to="/configuracoes#app" onClick={() => setSheet(false)} className="mt-2 flex items-center gap-3 rounded-2xl bg-panel-2 px-3 py-2.5 text-sm font-semibold text-ink">
-                <Smartphone size={18} /> Instalar o app no celular
+              <Link to="/configuracoes#app" onClick={() => setSheet(false)} className="mt-2 flex h-11 shrink-0 items-center gap-3 rounded-ctl border border-line px-3 text-[15px] text-secondary">
+                <Smartphone size={18} strokeWidth={1.5} className="text-muted" /> Instalar o app no celular
               </Link>
             )}
-            <button onClick={() => sair()} className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50">
-              <LogOut size={18} /> Sair da conta
+            <button onClick={() => sair()} className="mt-1 flex h-11 shrink-0 items-center gap-3 rounded-ctl px-3 text-[15px] text-rose-700 hover:bg-rose-50">
+              <LogOut size={18} strokeWidth={1.5} /> Sair da conta
             </button>
           </nav>
         </div>
@@ -283,7 +282,7 @@ export default function Layout() {
       {dica && (
         <span
           role="tooltip"
-          className="dica-entra pointer-events-none fixed z-40 hidden -translate-y-1/2 whitespace-nowrap rounded-xl bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-lg md:block"
+          className="dica-entra pointer-events-none fixed z-40 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-medium text-white md:block"
           style={{ left: dica.x, top: dica.y }}
         >
           {dica.texto}

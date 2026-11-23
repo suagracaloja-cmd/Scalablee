@@ -3,7 +3,7 @@ import { ArrowDownCircle, ArrowUpCircle, Check, Pencil, Plus, Trash2, Undo2, Wal
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import type { Transaction } from '../lib/types'
-import { brl, fmtDate, today } from '../lib/format'
+import { brl, fmtDate, today, plural } from '../lib/format'
 import { Bars } from '../components/LineChart'
 import { Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, StatusCard } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
@@ -63,7 +63,7 @@ export default function Finance() {
       // Mesmo cálculo da Coraline AI: atendimentos pagos + outras receitas pagas − despesas pagas, no mês
       outrasReceitas: sum(paidMonth.filter((x) => x.type === 'income')),
       despesasPagas: sum(paidMonth.filter((x) => x.type === 'expense')),
-      cats: [...byCat].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value, color: 'bg-gradient-to-t from-amber-500 to-yellow-300' })),
+      cats: [...byCat].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value, color: 'bg-slate-300' })),
     }
   }, [items, t])
 
@@ -93,7 +93,7 @@ export default function Finance() {
   }
   async function togglePaid(x: Transaction) {
     await supabase.from('transactions').update({ paid_at: x.paid_at ? null : today() }).eq('id', x.id)
-    toast(x.paid_at ? 'Marcado como em aberto' : x.type === 'expense' ? 'Conta paga ✅' : 'Recebimento confirmado ✅')
+    toast(x.paid_at ? 'Marcado como em aberto' : x.type === 'expense' ? 'Conta paga' : 'Recebimento confirmado')
     load()
   }
   async function remove(x: Transaction) {
@@ -121,11 +121,11 @@ export default function Finance() {
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatusCard i={1} tone="rose" label="A pagar (em aberto)" value={<Money value={m.payable} delay={200} />} sub="contas em aberto" />
         <StatusCard i={2} tone={m.overdue ? 'amber' : 'slate'} label="Vencido" value={<Money value={m.overdue} delay={300} />} sub={m.overdue ? 'pague o quanto antes' : 'nada vencido'} />
-        <StatusCard i={3} tone="green" label="A receber" value={<Money value={m.receivable + atend.aReceber} delay={400} />} sub={atend.nAReceber ? `+${atend.nAReceber} atendimento(s)` : 'valores em aberto'} />
+        <StatusCard i={3} tone="green" label="A receber" value={<Money value={m.receivable + atend.aReceber} delay={400} />} sub={atend.nAReceber ? `+${plural(atend.nAReceber, 'atendimento', 'atendimentos')}` : 'Valores em aberto'} />
         <StatusCard i={4} tone="blue" label="Saldo do mês" value={<Money value={atend.pagosMes + m.outrasReceitas - m.despesasPagas} delay={500} />} sub="entradas − saídas" />
       </div>
       {!loading && (
-        <Reveal i={5} className="mt-3 rounded-2xl bg-panel px-4 py-3 text-xs leading-relaxed text-muted">
+        <Reveal i={5} className="mt-3 rounded-ctl bg-panel px-4 py-3 text-xs leading-relaxed text-muted">
           <b className="text-ink">Como o saldo do mês é calculado:</b> entradas de {brl(atend.pagosMes + m.outrasReceitas)} (atendimentos pagos {brl(atend.pagosMes)}
           {m.outrasReceitas ? ` + outras receitas ${brl(m.outrasReceitas)}` : ''}) menos saídas pagas de {brl(m.despesasPagas)}.
         </Reveal>
@@ -135,11 +135,11 @@ export default function Finance() {
         <Reveal i={5} className="card overflow-hidden lg:col-span-2">
           <div className="flex flex-wrap items-center gap-2 border-b border-line p-4">
             {(['open', 'paid'] as const).map((x) => (
-              <button key={x} onClick={() => setTab(x)} className={`h-9 rounded-full px-4 text-xs font-semibold ${tab === x ? 'bg-ink text-white' : 'bg-panel-2 text-ink'}`}>
+              <button key={x} onClick={() => setTab(x)} className={`h-9 rounded-ctl px-4 text-xs font-medium ${tab === x ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'bg-panel-2 text-ink'}`}>
                 {x === 'open' ? 'Em aberto' : 'Pagos / recebidos'}
               </button>
             ))}
-            <select className="ml-auto h-9 rounded-full bg-panel-2 px-3 text-xs font-semibold outline-none" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+            <select className="ml-auto h-9 rounded-ctl bg-panel-2 px-3 text-xs font-medium outline-none" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
               <option value="all">Tudo</option>
               <option value="expense">A pagar</option>
               <option value="income">A receber</option>
@@ -166,16 +166,16 @@ export default function Finance() {
                       </div>
                     </div>
                     <div className="text-right text-sm font-semibold tabular-nums">{brl(x.amount)}</div>
-                    <button onClick={() => togglePaid(x)} className={`rounded-full p-1.5 ${x.paid_at ? 'text-muted' : 'text-emerald-600'} hover:bg-panel-2`} title={x.paid_at ? 'Desfazer' : 'Marcar como pago'}>
+                    <button onClick={() => togglePaid(x)} className={`rounded-md p-1.5 ${x.paid_at ? 'text-muted' : 'text-emerald-600'} hover:bg-panel-2`} title={x.paid_at ? 'Desfazer' : 'Marcar como pago'}>
                       {x.paid_at ? <Undo2 size={15} /> : <Check size={15} />}
                     </button>
                     <button
-                      className="rounded-full p-1.5 text-muted hover:bg-panel-2"
+                      className="rounded-md p-1.5 text-muted hover:bg-panel-2"
                       onClick={() => (setEditId(x.id), setForm({ type: x.type, description: x.description, category: x.category ?? '', amount: String(x.amount), due_date: x.due_date, paid: !!x.paid_at }))}
                     >
                       <Pencil size={14} />
                     </button>
-                    <button className="rounded-full p-1.5 text-muted hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(x)}>
+                    <button className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-rose-600" onClick={() => remove(x)}>
                       <Trash2 size={14} />
                     </button>
                   </li>
@@ -193,7 +193,7 @@ export default function Finance() {
           )}
         </Reveal>
         <Reveal i={6} className="card p-5 sm:p-6">
-          <h2 className="mb-1 text-lg font-bold">Despesas do mês</h2>
+          <h2 className="mb-1 text-lg font-semibold">Despesas do mês</h2>
           <p className="mb-5 text-xs text-muted">Por categoria</p>
           {m.cats.length ? <Bars data={m.cats} delay={800} /> : <p className="py-6 text-center text-sm text-muted">Sem despesas este mês.</p>}
         </Reveal>
@@ -202,7 +202,7 @@ export default function Finance() {
       <Modal open={!!form} onClose={() => setForm(null)} title={form?.type === 'income' ? 'Valor a receber' : 'Conta a pagar'}>
         {form && (
           <form onSubmit={save} className="space-y-3">
-            <div className="grid grid-cols-2 gap-1 rounded-full bg-panel-2 p-1 text-sm">
+            <div className="grid grid-cols-2 gap-1 rounded-ctl border border-line bg-panel-2 p-0.5 text-sm">
               {(['expense', 'income'] as const).map((ty) => (
                 <button type="button" key={ty} onClick={() => setForm({ ...form, type: ty, category: '' })} className={`h-9 rounded-full font-semibold ${form.type === ty ? 'bg-ink text-white' : 'text-muted'}`}>
                   {ty === 'expense' ? 'A pagar' : 'A receber'}

@@ -27,7 +27,7 @@ export default function Tasks() {
   async function toggle(t: Task) {
     setItems((x) => x.filter((i) => i.id !== t.id))
     await supabase.from('tasks').update({ done: !t.done }).eq('id', t.id)
-    if (!t.done) toast('Tarefa concluída ✅')
+    if (!t.done) toast('Tarefa concluída')
   }
   async function remove(t: Task) {
     if (!(await confirmar({ titulo: 'Excluir esta tarefa?', texto: `"${t.title}" é apagada e não dá para desfazer.`, botao: 'Excluir tarefa' }))) return
@@ -81,7 +81,7 @@ export default function Tasks() {
         <div className="space-y-5">
           {(showDone ? [{ label: 'Concluídas', items }] : groups).map((g) => (
             <div key={g.label}>
-              <Reveal i={idx++} className={`mb-2 text-xs font-semibold uppercase tracking-wide ${g.label === 'Atrasadas' ? 'text-rose-600' : 'text-muted'}`}>
+              <Reveal i={idx++} className={`mb-2 text-xs font-semibold ${g.label === 'Atrasadas' ? 'text-rose-600' : 'text-muted'}`}>
                 {g.label} · {g.items.length}
               </Reveal>
               <div className="card divide-y divide-line">

@@ -186,13 +186,13 @@ export type Papel = 'dono' | 'recepcao' | 'profissional'
 export const PAPEL_LABEL: Record<Papel, string> = { dono: 'Dono da conta', recepcao: 'Recepção', profissional: 'Profissional de saúde' }
 export type Etapa = 'novo' | 'contato' | 'agendado' | 'compareceu' | 'orcamento' | 'fechado' | 'perdido'
 export const ETAPAS: { id: Etapa; label: string; cls: string }[] = [
-  { id: 'novo', label: 'Novo', cls: 'bg-sky-50 text-sky-700' },
-  { id: 'contato', label: 'Em contato', cls: 'bg-indigo-50 text-indigo-700' },
-  { id: 'agendado', label: 'Agendado', cls: 'bg-violet-50 text-violet-700' },
-  { id: 'compareceu', label: 'Compareceu', cls: 'bg-teal-50 text-teal-700' },
+  { id: 'novo', label: 'Novo', cls: 'bg-panel-2 text-secondary' },
+  { id: 'contato', label: 'Em contato', cls: 'bg-panel-2 text-secondary' },
+  { id: 'agendado', label: 'Agendado', cls: 'bg-brand-soft text-brand-ink' },
+  { id: 'compareceu', label: 'Compareceu', cls: 'bg-panel-2 text-ink' },
   { id: 'orcamento', label: 'Orçamento', cls: 'bg-amber-50 text-amber-800' },
   { id: 'fechado', label: 'Paciente', cls: 'bg-emerald-50 text-emerald-700' },
-  { id: 'perdido', label: 'Perdido', cls: 'bg-slate-100 text-slate-600' },
+  { id: 'perdido', label: 'Perdido', cls: 'bg-panel-2 text-muted' },
 ]
 export const etapaInfo = (e?: string | null) => ETAPAS.find((x) => x.id === e) ?? ETAPAS[0]
 export const ORIGENS: Record<string, string> = { whatsapp: 'WhatsApp', instagram: 'Instagram', indicacao: 'Indicação', site: 'Site', google: 'Google', outro: 'Outro' }
@@ -218,9 +218,9 @@ export type Agendamento = {
 export const STATUS_AGENDA: Record<StatusAgenda, { label: string; cls: string }> = {
   agendado: { label: 'A confirmar', cls: 'bg-amber-50 text-amber-800' },
   confirmado: { label: 'Confirmada', cls: 'bg-emerald-50 text-emerald-700' },
-  realizado: { label: 'Realizada', cls: 'bg-sky-50 text-sky-700' },
+  realizado: { label: 'Realizada', cls: 'bg-panel-2 text-secondary' },
   faltou: { label: 'Faltou', cls: 'bg-rose-50 text-rose-700' },
-  cancelado: { label: 'Cancelada', cls: 'bg-slate-100 text-slate-500' },
+  cancelado: { label: 'Cancelada', cls: 'bg-panel-2 text-muted' },
 }
 export const TIPO_AGENDA: Record<Agendamento['tipo'], string> = { consulta: 'Consulta', retorno: 'Retorno', procedimento: 'Procedimento', avaliacao: 'Avaliação' }
 export type Membro = { user_id: string; papel: Exclude<Papel, 'dono'>; nome: string | null; email: string | null; criado_em: string }

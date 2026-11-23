@@ -212,7 +212,7 @@ export default function Settings() {
               {savingAg && <Spinner />} Salvar configurações da Coraline AI
             </button>
             {uso && (
-              <div className="rounded-2xl bg-panel-2 p-3 text-xs text-muted">
+              <div className="rounded-ctl bg-panel-2 p-3 text-xs text-muted">
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <span>
                     {AGENT_NAME}: <b className="text-ink">{uso.providers.length ? 'ativa' : 'modo básico'}</b>
@@ -263,7 +263,7 @@ export default function Settings() {
                       style={{ '--len': 100, strokeDasharray: `${a.score} 100` } as React.CSSProperties}
                     />
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xl font-bold">{a.score}</div>
+                  <div className="absolute inset-0 flex items-center justify-center text-xl font-semibold">{a.score}</div>
                 </div>
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{a.business}</div>
@@ -355,10 +355,10 @@ export default function Settings() {
 
 function Toggle({ checked, onChange, title, text, disabled }: { checked: boolean; onChange: (v: boolean) => void; title: string; text: string; disabled?: boolean }) {
   return (
-    <label className={`flex cursor-pointer items-start gap-3 rounded-2xl bg-panel-2 p-3 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}>
+    <label className={`flex cursor-pointer items-start gap-3 rounded-ctl bg-panel-2 p-3 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}>
       <input type="checkbox" className="peer sr-only" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span className={`relative mt-0.5 h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-brand ${checked ? 'bg-brand' : 'bg-slate-300'}`}>
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'left-[18px]' : 'left-0.5'}`} />
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transicao ${checked ? 'left-[18px]' : 'left-0.5'}`} />
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold">{title}</span>

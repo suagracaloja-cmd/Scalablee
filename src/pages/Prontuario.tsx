@@ -155,11 +155,11 @@ export default function Prontuario() {
       {/* Cabeçalho do paciente, com os alertas que não podem passar batido */}
       <Reveal className="card p-5 sm:p-6">
         <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand/40 to-brand-2/30 text-lg font-bold" aria-hidden="true">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-ink text-lg font-semibold" aria-hidden="true">
             {pac.name[0]?.toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="break-words text-[22px] font-bold leading-tight sm:text-[26px]">{pac.name}</h1>
+            <h1 className="break-words text-[22px] font-semibold leading-tight sm:text-[26px]">{pac.name}</h1>
             <p className="mt-0.5 text-sm text-muted">
               {[idade !== null ? `${idade} anos` : null, pac.data_nascimento ? `nasc. ${fmtDate(pac.data_nascimento)}` : null, pac.phone ? `+${pac.phone}` : null].filter(Boolean).join(' · ') || 'Sem dados de contato'}
             </p>
@@ -168,7 +168,7 @@ export default function Prontuario() {
         {atual && (atual.alergias || atual.medicamentos || atual.gestante_lactante === 'gestante' || atual.gestante_lactante === 'lactante') && (
           <ul className="mt-4 flex flex-col gap-2" aria-label="Alertas do paciente">
             {atual.alergias && (
-              <li className="flex items-start gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800">
+              <li className="flex items-start gap-2 rounded-ctl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800">
                 <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                 <span className="min-w-0 break-words">
                   <b>Alergias:</b> {atual.alergias}
@@ -176,12 +176,12 @@ export default function Prontuario() {
               </li>
             )}
             {(atual.gestante_lactante === 'gestante' || atual.gestante_lactante === 'lactante') && (
-              <li className="flex items-start gap-2 rounded-2xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+              <li className="flex items-start gap-2 rounded-ctl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
                 <AlertTriangle size={16} className="mt-0.5 shrink-0" /> {GESTANTE_LABEL[atual.gestante_lactante]}
               </li>
             )}
             {atual.medicamentos && (
-              <li className="flex items-start gap-2 rounded-2xl bg-sky-50 px-3 py-2 text-sm font-medium text-sky-900">
+              <li className="flex items-start gap-2 rounded-ctl bg-sky-50 px-3 py-2 text-sm font-medium text-sky-900">
                 <Pill size={16} className="mt-0.5 shrink-0" />
                 <span className="min-w-0 break-words">
                   <b>Em uso:</b> {atual.medicamentos}
@@ -205,7 +205,7 @@ export default function Prontuario() {
               { id: 'historico', label: `Histórico (${dados.consultas.length})`, icon: History },
             ] as const
           ).map((a) => (
-            <button key={a.id} role="tab" aria-selected={aba === a.id} onClick={() => setAba(a.id)} className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${aba === a.id ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:text-ink'}`}>
+            <button key={a.id} role="tab" aria-selected={aba === a.id} onClick={() => setAba(a.id)} className={`flex shrink-0 items-center gap-2 rounded-ctl border px-4 py-2 text-sm font-medium ${aba === a.id ? 'border-brand/40 bg-brand-soft text-brand-ink' : 'border-line text-muted hover:text-ink'}`}>
               <a.icon size={15} /> {a.label}
             </button>
           ))}
@@ -216,7 +216,7 @@ export default function Prontuario() {
       {aba === 'evolucao' && (
         <section className="mt-4" aria-label="Evolução dos atendimentos">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold">Evolução dos atendimentos</h2>
+            <h2 className="text-lg font-semibold">Evolução dos atendimentos</h2>
             <button className="btn-primary h-10 px-4" onClick={() => novoRegistro()}>
               <Plus size={16} /> Novo registro
             </button>
@@ -242,7 +242,7 @@ export default function Prontuario() {
       {aba === 'anamnese' && (
         <section className="mt-4" aria-label="Anamnese">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold">Anamnese</h2>
+            <h2 className="text-lg font-semibold">Anamnese</h2>
             {atual && (
               <button className="btn-primary h-10 px-4" onClick={() => setFormAn(anVazio(atual))}>
                 <NotebookPen size={16} /> Atualizar
@@ -263,7 +263,7 @@ export default function Prontuario() {
               </Reveal>
               {dados.anamnese_versoes.length > 1 && (
                 <Reveal i={1} className="card mt-3 p-5 sm:p-6">
-                  <h3 className="text-sm font-bold">Versões anteriores ({dados.anamnese_versoes.length - 1})</h3>
+                  <h3 className="text-sm font-semibold">Versões anteriores ({dados.anamnese_versoes.length - 1})</h3>
                   <p className="mt-1 text-xs text-muted">Cada atualização cria uma nova versão. As anteriores continuam guardadas e não podem ser alteradas.</p>
                   <div className="mt-3 divide-y divide-line">
                     {dados.anamnese_versoes.slice(1).map((v) => (
@@ -288,7 +288,7 @@ export default function Prontuario() {
       {/* Histórico (consultas da agenda) */}
       {aba === 'historico' && (
         <section className="mt-4" aria-label="Histórico de consultas">
-          <h2 className="mb-3 text-lg font-bold">Histórico de consultas</h2>
+          <h2 className="mb-3 text-lg font-semibold">Histórico de consultas</h2>
           {dados.consultas.length === 0 ? (
             <Reveal className="card">
               <Empty icon={<CalendarDays size={24} />} title="Nenhuma consulta na agenda" text="As consultas marcadas para este paciente aparecem aqui." />
@@ -297,7 +297,7 @@ export default function Prontuario() {
             <Reveal className="card divide-y divide-line overflow-hidden">
               {dados.consultas.map((c) => (
                 <div key={c.id} className="flex items-center gap-3 px-4 py-3.5">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-dark">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-ink">
                     <CalendarDays size={16} />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -320,7 +320,7 @@ export default function Prontuario() {
         {formEv && (
           <form onSubmit={salvarEvolucao} className="space-y-4">
             {original && (
-              <div className="rounded-2xl bg-panel-2 p-3 text-xs text-muted">
+              <div className="rounded-ctl bg-panel-2 p-3 text-xs text-muted">
                 Complemento ao registro de <b className="text-ink">{fmtDate(original.data_atendimento)}</b>
                 {original.titulo ? ` — ${original.titulo}` : ''}. O registro original não é alterado.
               </div>
@@ -328,7 +328,7 @@ export default function Prontuario() {
             <Field label="Tipo">
               <div className="flex flex-wrap gap-2">
                 {TIPOS_EVOLUCAO.map((t) => (
-                  <button type="button" key={t.id} aria-pressed={formEv.tipo === t.id} onClick={() => setFormEv({ ...formEv, tipo: t.id })} className={`h-9 rounded-full px-3.5 text-xs font-semibold ${formEv.tipo === t.id ? 'bg-ink text-white' : 'bg-panel-2'}`}>
+                  <button type="button" key={t.id} aria-pressed={formEv.tipo === t.id} onClick={() => setFormEv({ ...formEv, tipo: t.id })} className={`h-9 rounded-ctl px-3.5 text-xs font-medium ${formEv.tipo === t.id ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'bg-panel-2'}`}>
                     {t.label}
                   </button>
                 ))}
@@ -432,10 +432,10 @@ function CartaoEvolucao({ e, profissional, consulta, onComplementar, complemento
         <span className="chip bg-panel-2 text-ink">{TIPO_EVOLUCAO_LABEL[e.tipo]}</span>
         <span className="text-sm font-semibold">{fmtDate(e.data_atendimento)}</span>
       </header>
-      {e.titulo && <h3 className="mt-2 break-words font-bold">{e.titulo}</h3>}
+      {e.titulo && <h3 className="mt-2 break-words font-semibold">{e.titulo}</h3>}
       <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{e.descricao}</p>
       {e.conduta && (
-        <div className="mt-3 rounded-2xl bg-panel-2 p-3">
+        <div className="mt-3 rounded-ctl bg-panel-2 p-3">
           <p className="text-xs font-semibold text-muted">Conduta e orientações</p>
           <p className="mt-0.5 whitespace-pre-wrap break-words text-sm">{e.conduta}</p>
         </div>
@@ -446,7 +446,7 @@ function CartaoEvolucao({ e, profissional, consulta, onComplementar, complemento
           {profissional ? ` · Profissional: ${profissional}` : ''}
           {consulta ? ` · Consulta de ${fmtDate(consulta)}` : ''}
         </span>
-        <button className="shrink-0 font-semibold text-brand-dark underline underline-offset-2" onClick={onComplementar}>
+        <button className="shrink-0 font-semibold text-brand-ink underline underline-offset-2" onClick={onComplementar}>
           Complementar
         </button>
       </footer>

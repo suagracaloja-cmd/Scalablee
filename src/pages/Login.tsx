@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { BellRing, CalendarDays, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { avisoConfirmacao, supabase } from '../lib/supabase'
 import { LEGAL_VERSION } from '../lib/legal-dados'
-import { Logo, Reveal, Spinner } from '../components/ui'
+import { Logo, Orb, Reveal, Spinner } from '../components/ui'
 import { LegalFooter } from '../components/LegalFooter'
 import { Captcha, CAPTCHA_ATIVO } from '../components/Captcha'
 import { SENHA_MIN, senhaFraca } from '../lib/senha'
@@ -65,48 +64,59 @@ export default function Login() {
   return (
     <div className="grid min-h-screen bg-panel lg:grid-cols-[1.1fr_1fr]">
       {/* Vitrine */}
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-[#eaf3ff] via-[#d9ebff] to-[#9fcbff] lg:block">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.9),transparent_55%)]" />
-        <div className="relative flex h-full flex-col p-12">
+      <div className="relative hidden overflow-hidden border-r border-line bg-bg lg:block">
+        <div className="flex h-full flex-col p-12 xl:p-16">
           <Reveal>
-            <Logo size={44} />
+            <Logo size={36} />
           </Reveal>
-          <div className="mt-16 max-w-lg">
-            <Reveal i={1}>
-              <span className="chip bg-white/80 px-3 py-1.5 text-brand-dark">Coraline AI · assistente de IA para clínicas</span>
-              <h1 className="mt-4 text-[44px] font-extrabold leading-[1.05] tracking-tight text-ink">
-                Sua clínica organizada, do WhatsApp à agenda.
-              </h1>
-              <p className="mt-4 text-base text-slate-600">Atendimento, agenda, pacientes, marketing e financeiro em um só lugar — com a Coraline AI preparando o trabalho e você aprovando o que importa.</p>
-            </Reveal>
-          </div>
-          {/* Ilustração da interface (exemplos, não são dados reais) */}
-          <div className="relative mt-auto h-72" aria-hidden="true">
-            <Reveal i={3} className="absolute left-0 top-6 w-64 -rotate-6 rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-600">
-                <BellRing size={15} /> Lembrete
+          <Reveal i={1} className="mt-16 max-w-xl">
+            <h1 className="text-[44px] font-medium leading-[1.08] tracking-[-0.02em] text-ink xl:text-[52px]">
+              Sua clínica organizada, do WhatsApp à agenda
+            </h1>
+            <p className="mt-5 max-w-lg text-lg leading-[1.6] text-secondary">
+              Atendimento, agenda, pacientes, marketing e financeiro em um só lugar — com a Coraline AI preparando o trabalho e você aprovando o que importa.
+            </p>
+          </Reveal>
+          {/* Prévia da interface (exemplo ilustrativo, não são dados reais) */}
+          <Reveal i={2} className="mt-auto max-w-md pt-12" aria-hidden="true">
+            <div className="rounded-panel border border-line bg-panel p-5 shadow-[0_8px_24px_rgba(16,24,40,0.06)]">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Agenda de hoje</span>
+                <span className="text-xs text-muted">3 consultas · 2 confirmadas</span>
               </div>
-              <p className="mt-1.5 text-sm font-semibold">Consulta amanhã às 9h</p>
-              <p className="text-xs text-muted">Confirmação pelo WhatsApp</p>
-            </Reveal>
-            <Reveal i={4} className="absolute left-48 top-28 w-72 rotate-2 rounded-3xl bg-brand p-5 text-white shadow-2xl">
-              <div className="flex items-center gap-2 text-xs font-semibold text-white/80">
-                <CalendarDays size={15} /> Agenda de hoje
-              </div>
-              <ul className="mt-2 space-y-1.5 text-sm font-semibold">
-                <li>09:00 · Avaliação</li>
-                <li>10:30 · Limpeza</li>
-                <li>14:00 · Retorno</li>
+              <ul className="mt-3 space-y-1 text-sm">
+                {[
+                  { h: '09:00', p: 'Avaliação', d: 'Dra. Paula Lima', c: '#48a8fc', ok: 'Confirmada', passou: true },
+                  { h: '10:30', p: 'Limpeza', d: 'Dr. Renato Alves', c: '#8b95a7', ok: 'Confirmada', passou: true },
+                ].map((x) => (
+                  <li key={x.h} className="flex items-center gap-3 py-1.5 opacity-60">
+                    <span className="w-11 font-medium tabular-nums">{x.h}</span>
+                    <span className="h-7 w-0.5 rounded-full" style={{ background: x.c }} />
+                    <span className="flex-1">{x.p} <span className="text-muted">· {x.d}</span></span>
+                    <span className="text-xs text-muted">{x.ok}</span>
+                  </li>
+                ))}
+                <li className="flex items-center gap-2 py-0.5 text-xs font-medium tabular-nums text-brand-ink">
+                  <span>11:42</span>
+                  <span className="h-px flex-1 bg-brand" />
+                </li>
+                <li className="flex items-center gap-3 py-1.5">
+                  <span className="w-11 font-medium tabular-nums">14:00</span>
+                  <span className="h-7 w-0.5 rounded-full bg-[#48a8fc]" />
+                  <span className="flex-1">Retorno <span className="text-muted">· Dra. Paula Lima</span></span>
+                  <span className="text-xs text-amber-700">A confirmar</span>
+                </li>
               </ul>
-            </Reveal>
-            <Reveal i={5} className="absolute right-6 top-0 w-60 rotate-6 rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-600">
-                <MessageCircle size={15} /> WhatsApp
+              <div className="mt-4 flex items-start gap-3 rounded-ctl border border-line bg-panel-2 p-3">
+                <Orb size={24} />
+                <div className="min-w-0 flex-1 text-sm">
+                  <p className="font-medium">Paciente das 14:00 pediu para remarcar</p>
+                  <p className="text-xs text-muted">A Coraline AI preparou a resposta pelo WhatsApp</p>
+                </div>
+                <span className="shrink-0 rounded-md bg-ink px-2.5 py-1 text-xs font-medium text-white">Aprovar</span>
               </div>
-              <p className="mt-1.5 text-sm font-semibold">Paciente pediu para remarcar</p>
-              <p className="text-xs text-muted">A Coraline AI preparou · aguarda aprovação</p>
-            </Reveal>
-          </div>
+            </div>
+          </Reveal>
         </div>
       </div>
 
@@ -114,17 +124,17 @@ export default function Login() {
       <div className="flex items-center justify-center p-6">
         <form onSubmit={submit} className="w-full max-w-sm">
           <Reveal className="mb-10 lg:hidden">
-            <Logo size={44} />
+            <Logo size={36} />
           </Reveal>
           <Reveal i={1}>
-            <h2 className="text-3xl font-bold tracking-tight">{mode === 'login' ? (jaEntrouAntes() ? 'Bem-vindo de volta' : 'Bem-vindo') : mode === 'signup' ? 'Crie sua conta' : 'Recuperar senha'}</h2>
-            <p className="mt-2 text-sm text-muted">{mode === 'signup' ? 'Comece a organizar sua clínica com IA em minutos.' : mode === 'login' ? 'Entre para ver como está sua clínica hoje.' : 'Enviaremos um link para o seu e-mail.'}</p>
+            <h2 className="text-[28px] font-semibold leading-tight">{mode === 'login' ? (jaEntrouAntes() ? 'Bem-vindo de volta' : 'Bem-vindo') : mode === 'signup' ? 'Crie sua conta' : 'Recuperar senha'}</h2>
+            <p className="mt-2 text-sm text-secondary">{mode === 'signup' ? 'Comece com o teste grátis, sem cadastrar cartão' : mode === 'login' ? 'Entre para ver como está sua clínica hoje' : 'Enviaremos um link para o seu e-mail'}</p>
           </Reveal>
           <Reveal i={2} className="mt-8 space-y-3">
-            <input maxLength={254} className="input h-12" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <input maxLength={254} className="input h-11" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
             {mode !== 'reset' && (
               <input
-                className="input h-12"
+                className="input h-11"
                 type="password"
                 required
                 maxLength={72}
@@ -140,32 +150,32 @@ export default function Login() {
                 <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#48a8fc]" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
                 <span>
                   Li e aceito os{' '}
-                  <Link to="/termos" target="_blank" className="font-semibold text-ink underline underline-offset-2">Termos de Uso</Link> e a{' '}
-                  <Link to="/privacidade" target="_blank" className="font-semibold text-ink underline underline-offset-2">Política de Privacidade</Link>.
+                  <Link to="/termos" target="_blank" className="font-medium text-ink underline underline-offset-2">Termos de Uso</Link> e a{' '}
+                  <Link to="/privacidade" target="_blank" className="font-medium text-ink underline underline-offset-2">Política de Privacidade</Link>.
                 </span>
               </label>
             )}
             <Captcha onToken={setCaptcha} rodada={rodada} />
-            {msg && <p role={msg.t === 'err' ? 'alert' : 'status'} className={`rounded-2xl px-4 py-3 text-sm ${msg.t === 'err' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{msg.m}</p>}
-            <button className="btn-primary h-12 w-full" disabled={busy}>
+            {msg && <p role={msg.t === 'err' ? 'alert' : 'status'} className={`rounded-ctl px-4 py-3 text-sm ${msg.t === 'err' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{msg.m}</p>}
+            <button className="btn-primary h-11 w-full" disabled={busy}>
               {busy && <Spinner />} {mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar conta grátis' : 'Enviar link'}
             </button>
           </Reveal>
-          <Reveal i={3} className="mt-6 space-y-2 text-center text-sm text-muted">
+          <Reveal i={3} className="mt-6 space-y-2 text-center text-sm text-secondary">
             {mode === 'login' ? (
               <>
                 <p>
                   Não tem conta?{' '}
-                  <button type="button" className="font-bold text-brand" onClick={() => setMode('signup')}>
+                  <button type="button" className="font-medium text-brand-ink hover:underline" onClick={() => setMode('signup')}>
                     Criar agora
                   </button>
                 </p>
-                <button type="button" className="text-xs hover:text-ink" onClick={() => setMode('reset')}>
+                <button type="button" className="text-sm text-muted hover:text-ink" onClick={() => setMode('reset')}>
                   Esqueci minha senha
                 </button>
               </>
             ) : (
-              <button type="button" className="font-bold text-brand" onClick={() => setMode('login')}>
+              <button type="button" className="font-medium text-brand-ink hover:underline" onClick={() => setMode('login')}>
                 Já tenho conta
               </button>
             )}

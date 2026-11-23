@@ -16,66 +16,55 @@ function useWidth() {
   return [ref, w] as const
 }
 
-/** Curva de vendas: a linha é "desenhada" ao carregar; faixa destacada no ponto em foco. */
-export function LineChart({ data, height = 250, delay = 400 }: { data: Point[]; height?: number; delay?: number }) {
+/** Faturamento acumulado: linha do período (azul da marca) sobre a do período anterior (cinza tracejado). */
+export function LineChart({ data, anterior, diario, height = 260 }: { data: Point[]; anterior?: number[]; diario?: number[]; height?: number; delay?: number }) {
   const [box, W] = useWidth()
   const H = height
-  const pad = { l: 40, r: 10, t: 34, b: 28 }
-  const max = niceMax(Math.max(1, ...data.map((d) => d.value)))
-  const maxIdx = data.reduce((best, d, i) => (d.value > data[best].value ? i : best), 0)
+  const pad = { l: 48, r: 8, t: 12, b: 28 }
+  const max = niceMax(Math.max(1, ...data.map((d) => d.value), ...(anterior ?? [])))
   const [hover, setHover] = useState<number | null>(null)
-  const focus = hover ?? maxIdx
   const innerW = Math.max(1, W - pad.l - pad.r)
-  const pts = data.map((d, i) => ({
-    x: pad.l + (i * innerW) / Math.max(1, data.length - 1),
-    y: pad.t + (1 - d.value / max) * (H - pad.t - pad.b),
-  }))
+  const xDe = (i: number) => pad.l + (i * innerW) / Math.max(1, data.length - 1)
+  const yDe = (v: number) => pad.t + (1 - v / max) * (H - pad.t - pad.b)
+  const pts = data.map((d, i) => ({ x: xDe(i), y: yDe(d.value) }))
+  const ptsAnt = (anterior ?? []).map((v, i) => ({ x: xDe(i), y: yDe(v) }))
   const path = useMemo(() => smooth(pts), [JSON.stringify(pts)]) // eslint-disable-line react-hooks/exhaustive-deps
+  const pathAnt = useMemo(() => smooth(ptsAnt), [JSON.stringify(ptsAnt)]) // eslint-disable-line react-hooks/exhaustive-deps
   const len = useMemo(() => pathLength(pts), [JSON.stringify(pts)]) // eslint-disable-line react-hooks/exhaustive-deps
   const area = pts.length ? `${path} L ${pts[pts.length - 1].x} ${H - pad.b} L ${pts[0].x} ${H - pad.b} Z` : ''
   const key = data.map((d) => d.value).join(',') + ':' + W
   const step = Math.ceil(data.length / (W < 500 ? 4 : 7))
-  const bandW = Math.min(46, Math.max(14, innerW / data.length))
   const ticks = [0, 0.25, 0.5, 0.75, 1]
 
   return (
     <div ref={box} className="relative w-full min-w-0 select-none" style={{ height: H }}>
       {W > 0 && (
-        <svg width={W} height={H} className="block overflow-visible" onMouseLeave={() => setHover(null)}>
-          <defs>
-            <linearGradient id="lc-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#48a8fc" stopOpacity="0.22" />
-              <stop offset="1" stopColor="#48a8fc" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="lc-band" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#48a8fc" stopOpacity="0.16" />
-              <stop offset="1" stopColor="#48a8fc" stopOpacity="0.02" />
-            </linearGradient>
-          </defs>
+        <svg width={W} height={H} className="block overflow-visible tabular-nums" onMouseLeave={() => setHover(null)} role="img" aria-label="Faturamento acumulado no período">
           {ticks.map((g) => {
             const y = pad.t + (1 - g) * (H - pad.t - pad.b)
             return (
               <g key={g}>
-                <line x1={pad.l} x2={W - pad.r} y1={y} y2={y} stroke="#eef0f3" />
-                <text x={0} y={y + 4} fill="#a0a5b1" fontSize="11">
+                <line x1={pad.l} x2={W - pad.r} y1={y} y2={y} stroke="#eceef1" />
+                <text x={pad.l - 10} y={y + 4} textAnchor="end" fill="#6b7080" fontSize="11">
                   {axis(max * g)}
                 </text>
               </g>
             )
           })}
-          {pts[focus] && <rect x={pts[focus].x - bandW / 2} y={pad.t - 6} width={bandW} height={H - pad.t - pad.b + 6} rx={bandW / 2} fill="url(#lc-band)" className="transition-all duration-300" />}
+          {ptsAnt.length > 0 && <path d={pathAnt} fill="none" stroke="#a9aeb8" strokeWidth={1.5} strokeDasharray="4 4" />}
           <g key={key}>
-            <path d={area} fill="url(#lc-fill)" className="fade-late" style={{ '--d': `${delay + 1300}ms` } as CSSProperties} />
-            <path d={path} fill="none" stroke="#48a8fc" strokeWidth={3} strokeLinecap="round" className="draw" style={{ '--len': len, '--d': `${delay}ms` } as CSSProperties} />
+            <path d={area} fill="#2f95ef" fillOpacity={0.06} className="fade-late" style={{ '--d': '500ms' } as CSSProperties} />
+            <path d={path} fill="none" stroke="#2f95ef" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="draw" style={{ '--len': len, '--d': '100ms' } as CSSProperties} />
           </g>
-          {pts[focus] && (
-            <g className="fade-late" style={{ '--d': `${hover !== null ? 0 : delay + 1500}ms` } as CSSProperties}>
-              <circle cx={pts[focus].x} cy={pts[focus].y} r={6.5} fill="#fff" stroke="#48a8fc" strokeWidth={3} />
+          {hover !== null && pts[hover] && (
+            <g>
+              <line x1={pts[hover].x} x2={pts[hover].x} y1={pad.t} y2={H - pad.b} stroke="#d5d8de" />
+              <circle cx={pts[hover].x} cy={pts[hover].y} r={4} fill="#fff" stroke="#2f95ef" strokeWidth={2} />
             </g>
           )}
           {data.map((d, i) =>
             i % step === 0 || i === data.length - 1 ? (
-              <text key={i} x={pts[i].x} y={H - 6} textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'} fill="#a0a5b1" fontSize="11">
+              <text key={i} x={pts[i].x} y={H - 8} textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'} fill="#6b7080" fontSize="11">
                 {d.label}
               </text>
             ) : null,
@@ -85,13 +74,14 @@ export function LineChart({ data, height = 250, delay = 400 }: { data: Point[]; 
           ))}
         </svg>
       )}
-      {W > 0 && pts[focus] && data[focus] && (
+      {W > 0 && hover !== null && pts[hover] && data[hover] && (
         <div
-          className="fade-late pointer-events-none absolute -translate-x-1/2 whitespace-nowrap rounded-xl bg-ink px-2.5 py-1.5 text-center text-[11px] font-semibold text-white shadow-lg"
-          style={{ left: Math.min(Math.max(pts[focus].x, 50), W - 50), top: 0, '--d': `${hover !== null ? 0 : delay + 1500}ms` } as CSSProperties}
+          className="pointer-events-none absolute -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs tabular-nums text-white"
+          style={{ left: Math.min(Math.max(pts[hover].x, 64), W - 64), top: Math.max(0, pts[hover].y - 52) }}
         >
-          <div className="text-[10px] font-medium text-white/60">{data[focus].label}</div>
-          {brl(data[focus].value)}
+          <div className="text-white/70">{data[hover].label}{diario && diario[hover] !== undefined ? ` · no dia ${brl(diario[hover])}` : ''}</div>
+          <div className="font-medium">Acumulado {brl(data[hover].value)}</div>
+          {anterior && anterior[hover] !== undefined && <div className="text-white/70">Período anterior {brl(anterior[hover])}</div>}
         </div>
       )}
     </div>
@@ -107,16 +97,16 @@ export function Bars({ data, height = 170, delay = 300, format = brlShort }: { d
       {data.map((d, i) => (
         <div key={d.label + i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
           {i === top && (
-            <span className="fade-late rounded-lg bg-ink px-2 py-1 text-[10px] font-bold text-white" style={{ '--d': `${delay + 900}ms` } as CSSProperties}>
+            <span className="fade-late text-xs font-medium tabular-nums text-secondary" style={{ '--d': `${Math.min(delay, 300)}ms` } as CSSProperties}>
               {format(d.value)}
             </span>
           )}
           <div
-            className={`grow w-full max-w-[44px] rounded-full ${i === top ? 'bg-brand' : 'bg-brand-soft'}`}
-            style={{ height: `${Math.max(6, (d.value / max) * (height - 56))}px`, '--d': `${delay + i * 70}ms` } as CSSProperties}
+            className={`grow w-full max-w-[40px] rounded-t-[4px] ${i === top ? 'bg-brand-dark' : 'bg-slate-300'}`}
+            style={{ height: `${Math.max(4, (d.value / max) * (height - 56))}px`, '--d': `${i * 40}ms` } as CSSProperties}
             title={`${d.label}: ${format(d.value)}`}
           />
-          <span className="max-w-full truncate text-[11px] text-muted">{d.label}</span>
+          <span className="max-w-full truncate text-xs text-muted">{d.label}</span>
         </div>
       ))}
     </div>
@@ -124,64 +114,19 @@ export function Bars({ data, height = 170, delay = 300, format = brlShort }: { d
 }
 
 /** Barras agrupadas: entradas x saídas. */
-export function DualBars({ data, height = 190, delay = 300 }: { data: { label: string; a: number; b: number }[]; height?: number; delay?: number }) {
+export function DualBars({ data, height = 190 }: { data: { label: string; a: number; b: number }[]; height?: number; delay?: number }) {
   const max = Math.max(1, ...data.flatMap((d) => [d.a, d.b]))
   return (
     <div className="flex items-end gap-3 sm:gap-5" style={{ height }}>
       {data.map((d, i) => (
         <div key={d.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
           <div className="flex w-full items-end justify-center gap-1.5">
-            <div className="grow w-full max-w-[18px] rounded-full bg-brand" style={{ height: `${Math.max(5, (d.a / max) * (height - 30))}px`, '--d': `${delay + i * 90}ms` } as CSSProperties} title={`Entradas: ${brl(d.a)}`} />
-            <div className="grow w-full max-w-[18px] rounded-full bg-ink" style={{ height: `${Math.max(5, (d.b / max) * (height - 30))}px`, '--d': `${delay + i * 90 + 60}ms` } as CSSProperties} title={`Saídas: ${brl(d.b)}`} />
+            <div className="grow w-full max-w-[16px] rounded-t-[3px] bg-brand-dark" style={{ height: `${Math.max(2, (d.a / max) * (height - 30))}px`, '--d': `${i * 40}ms` } as CSSProperties} title={`Entradas: ${brl(d.a)}`} />
+            <div className="grow w-full max-w-[16px] rounded-t-[3px] bg-slate-300" style={{ height: `${Math.max(2, (d.b / max) * (height - 30))}px`, '--d': `${i * 40 + 20}ms` } as CSSProperties} title={`Saídas: ${brl(d.b)}`} />
           </div>
-          <span className="text-[11px] capitalize text-muted">{d.label}</span>
+          <span className="text-xs capitalize text-muted">{d.label}</span>
         </div>
       ))}
-    </div>
-  )
-}
-
-export const DONUT_COLORS = ['#48a8fc', '#0f172a', '#8cc2ff', '#f59e0b', '#10b981', '#ec4899']
-
-/** Rosca animada: cada fatia aparece em sequência. */
-export function Donut({ data, size = 170, delay = 400, center }: { data: { label: string; value: number }[]; size?: number; delay?: number; center?: { value: string; label: string } }) {
-  const total = data.reduce((a, b) => a + b.value, 0) || 1
-  const r = 15.9155
-  let acc = 0
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 42 42" className="h-full w-full -rotate-90">
-        <circle cx="21" cy="21" r={r} fill="none" stroke="#f1f3f6" strokeWidth="4.5" />
-        {data.map((d, i) => {
-          const pct = (d.value / total) * 100
-          const gap = data.length > 1 ? 1.2 : 0
-          const len = Math.max(0.1, pct - gap)
-          const seg = (
-            <circle
-              key={d.label}
-              cx="21"
-              cy="21"
-              r={r}
-              fill="none"
-              stroke={DONUT_COLORS[i % DONUT_COLORS.length]}
-              strokeWidth="4.5"
-              strokeLinecap="round"
-              strokeDasharray={`${len} ${100 - len}`}
-              strokeDashoffset={-acc}
-              className="fade-late"
-              style={{ '--d': `${delay + i * 180}ms` } as CSSProperties}
-            />
-          )
-          acc += pct
-          return seg
-        })}
-      </svg>
-      {center && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-[15px] font-bold leading-tight">{center.value}</span>
-          <span className="text-[11px] text-muted">{center.label}</span>
-        </div>
-      )}
     </div>
   )
 }

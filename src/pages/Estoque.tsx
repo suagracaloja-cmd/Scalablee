@@ -293,17 +293,17 @@ export default function Estoque() {
       <Reveal i={5} className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative w-full lg:max-w-sm">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-          <input className="glass h-11 w-full rounded-full pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-4" placeholder="Buscar item, categoria ou fornecedor…" aria-label="Buscar no estoque" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="glass h-11 w-full rounded-full pl-11 pr-4 text-sm outline-none ring-brand/20 placeholder:text-muted focus:ring-3" placeholder="Buscar item, categoria ou fornecedor…" aria-label="Buscar no estoque" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {filtros.map((f) => (
-            <button key={f.id} onClick={() => setFiltro(f.id)} className={`h-9 rounded-full px-4 text-xs font-semibold ${filtro === f.id ? 'bg-ink text-white' : 'glass text-ink'}`}>
+            <button key={f.id} onClick={() => setFiltro(f.id)} className={`h-9 rounded-ctl px-4 text-xs font-medium ${filtro === f.id ? 'bg-brand-soft text-brand-ink ring-1 ring-brand/30' : 'glass text-ink'}`}>
               {f.label}
-              {!!f.n && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] ${filtro === f.id ? 'bg-white/20' : 'bg-amber-100 text-amber-800'}`}>{f.n}</span>}
+              {!!f.n && <span className={`ml-1.5 rounded-md px-1.5 py-0.5 text-xs ${filtro === f.id ? 'bg-white/20' : 'bg-amber-100 text-amber-800'}`}>{f.n}</span>}
             </button>
           ))}
           {categorias.length > 0 && (
-            <select className="glass h-9 rounded-full px-3 text-xs font-semibold outline-none" value={categoria} onChange={(e) => setCategoria(e.target.value)} aria-label="Categoria">
+            <select className="glass h-9 rounded-ctl px-3 text-xs font-medium outline-none" value={categoria} onChange={(e) => setCategoria(e.target.value)} aria-label="Categoria">
               <option value="">Todas as categorias</option>
               {categorias.map((c) => (
                 <option key={c}>{c}</option>
@@ -352,7 +352,7 @@ export default function Estoque() {
                         <div className="text-xs text-muted">{[i.categoria, i.fornecedor].filter(Boolean).join(' · ') || '—'}</div>
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums">
-                        <div className="font-bold">
+                        <div className="font-semibold">
                           {fmtQtd(i.quantidade)} <span className="text-xs font-medium text-muted">{i.unidade}</span>
                         </div>
                         {i.minimo > 0 && <div className="text-xs text-muted">mínimo {fmtQtd(i.minimo)}</div>}
@@ -376,7 +376,7 @@ export default function Estoque() {
                         <div className="truncate text-xs text-muted">{[i.categoria, i.fornecedor].filter(Boolean).join(' · ') || '—'}</div>
                       </div>
                       <div className="shrink-0 text-right tabular-nums">
-                        <div className="text-lg font-bold leading-tight">
+                        <div className="text-lg font-semibold leading-tight">
                           {fmtQtd(i.quantidade)} <span className="text-xs font-medium text-muted">{i.unidade}</span>
                         </div>
                         {i.minimo > 0 && <div className="text-xs text-muted">mínimo {fmtQtd(i.minimo)}</div>}
@@ -461,7 +461,7 @@ export default function Estoque() {
       <Modal open={!!mov} onClose={() => setMov(null)} title={mov ? `${TIPO_MOV[mov.tipo]} · ${mov.item.nome}` : ''}>
         {mov && (
           <form onSubmit={movimentar} className="space-y-3">
-            <div className={`grid gap-1 rounded-full bg-panel-2 p-1 text-sm ${gerencia ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <div className={`grid gap-1 rounded-ctl border border-line bg-panel-2 p-0.5 text-sm ${gerencia ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {(gerencia ? (['entrada', 'saida', 'ajuste'] as const) : (['entrada', 'saida'] as const)).map((t) => (
                 <button key={t} type="button" onClick={() => setMov({ ...mov, tipo: t })} className={`h-9 rounded-full font-semibold ${mov.tipo === t ? 'bg-ink text-white' : 'text-muted'}`}>
                   {TIPO_MOV[t]}

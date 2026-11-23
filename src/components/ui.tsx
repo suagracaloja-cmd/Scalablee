@@ -48,9 +48,9 @@ export function Ajusta({ children, className = '', min = 12 }: { children: React
 }
 
 /** Faz o conteúdo aparecer da esquerda para a direita, em sequência (índice i). */
-export function Reveal({ i = 0, children, className = '', up = false, step = 80, onClick }: { i?: number; children: ReactNode; className?: string; up?: boolean; step?: number; onClick?: () => void }) {
+export function Reveal({ i = 0, children, className = '', up = false, step = 50, onClick }: { i?: number; children: ReactNode; className?: string; up?: boolean; step?: number; onClick?: () => void }) {
   return (
-    <div onClick={onClick} className={`${up ? 'reveal-up' : 'reveal'} ${className}`} style={{ '--d': `${i * step}ms` } as CSSProperties}>
+    <div onClick={onClick} className={`${up ? 'reveal-up' : 'reveal'} ${className}`} style={{ '--d': `${Math.min(i, 6) * step}ms` } as CSSProperties}>
       {children}
     </div>
   )
@@ -74,8 +74,8 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <Reveal className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-[28px] font-bold leading-tight tracking-tight sm:text-[32px]">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+        <h1 className="text-[26px] font-semibold leading-tight sm:text-[30px]">{title}</h1>
+        {subtitle && <p className="mt-1 max-w-2xl text-sm text-secondary">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </Reveal>
@@ -101,7 +101,7 @@ export function AreaChip({ kind, className = '' }: { kind?: string | null; class
   const a = areaOf(kind)
   return (
     <span className={`chip ${a.cls} ${className}`}>
-      <a.icon size={11} strokeWidth={2.4} />
+      <a.icon size={12} strokeWidth={2} />
       {a.label}
     </span>
   )
@@ -117,16 +117,16 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   const tituloId = useId()
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/30 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/30 sm:items-center sm:p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={tituloId}
-        className={`reveal-up max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] bg-panel p-6 shadow-2xl sm:rounded-[28px] ${wide ? 'sm:max-w-2xl' : 'sm:max-w-md'}`}
+        className={`reveal-up max-h-[92vh] w-full overflow-y-auto rounded-t-panel border border-line bg-panel p-6 shadow-[0_8px_24px_rgba(16,24,40,0.08)] sm:rounded-panel ${wide ? 'sm:max-w-2xl' : 'sm:max-w-md'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between">
-          <h2 id={tituloId} className="text-lg font-bold">{title}</h2>
+          <h2 id={tituloId} className="text-lg font-semibold">{title}</h2>
           <button onClick={onClose} className="icon-btn h-9 w-9" aria-label="Fechar">
             <X size={16} />
           </button>
@@ -140,8 +140,8 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
 export function Empty({ icon, title, text, action }: { icon: ReactNode; title: string; text?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand">{icon}</div>
-      <p className="font-bold">{title}</p>
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-card border border-line bg-panel-2 text-muted">{icon}</div>
+      <p className="font-medium">{title}</p>
       {text && <p className="mt-1 max-w-sm text-sm text-muted">{text}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
@@ -153,22 +153,21 @@ export function Spinner({ size = 16 }: { size?: number }) {
 }
 
 export function Money({ value, delay = 0, className = '' }: { value: number; delay?: number; className?: string }) {
-  const v = useCountUp(value, 1500, delay)
+  const v = useCountUp(value, 600, Math.min(delay, 200))
   return <span className={`tabular-nums ${className}`}>{brl(v)}</span>
 }
 export function Count({ value, delay = 0, className = '' }: { value: number; delay?: number; className?: string }) {
-  const v = useCountUp(value, 1200, delay)
+  const v = useCountUp(value, 600, Math.min(delay, 200))
   return <span className={`tabular-nums ${className}`}>{Math.round(v).toLocaleString('pt-BR')}</span>
 }
 
-/** Selo de variação (↑ 9,9% / ↓ 3,5%). */
-export function Delta({ value, inverse = false, onDark = false }: { value: number | null; inverse?: boolean; onDark?: boolean }) {
+/** Variação (↑ 9,9% / ↓ 3,5%): texto discreto na cor do sentido, sem selo. */
+export function Delta({ value, inverse = false }: { value: number | null; inverse?: boolean; onDark?: boolean }) {
   if (value === null || !isFinite(value)) return null
   const good = inverse ? value <= 0 : value >= 0
-  const cls = onDark ? 'bg-white text-brand' : good ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
   return (
-    <span className={`chip ${cls}`}>
-      {value >= 0 ? <ArrowUpRight size={12} strokeWidth={2.5} /> : <ArrowDownRight size={12} strokeWidth={2.5} />}
+    <span className={`inline-flex items-center gap-0.5 font-medium tabular-nums ${good ? 'text-emerald-700' : 'text-rose-700'}`}>
+      {value >= 0 ? <ArrowUpRight size={14} strokeWidth={1.75} /> : <ArrowDownRight size={14} strokeWidth={1.75} />}
       {Math.abs(value).toFixed(1).replace('.', ',')}%
     </span>
   )
@@ -184,16 +183,16 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export const STATUS_CHIP: Record<string, string> = {
-  paid: 'bg-emerald-50 text-emerald-600',
-  pending: 'bg-amber-50 text-amber-600',
-  cancelled: 'bg-slate-100 text-slate-500',
-  lead: 'bg-sky-50 text-sky-600',
-  active: 'bg-emerald-50 text-emerald-600',
-  inactive: 'bg-slate-100 text-slate-500',
-  vip: 'bg-fuchsia-50 text-fuchsia-600',
-  high: 'bg-rose-50 text-rose-600',
-  normal: 'bg-brand-soft text-brand',
-  low: 'bg-slate-100 text-slate-500',
+  paid: 'bg-emerald-50 text-emerald-700',
+  pending: 'bg-amber-50 text-amber-700',
+  cancelled: 'bg-panel-2 text-secondary',
+  lead: 'bg-panel-2 text-secondary',
+  active: 'bg-emerald-50 text-emerald-700',
+  inactive: 'bg-panel-2 text-secondary',
+  vip: 'bg-panel-2 text-ink',
+  high: 'bg-rose-50 text-rose-700',
+  normal: 'bg-panel-2 text-secondary',
+  low: 'bg-panel-2 text-muted',
 }
 export const STATUS_DOT: Record<string, string> = {
   paid: 'bg-emerald-500',
@@ -213,23 +212,24 @@ export const STATUS_LABEL: Record<string, string> = {
   low: 'Baixa',
 }
 
-/** Cartão de status com faixa colorida no topo (estilo "Order list"). */
+/** Cartão de número: um ponto de cor dá o sentido (a pagar, a receber…), o número é o destaque. */
 export function StatusCard({ i = 0, label, value, sub, tone }: { i?: number; label: string; value: ReactNode; sub?: ReactNode; tone: 'blue' | 'green' | 'amber' | 'rose' | 'slate' | 'violet' }) {
   const tones = {
-    blue: 'bg-brand text-ink',
-    green: 'bg-emerald-400 text-emerald-950',
-    amber: 'bg-amber-300 text-amber-950',
-    rose: 'bg-rose-400 text-white',
-    slate: 'bg-slate-200 text-slate-700',
-    violet: 'bg-violet-400 text-white',
+    blue: 'bg-brand',
+    green: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    rose: 'bg-rose-500',
+    slate: 'bg-slate-400',
+    violet: 'bg-slate-500',
   }
   return (
-    <Reveal i={i} className="card overflow-hidden">
-      <div className={`px-4 py-2.5 text-xs font-bold sm:px-5 ${tones[tone]}`}>{label}</div>
-      <div className="px-4 py-4 sm:px-5">
-        <Ajusta className="py-0.5 text-[22px] font-bold tracking-tight sm:text-[26px]">{value}</Ajusta>
-        {sub && <div className="mt-1 truncate text-xs text-muted">{sub}</div>}
+    <Reveal i={i} className="card p-4 sm:p-5">
+      <div className="flex items-center gap-2 text-sm text-secondary">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${tones[tone]}`} aria-hidden="true" />
+        <span className="truncate">{label}</span>
       </div>
+      <Ajusta className="mt-3 py-0.5 text-[24px] font-medium leading-none tabular-nums sm:text-[28px]">{value}</Ajusta>
+      {sub && <div className="mt-2 truncate text-xs text-muted">{sub}</div>}
     </Reveal>
   )
 }

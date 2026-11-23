@@ -123,7 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`reveal-up max-w-sm rounded-2xl px-4 py-3 text-sm font-medium shadow-xl ${t.type === 'err' ? 'bg-rose-600 text-white' : 'bg-ink text-white'}`}
+            className={`reveal-up max-w-sm rounded-ctl px-4 py-3 text-sm font-medium shadow-[0_8px_24px_rgba(16,24,40,0.16)] ${t.type === 'err' ? 'bg-rose-600 text-white' : 'bg-ink text-white'}`}
           >
             {t.msg}
           </div>

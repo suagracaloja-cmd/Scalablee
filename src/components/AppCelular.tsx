@@ -67,7 +67,7 @@ export function AppCelular({ i = 5 }: { i?: number }) {
         <p className="mt-1 text-sm text-muted">Use a Scalable como um aplicativo: ícone na tela inicial, tela cheia e avisos no celular. Grátis, sem loja de aplicativos.</p>
 
         {/* Instalar */}
-        <div className="mt-4 rounded-2xl bg-panel-2 p-4 text-sm">
+        <div className="mt-4 rounded-ctl bg-panel-2 p-4 text-sm">
           {appInstalado ? (
             <p className="flex items-center gap-2 font-medium text-emerald-700">
               <CheckCircle2 size={16} /> Você está usando o app instalado.

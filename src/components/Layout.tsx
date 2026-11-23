@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
+import { Suspense, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -14,7 +14,6 @@ import {
   Package,
   Search,
   Settings,
-  Smartphone,
   MessageSquareText,
   Stethoscope,
   Users,
@@ -25,7 +24,7 @@ import { useApp } from '../lib/store'
 import { CarregandoTela, ErroTela, Logo, LogoIcon, Orb } from './ui'
 import { CoralinePainel } from './CoralinePainel'
 import { useRolou } from '../hooks/useRolou'
-import { instalado, sair } from '../lib/app'
+import { sair } from '../lib/supabase'
 import { AGENT_NAME } from '../lib/areas'
 import type { Papel } from '../lib/types'
 import { LegalFooter } from './LegalFooter'
@@ -62,16 +61,6 @@ export default function Layout() {
   const alvoDica = useRef<{ el: HTMLElement; texto: string } | null>(null)
   const loc = useLocation()
   const nav = useNavigate()
-  // Toque na notificação com o app aberto: o service worker pede para abrir a tela certa
-  useEffect(() => {
-    if (!('serviceWorker' in navigator)) return
-    const abrir = (e: MessageEvent) => {
-      const url = e.data?.tipo === 'abrir' && typeof e.data.url === 'string' ? e.data.url : null
-      if (url && url.startsWith('/')) nav(url)
-    }
-    navigator.serviceWorker.addEventListener('message', abrir)
-    return () => navigator.serviceWorker.removeEventListener('message', abrir)
-  }, [nav])
   const isActive = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
 
   // Cobrança: aviso de teste acabando/pagamento pendente e bloqueio (só quando COBRANCA_ATIVA=on)
@@ -267,11 +256,6 @@ export default function Layout() {
                 )
               })}
             </ul>
-            {!instalado() && (
-              <Link to="/configuracoes#app" onClick={() => setSheet(false)} className="mt-2 flex h-11 shrink-0 items-center gap-3 rounded-ctl border border-line px-3 text-[15px] text-secondary">
-                <Smartphone size={18} strokeWidth={1.5} className="text-muted" /> Instalar o app no celular
-              </Link>
-            )}
             <button onClick={() => sair()} className="mt-1 flex h-11 shrink-0 items-center gap-3 rounded-ctl px-3 text-[15px] text-rose-700 hover:bg-rose-50">
               <LogOut size={18} strokeWidth={1.5} /> Sair da conta
             </button>

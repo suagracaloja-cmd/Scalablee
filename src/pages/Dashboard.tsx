@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowUp, CheckCircle2, ChevronRight, Package, Play } from 'lucide-react'
 import { api, supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import type { Approval, Insight, Sale, Task, Transaction } from '../lib/types'
+import type { Approval, Insight, Task, Transaction } from '../lib/types'
 import { addDays, brl, fmtDate, plural, relativeDay, timeAgo, toISO, today } from '../lib/format'
 import { AgentMark, Ajusta, Count, Delta, Money, Orb, Reveal, Spinner, STATUS_DOT, STATUS_LABEL } from '../components/ui'
 import { DualBars, LineChart } from '../components/LineChart'
@@ -11,6 +11,7 @@ import { AGENT_NAME, SUGGESTIONS, areaOf } from '../lib/areas'
 import { HojeNaAgenda } from '../components/HojeNaAgenda'
 import { normalizarItem, situacao, type ItemEstoque } from '../lib/estoque'
 import { useTempoReal } from '../hooks/useTempoReal'
+import { painelAtendimentos, type Painel } from '../lib/atendimentos'
 
 type Range = 7 | 30 | 90
 
@@ -20,9 +21,7 @@ export default function Dashboard() {
   const [ask, setAsk] = useState('')
   const navigate = useNavigate()
   // Atendimentos já somados no banco: totais por dia e situação, mais vendidos (30 dias) e os 6 mais recentes
-  type Dia = { dia: string; status: Sale['status']; total: number; qtd: number }
-  type Recente = Sale & { paciente: string | null }
-  const [painel, setPainel] = useState<{ dias: Dia[]; produtos: { descricao: string; total: number }[]; recentes: Recente[] }>({ dias: [], produtos: [], recentes: [] })
+  const [painel, setPainel] = useState<Painel>({ dias: [], produtos: [], recentes: [] })
   const [txs, setTxs] = useState<Transaction[]>([])
   // Pacientes: só as contagens e os nomes que aparecem na tela (antes baixava a lista inteira)
   const [clientes, setClientes] = useState<{ total: number; novosMes: number }>({ total: 0, novosMes: 0 })
@@ -42,7 +41,7 @@ export default function Dashboard() {
     // Lançamentos: os em aberto e os dos últimos 4 meses (é o que os cartões e o gráfico usam)
     const desde4Meses = toISO(new Date(d.getFullYear(), d.getMonth() - 3, 1))
     const [s, t, c, cNovos, tk, i, a, es] = await Promise.all([
-      supabase.rpc('painel_atendimentos', { p_desde: since, p_produtos_desde: addDays(today(), -30) }),
+      painelAtendimentos(since, addDays(today(), -30)).catch(() => ({ dias: [], produtos: [], recentes: [] }) as Painel),
       supabase.from('transactions').select('id,type,description,amount,due_date,paid_at').or(`paid_at.is.null,due_date.gte.${desde4Meses},paid_at.gte.${desde4Meses}`),
       supabase.from('customers').select('id', { count: 'exact', head: true }),
       supabase.from('customers').select('id', { count: 'exact', head: true }).gte('created_at', mesAtual),
@@ -51,16 +50,12 @@ export default function Dashboard() {
       supabase.from('approvals').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
       supabase.from('estoque_itens').select('*').eq('ativo', true).limit(2000),
     ])
-    const pa = (s.data ?? { dias: [], produtos: [], recentes: [] }) as { dias: Dia[]; produtos: { descricao: string; total: number }[]; recentes: Recente[] }
-    setPainel({
-      dias: (pa.dias ?? []).map((x) => ({ ...x, total: Number(x.total), qtd: Number(x.qtd) })),
-      produtos: (pa.produtos ?? []).map((x) => ({ ...x, total: Number(x.total) })),
-      recentes: (pa.recentes ?? []).map((x) => ({ ...x, amount: Number(x.amount) })),
-    })
+    const pa = s
+    setPainel(pa)
     setTxs(((t.data ?? []) as Transaction[]).map((x) => ({ ...x, amount: Number(x.amount) })))
     setClientes({ total: c.count ?? 0, novosMes: cNovos.count ?? 0 })
     // Nomes dos atendimentos recentes (já vêm junto, do banco)
-    setNames(new Map((pa.recentes ?? []).filter((x) => x.customer_id && x.paciente).map((x) => [x.customer_id as string, x.paciente as string])))
+    setNames(new Map(pa.recentes.filter((x) => x.customer_id && x.paciente).map((x) => [x.customer_id as string, x.paciente as string])))
     setTasks((tk.data ?? []) as Task[])
     setInsights((i.data ?? []) as Insight[])
     setApprovals((a.data ?? []) as Approval[])

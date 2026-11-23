@@ -7,14 +7,7 @@ import { brl, fmtDate, today, plural } from '../lib/format'
 import { Bars } from '../components/LineChart'
 import { Empty, Field, Modal, Money, PageHeader, Reveal, Spinner, StatusCard } from '../components/ui'
 import { useConfirmar } from '../components/Confirmar'
-
-/** Soma os atendimentos (tabela sales) com o filtro dado, no próprio banco (antes: baixava todos e somava aqui). */
-async function somarAtendimentos(status: 'paid' | 'pending', desde?: string) {
-  const { data, error } = await supabase.rpc('atendimentos_soma', { p_status: status, p_desde: desde ?? null })
-  if (error) throw new Error(error.message)
-  const r = ((data ?? []) as { total: number | string; quantidade: number | string }[])[0]
-  return { total: Number(r?.total ?? 0), n: Number(r?.quantidade ?? 0) }
-}
+import { somarAtendimentos } from '../lib/atendimentos'
 
 const CATS = { expense: ['Fornecedores', 'Aluguel', 'Salários', 'Impostos', 'Marketing', 'Energia/Água/Internet', 'Outros'], income: ['Atendimentos', 'Outros'] }
 const empty = (type: Transaction['type'] = 'expense') => ({ type, description: '', category: '', amount: '', due_date: today(), paid: false })

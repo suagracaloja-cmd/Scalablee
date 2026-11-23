@@ -51,3 +51,6 @@ export async function callFn<T = unknown>(name: string, body: Record<string, unk
 }
 
 export const WEBHOOK_URL = `${url}/functions/v1/api/wa-webhook`
+
+/** Sair da conta. */
+export const sair = () => supabase.auth.signOut()

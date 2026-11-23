@@ -9,6 +9,7 @@ import { Empty, Field, Modal, PageHeader, Reveal, Spinner } from '../components/
 import { cpfValido, formatarCpf, soDigitos } from '../lib/cpf'
 import { erroTelefone, lerTelefone } from '../lib/telefone'
 import { useConfirmar } from '../components/Confirmar'
+import { totaisPorPaciente } from '../lib/atendimentos'
 
 const empty = () => ({ name: '', phone: '', email: '', status: 'lead' as Customer['status'], notes: '', etapa: 'novo' as Etapa, proximo_contato: '', origem: '', data_nascimento: '', cpf: '' })
 type Form = ReturnType<typeof empty>
@@ -33,21 +34,15 @@ export default function Customers() {
   const [limite, setLimite] = useState(60)
   useEffect(() => setLimite(60), [q, etapa])
 
-  /** Total pago e último atendimento de cada paciente, somados no próprio banco (antes: todos os atendimentos em páginas de 1000). */
-  async function totaisPorPaciente() {
-    const { data } = await supabase.rpc('atendimentos_por_paciente')
-    return { data: ((data ?? []) as { customer_id: string; total: number | string; ultimo: string }[]).map((x) => ({ customer_id: x.customer_id, total: Number(x.total), ultimo: x.ultimo })) }
-  }
-
   const load = async () => {
     const [c, s, a] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
-      veVendas ? totaisPorPaciente() : Promise.resolve({ data: [] as { customer_id: string; total: number; ultimo: string }[] }),
+      veVendas ? totaisPorPaciente() : Promise.resolve([] as { customer_id: string; total: number; ultimo: string }[]),
       supabase.from('agendamentos').select('customer_id,inicio').gte('inicio', new Date().toISOString()).in('status', ['agendado', 'confirmado']).order('inicio'),
     ])
     setItems((c.data ?? []) as Customer[])
     const m = new Map<string, { total: number; last: string }>()
-    for (const x of s.data ?? []) m.set(x.customer_id, { total: x.total, last: x.ultimo })
+    for (const x of s) m.set(x.customer_id, { total: x.total, last: x.ultimo })
     setTotals(m)
     const p = new Map<string, string>()
     for (const x of a.data ?? []) if (x.customer_id && !p.has(x.customer_id)) p.set(x.customer_id, x.inicio)

@@ -9,6 +9,11 @@ Plataforma web (computador e celular) de gestão para **clínicas e consultório
 - **Central de Aprovações** — tudo que é relevante (mensagens, campanhas, lançamentos, vendas, cadastros, exclusões e **mudanças na agenda feitas pela IA**) só acontece depois que alguém autorizado aprova. Cada decisão registra operação, dados, data/hora, resultado e quem decidiu.
 - **WhatsApp Business**, **análise geral**, **análise de site**, Início (com a agenda do dia), Vendas, Financeiro, Tarefas e Notificações — tudo salvo no Supabase.
 
+## Raio-X da Gestão da Clínica
+
+Diagnóstico gratuito, sem conta, em `/diagnostico`: 25 perguntas, relatório personalizado, PDF e continuidade para o cadastro.
+Detalhes, segurança, migração (`0016`) e métricas em [`docs/raio-x.md`](docs/raio-x.md). Testes: `npm test` e `npm run test:e2e`.
+
 ## Stack
 
 - React + Vite + TypeScript + Tailwind CSS v4

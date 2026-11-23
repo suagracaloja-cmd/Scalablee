@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
 import Layout from './components/Layout'
@@ -14,6 +15,9 @@ import WhatsApp from './pages/WhatsApp'
 import Approvals from './pages/Approvals'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
+
+// Raio-X da Gestão da Clínica: página pública (não exige conta), carregada só quando acessada.
+const Diagnostic = lazy(() => import('./diagnostic/DiagnosticApp'))
 
 function Gate() {
   const { session, loading, company } = useApp()
@@ -48,9 +52,24 @@ function Gate() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <Gate />
-      </AppProvider>
+      <Routes>
+        <Route
+          path="/diagnostico/*"
+          element={
+            <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0b0d12' }} />}>
+              <Diagnostic />
+            </Suspense>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <AppProvider>
+              <Gate />
+            </AppProvider>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   )
 }

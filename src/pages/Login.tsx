@@ -1,12 +1,21 @@
 import { useState, type FormEvent } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Bot, LineChart, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Logo } from '../components/Layout'
 import { Reveal, Spinner } from '../components/ui'
+import { trackEvent } from '../diagnostic/lib/events'
+import { store as diagnosticStore } from '../diagnostic/lib/storage'
 
 export default function Login() {
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
-  const [email, setEmail] = useState('')
+  // Chegada pelo botão do Raio-X (?cadastro=1&origem=raio-x): abre direto no cadastro.
+  // Lido aqui, e não na carga do módulo, porque a chegada é uma navegação interna.
+  const params = new URLSearchParams(useLocation().search)
+  const fromDiagnostic = params.get('origem') === 'raio-x'
+  const wantsSignup = params.get('cadastro') === '1'
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>(wantsSignup ? 'signup' : 'login')
+  // Se a pessoa fez o diagnóstico neste navegador, o e-mail informado lá já vem preenchido.
+  const [email, setEmail] = useState(() => (wantsSignup ? (diagnosticStore.profile()?.email ?? '') : ''))
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
@@ -20,6 +29,7 @@ export default function Login() {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw new Error(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message)
       } else if (mode === 'signup') {
+        if (fromDiagnostic) trackEvent('signup_started', 'login-signup')
         const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
         if (error) throw error
         if (!data.session) setMsg({ t: 'ok', m: 'Conta criada! Confirme pelo link enviado ao seu e-mail e depois faça login.' })
@@ -107,6 +117,9 @@ export default function Login() {
                 <button type="button" className="text-xs hover:text-slate-300" onClick={() => setMode('reset')}>
                   Esqueci minha senha
                 </button>
+                <Link to="/diagnostico" className="block text-xs hover:text-slate-300">
+                  Faça o Raio-X gratuito da gestão da sua clínica
+                </Link>
               </>
             ) : (
               <button type="button" className="font-semibold text-violet-300" onClick={() => setMode('login')}>

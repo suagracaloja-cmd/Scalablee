@@ -3,12 +3,17 @@ import { supabase, api } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { Logo } from '../components/Layout'
 import { Field, Reveal, Spinner } from '../components/ui'
+import { store as diagnosticStore } from '../diagnostic/lib/storage'
 
 const SEGMENTS = ['Loja de roupas / moda', 'Alimentação / restaurante', 'Beleza / estética', 'Serviços', 'E-commerce', 'Saúde / clínica', 'Educação / cursos', 'Imobiliária', 'Academia / fitness', 'Outro']
 
 export default function Onboarding() {
   const { reloadCompany, reloadAgents, reloadCounts, toast } = useApp()
-  const [f, setF] = useState({ name: '', segment: '', description: '', website: '', instagram: '' })
+  // Se a pessoa fez o Raio-X neste navegador, o nome da clínica e o segmento já vêm preenchidos.
+  const [f, setF] = useState(() => {
+    const hint = diagnosticStore.profile()
+    return { name: hint?.clinic ?? '', segment: hint ? 'Saúde / clínica' : '', description: '', website: '', instagram: '' }
+  })
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
 

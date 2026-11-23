@@ -13,6 +13,11 @@ Plataforma web (desktop e celular) onde o dono da empresa faz login e tem:
 - **Dashboard** com animação de entrada (da esquerda para a direita), linha de vendas sendo “desenhada”, números subindo e atualização em tempo real.
 - Vendas, Clientes (CRM), Financeiro (a pagar / a receber), Tarefas, Aprovações e Notificações — tudo salvo no Supabase.
 
+## Raio-X da Gestão da Clínica
+
+Diagnóstico gratuito, sem conta, em `/diagnostico`: 25 perguntas, relatório personalizado, PDF e continuidade para o cadastro.
+Detalhes, segurança, migração e métricas em [`docs/raio-x.md`](docs/raio-x.md). Testes: `npm test` e `npm run test:e2e`.
+
 ## Stack
 
 - React + Vite + TypeScript + Tailwind CSS v4

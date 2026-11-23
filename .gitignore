@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capturas do teste de ponta a ponta
+tests/e2e/out

@@ -1,3 +1,4 @@
+import { store as diagnosticStore } from '../diagnostic/lib/storage'
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase, api } from '../lib/supabase'
 import { useApp } from '../lib/store'
@@ -7,7 +8,8 @@ const SEGMENTS = ['Clínica médica', 'Clínica odontológica', 'Estética / har
 
 export default function Onboarding() {
   const { reloadCompany, reloadCounts, toast } = useApp()
-  const [f, setF] = useState({ name: '', segment: '', description: '', website: '', instagram: '' })
+  // Se a pessoa fez o Raio-X neste navegador, o nome da clínica já vem preenchido.
+  const [f, setF] = useState(() => ({ name: diagnosticStore.profile()?.clinic ?? '', segment: '', description: '', website: '', instagram: '' }))
   const [busy, setBusy] = useState(false)
   const [convite, setConvite] = useState<{ clinica: string; papel: string } | null>(null)
   useEffect(() => {

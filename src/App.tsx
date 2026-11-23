@@ -45,6 +45,8 @@ const WhatsApp = tela(() => import('./pages/WhatsApp'))
 const Approvals = tela(() => import('./pages/Approvals'))
 const Notifications = tela(() => import('./pages/Notifications'))
 const Settings = tela(() => import('./pages/Settings'))
+// Raio-X da Gestão da Clínica: página pública (abre sem conta), carregada só quando acessada
+const Diagnostico = tela(() => import('./diagnostic/DiagnosticApp'))
 
 /** Telas por papel: quem não tem acesso volta para o início (o banco também bloqueia os dados). */
 function So({ papeis, children }: { papeis: Papel[]; children: ReactNode }) {
@@ -106,6 +108,7 @@ export default function App() {
           <Route path="/privacidade" element={<Legal kind="privacidade" />} />
           <Route path="/cookies" element={<Legal kind="cookies" />} />
           <Route path="/reembolso" element={<Legal kind="reembolso" />} />
+          <Route path="/diagnostico/*" element={<Diagnostico />} />
           <Route path="/*" element={<Gate />} />
         </Routes>
         </Suspense>

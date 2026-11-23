@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { BellRing, CalendarDays, MessageCircle } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { avisoConfirmacao, supabase } from '../lib/supabase'
 import { LEGAL_VERSION } from '../lib/legal-dados'
 import { Logo, Reveal, Spinner } from '../components/ui'
@@ -8,10 +8,18 @@ import { LegalFooter } from '../components/LegalFooter'
 import { Captcha, CAPTCHA_ATIVO } from '../components/Captcha'
 import { SENHA_MIN, senhaFraca } from '../lib/senha'
 import { jaEntrouAntes, marcarQueEntrou } from '../lib/visitante'
+import { trackEvent } from '../diagnostic/lib/events'
+import { store as diagnosticStore } from '../diagnostic/lib/storage'
 
 export default function Login() {
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
-  const [email, setEmail] = useState('')
+  // Chegada pelo botão do Raio-X (?cadastro=1&origem=raio-x): abre direto em "Crie sua conta".
+  // Lido aqui (e não na carga do módulo) porque a chegada é uma navegação interna.
+  const params = new URLSearchParams(useLocation().search)
+  const fromDiagnostic = params.get('origem') === 'raio-x'
+  const wantsSignup = params.get('cadastro') === '1'
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>(wantsSignup ? 'signup' : 'login')
+  // Se a pessoa fez o diagnóstico neste navegador, o e-mail informado lá já vem preenchido.
+  const [email, setEmail] = useState(() => (wantsSignup ? (diagnosticStore.profile()?.email ?? '') : ''))
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(
@@ -41,6 +49,7 @@ export default function Login() {
         if (!accepted) throw new Error('Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.')
         const fraca = senhaFraca(password)
         if (fraca) throw new Error(fraca)
+        if (fromDiagnostic) trackEvent('signup_started', 'login-signup')
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -163,6 +172,9 @@ export default function Login() {
                 <button type="button" className="text-xs hover:text-ink" onClick={() => setMode('reset')}>
                   Esqueci minha senha
                 </button>
+                <Link to="/diagnostico" className="block text-xs hover:text-ink">
+                  Faça o Raio-X gratuito da gestão da sua clínica
+                </Link>
               </>
             ) : (
               <button type="button" className="font-bold text-brand" onClick={() => setMode('login')}>

@@ -227,7 +227,7 @@ function PlanoPago() {
             )}
             {!canSubscribe && payUrl && !b.authorized && (
               <a className="btn-primary" href={payUrl} target="_blank" rel="noreferrer">
-                <ExternalLink size={16} /> Concluir assinatura no Mercado Pago
+                <ExternalLink size={16} /> Concluir assinatura
               </a>
             )}
             {b.hasSubscription && (
@@ -297,7 +297,7 @@ function PlanoPago() {
               <Link to="/reembolso" target="_blank" className="font-medium text-ink underline underline-offset-2">Política de Cancelamento e Reembolso</Link>.
             </p>
             <button className="btn-primary w-full" disabled={busy}>
-              {busy && <Spinner size={14} />} Continuar no Mercado Pago
+              {busy && <Spinner size={14} />} Assinar
             </button>
           </form>
         )}

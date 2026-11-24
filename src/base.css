@@ -1,0 +1,3 @@
+/* Reset base do navegador (preflight do Tailwind). Todo o resto do estilo está em rx.css. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/preflight.css" layer(base);

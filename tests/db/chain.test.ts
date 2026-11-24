@@ -41,7 +41,7 @@ describe('migrações do produto + diagnóstico, em sequência', () => {
     `)
     const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()
     expect(files[0]).toBe('0001_schema.sql')
-    expect(files.at(-1)).toBe('0016_diagnostico_raio_x.sql')
+    expect(files.at(-1)).toBe('0019_diagnostico_raio_x.sql')
     // a numeração é contínua: nenhuma migração do produto foi sobrescrita ou pulada
     expect(files.map((f) => f.slice(0, 4))).toEqual(Array.from({ length: files.length }, (_, i) => String(i + 1).padStart(4, '0')))
     for (const f of files) await db.exec(readFileSync(resolve(dir, f), 'utf8'))

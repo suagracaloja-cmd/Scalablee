@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 
-export const MIGRATION = resolve(__dirname, '../../supabase/migrations/0016_diagnostico_raio_x.sql')
+export const MIGRATION = resolve(__dirname, '../../supabase/migrations/0019_diagnostico_raio_x.sql')
 
 export type Role = 'anon' | 'authenticated' | 'service_role' | 'postgres'
 

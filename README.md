@@ -12,7 +12,7 @@ Plataforma web (computador e celular) de gestão para **clínicas e consultório
 ## Raio-X da Gestão da Clínica
 
 Diagnóstico gratuito, sem conta, em `/diagnostico`: 25 perguntas, relatório personalizado, PDF e continuidade para o cadastro.
-Detalhes, segurança, migração (`0016`) e métricas em [`docs/raio-x.md`](docs/raio-x.md). Testes: `npm test` e `npm run test:e2e`.
+Detalhes, segurança, migração (`0019`) e métricas em [`docs/raio-x.md`](docs/raio-x.md). Testes: `npm test` e `npm run test:e2e`.
 
 ## Stack
 

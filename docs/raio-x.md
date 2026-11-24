@@ -5,7 +5,7 @@ personalizado (nota, mapa das cinco dimensões, três prioridades, plano para ag
 real da plataforma. Toda a análise é determinística: **não usa IA nem serviço pago**.
 
 - Rota pública: `/diagnostico` (carregada sob demanda; não altera o restante do produto).
-- Código: `src/diagnostic/`. Banco: `supabase/migrations/0016_diagnostico_raio_x.sql`. Testes: `tests/`.
+- Código: `src/diagnostic/`. Banco: `supabase/migrations/0019_diagnostico_raio_x.sql`. Testes: `tests/`.
 - Base: o commit que a Vercel de fato builda (`build.sh` do deploy de produção), e não o `main` antigo do repositório.
 
 ## A jornada
@@ -74,7 +74,7 @@ A migração é aditiva (só cria objetos `diagnostic_*` e `diag_*`, sem tocar e
 local, inclusive aplicada em sequência depois das 15 migrações reais do produto.
 
 ```bash
-supabase db push        # ou cole supabase/migrations/0016_diagnostico_raio_x.sql no SQL Editor do projeto
+supabase db push        # ou cole supabase/migrations/0019_diagnostico_raio_x.sql no SQL Editor do projeto
 ```
 
 Conferência depois de aplicar (todas devem passar):

@@ -1,5 +1,5 @@
 // Servidor local que imita o endpoint RPC do PostgREST/Supabase para o diagnóstico,
-// executando a migração REAL (supabase/migrations/0016_diagnostico_raio_x.sql) em um Postgres (PGlite).
+// executando a migração REAL (supabase/migrations/0019_diagnostico_raio_x.sql) em um Postgres (PGlite).
 // Cada chamada roda com o papel `anon`, como no Supabase: a segurança testada é a do banco, não a de um mock.
 //
 // Rotas de apoio ao teste (não existem no Supabase):
@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 import { PGlite } from '@electric-sql/pglite'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const MIGRATION = resolve(here, '../../supabase/migrations/0016_diagnostico_raio_x.sql')
+const MIGRATION = resolve(here, '../../supabase/migrations/0019_diagnostico_raio_x.sql')
 
 const ARGS = {
   diag_start: [['p_profile', 'jsonb'], ['p_consent', 'boolean'], ['p_marketing', 'boolean'], ['p_consent_version', 'text']],
